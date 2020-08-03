@@ -1,0 +1,12 @@
+{
+    "name": "Publish Nuget Packages Workflow",
+    "description": "Dotnet publish nuget packages workflow template.",
+    "iconName": "dotnet-nuget-publish-packages",
+    "categories": [
+        "dotnet"
+    ],
+    "filePatterns": [
+        ".json$",
+        "^Dockerfile*"
+    ]
+}
