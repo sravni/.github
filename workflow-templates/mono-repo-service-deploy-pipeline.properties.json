@@ -1,0 +1,10 @@
+{
+    "name": "Build And Deploy Mono Repo Service Workflow",
+    "description": "Mono repo service build and deploy workflow template.",
+    "iconName": "",
+    "categories": [
+        "Go",
+        "Python",
+        "Node"
+    ]
+}
