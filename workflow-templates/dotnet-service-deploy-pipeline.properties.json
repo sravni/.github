@@ -1,7 +1,7 @@
 {
     "name": "Build And Deploy Dotnet Services Workflow",
     "description": "Dotnet services build and deploy workflow template.",
-    "iconName": "",
+    "iconName": "dotnet-service-deploy-pipeline",
     "categories": [
         "C#"
     ]
