@@ -399,8 +399,8 @@ jobs:
               echo "Publish failed, see logs" && exit 1
             fi
 
-            echo "Done"
             echo "DEPLOY_STATE=successful" >> $GITHUB_ENV
+            echo "Done"
 
       - name: Failed Deployment
         if: failure()
