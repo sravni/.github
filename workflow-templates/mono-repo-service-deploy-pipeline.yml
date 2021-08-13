@@ -333,41 +333,6 @@ jobs:
             echo "Done"
             echo "DEPLOY_STATE=successful" >> $GITHUB_ENV
 
-      - name: Set info about deployment to qa-environment-service
-        run: |
-
-          qa_deps_route="${{ secrets.QA_API_URL }}/deployments"
-
-          RESPONSE_FILE=/tmp/$(uuidgen).txt
-
-          put_response=$(curl -X PUT \
-          	-so "${RESPONSE_FILE}" \
-          	-w "%{http_code}" "${qa_deps_route}" \
-          	-H "accept: application/json" \
-          	-H "Content-Type: application/json" \
-            --cookie "${{ secrets.YA_AUTH_COOKIE_NAME_VALUE }}" \
-          	-d "{ \
-             \"Branch\": \"${{ env.branch }}\", \
-             \"Project\": \"${{ env.service_name }}\", \
-             \"Stand\": \"${{ env.namespace }}\", \
-             \"TriggeredBy\": \"${{ github.actor }}\", \
-             \"VcsNumber\": \"${{ env.build_number }}\", \
-             \"buildId\": ${{ github.run_id }} \
-             }" \
-              || true )
-
-          if [ "${put_response}" != "200" ]; then
-            echo "Cannot create deployment"
-            echo "${put_response}"
-            cat "${REPONSE_FILE}" && exit 1
-          elif [ "${put_response}" != "409" ]; then
-            echo "Deployment already exists"
-            exit 0
-          else
-            echo "Deployment creation OK"
-            exit 0
-          fi
-
       - name: Failed Deployment
         if: failure()
         run: echo "DEPLOY_STATE=failed" >> $GITHUB_ENV
