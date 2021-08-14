@@ -565,6 +565,7 @@ jobs:
             fi
 
             echo "DEPLOY_STATE=successful" >> $GITHUB_ENV
+            echo "Done"
 
       - name: Inform about release
         run: |
