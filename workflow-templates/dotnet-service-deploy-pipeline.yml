@@ -583,7 +583,7 @@ jobs:
             -d '{
               "build_id": "${{ github.run_id }}",
               "version": "${sha}",
-              "build_status_url": "{{ github.event.repository.url }}/actions/runs/${{ github.run_id }}"
+              "build_status_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             }'
 
       - name: Parse Jira Keys from All Commits
