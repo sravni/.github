@@ -212,13 +212,13 @@ jobs:
           build-number: ${{ github.run_number }}
           build-display-name: 'Workflow: ${{ github.workflow }} (#${{ github.run_number }})'
           build-state: "${{ env.BUILD_STATE }}"
-          build-url: '${{ github.event.repository.url }}/actions/runs/${{ github.run_id }}'
+          build-url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
           update-sequence-number: '${{ github.run_id }}'
           last-updated: '${{ github.event.head_commit.timestamp }}'
           issue-keys: "${{ steps.jira_keys.outputs.jira-keys }}"
           commit-id: '${{ github.sha }}'
           repo-url: '${{ github.event.repository.url }}'
-          build-ref-url: '${{ github.event.repository.url }}/actions/runs/${{ github.run_id }}'
+          build-ref-url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
 
       - name: Confirm Jira Build Output
         if: ${{ success() }}
@@ -477,7 +477,7 @@ jobs:
           state: '${{ env.DEPLOY_STATE }}'
           pipeline-id: '${{ github.repository }} ${{ github.workflow }}'
           pipeline-display-name: 'Workflow: ${{ github.workflow }} (#${{ github.run_number }})'
-          pipeline-url: '${{ github.event.repository.url }}/actions/runs/${{ github.run_id }}'
+          pipeline-url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
           environment-id: 'Test'
           environment-display-name: 'Test'
           environment-type: 'testing'
@@ -621,7 +621,7 @@ jobs:
           state: '${{ env.DEPLOY_STATE }}'
           pipeline-id: '${{ github.repository }} ${{ github.workflow }}'
           pipeline-display-name: 'Workflow: ${{ github.workflow }} (#${{ github.run_number }})'
-          pipeline-url: '${{ github.event.repository.url }}/actions/runs/${{ github.run_id }}'
+          pipeline-url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
           environment-id: 'Prod'
           environment-display-name: 'Prod'
           environment-type: 'production'
