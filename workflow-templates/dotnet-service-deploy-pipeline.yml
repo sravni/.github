@@ -187,12 +187,12 @@ jobs:
           echo "BUILD_STATE=successful" >> $GITHUB_ENV
 
       - name: Failed Build
-        if: failure()
+        if: ${{ failure() }}
         run: echo "BUILD_STATE=failed" >> $GITHUB_ENV
 
       - name: Parse Jira Keys from Commit
         id: jira_keys
-        if: always()
+        if: ${{ always() }}
         uses: HighwayThree/jira-extract-issue-keys@master
         with:
           is-pull-request: ${{ github.event_name == 'pull_request' }}
@@ -212,16 +212,16 @@ jobs:
           build-number: ${{ github.run_number }}
           build-display-name: 'Workflow: ${{ github.workflow }} (#${{ github.run_number }})'
           build-state: "${{ env.BUILD_STATE }}"
-          build-url: '${{ github.event.repository.url }}/actions/runs/${{ github.run_id }}'
+          build-url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
           update-sequence-number: '${{ github.run_id }}'
           last-updated: '${{ github.event.head_commit.timestamp }}'
           issue-keys: "${{ steps.jira_keys.outputs.jira-keys }}"
           commit-id: '${{ github.sha }}'
           repo-url: '${{ github.event.repository.url }}'
-          build-ref-url: '${{ github.event.repository.url }}/actions/runs/${{ github.run_id }}'
+          build-ref-url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
 
       - name: Confirm Jira Build Output
-        if: success()
+        if: ${{ success() }}
         run: |
           echo "Jira Upload Build Info response: ${{ steps.push_build_info_to_jira.outputs.response }}"
 
@@ -399,15 +399,16 @@ jobs:
               echo "Publish failed, see logs" && exit 1
             fi
 
-            echo "DEPLOY_STATE=successful" >> $GITHUB_ENV
             echo "Done"
 
       - name: Failed Deployment
-        if: failure()
+        if: ${{ failure() }}
         run: echo "DEPLOY_STATE=failed" >> $GITHUB_ENV
 
       - name: Set info about deployment to qa-environment-service
+        if: ${{ success() }}
         run: |
+          echo "DEPLOY_STATE=successful" >> $GITHUB_ENV
 
           qa_deps_route="${{ secrets.QA_API_URL }}/deployments"
 
@@ -443,7 +444,7 @@ jobs:
 
       - name: Parse Jira Keys from All Commits
         id: jira_keys
-        if: always()
+        if: ${{ always() }}
         uses: HighwayThree/jira-extract-issue-keys@master
         with:
           is-pull-request: ${{ github.event_name == 'pull_request' }}
@@ -452,7 +453,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Confirm Deploy State and Jira Key Values
-        if: always()
+        if: ${{ always() }}
         run: |
           echo "DEPLOY_STATE: ${{env.DEPLOY_STATE}}"
           echo "Jira Keys: ${{ steps.jira_keys.outputs.jira-keys }}"
@@ -476,13 +477,13 @@ jobs:
           state: '${{ env.DEPLOY_STATE }}'
           pipeline-id: '${{ github.repository }} ${{ github.workflow }}'
           pipeline-display-name: 'Workflow: ${{ github.workflow }} (#${{ github.run_number }})'
-          pipeline-url: '${{ github.event.repository.url }}/actions/runs/${{ github.run_id }}'
+          pipeline-url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
           environment-id: 'Test'
           environment-display-name: 'Test'
           environment-type: 'testing'
 
       - name: Confirm Jira Deploy Output
-        if: success()
+        if: ${{ success() }}
         run: |
           echo "Jira Upload Deploy Info response: ${{steps.push_deployment_info_to_jira.outputs.response}}"
 
@@ -564,10 +565,16 @@ jobs:
               echo "Publish failed, see logs" && exit 1
             fi
 
-            echo "DEPLOY_STATE=successful" >> $GITHUB_ENV
+            echo "Done"
+
+      - name: Failed Deployment
+        if: ${{ failure() }}
+        run: echo "DEPLOY_STATE=failed" >> $GITHUB_ENV
 
       - name: Inform about release
+        if: ${{ success() }}
         run: |
+          echo "DEPLOY_STATE=successful" >> $GITHUB_ENV
 
           sha=$(echo ${GITHUB_SHA} | cut -c1-7)
 
@@ -576,17 +583,12 @@ jobs:
             -d '{
               "build_id": "${{ github.run_id }}",
               "version": "${sha}",
-              "build_status_url": "{{ github.event.repository.url }}/actions/runs/${{ github.run_id }}"
+              "build_status_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             }'
-
-
-      - name: Failed Deployment
-        if: failure()
-        run: echo "DEPLOY_STATE=failed" >> $GITHUB_ENV
 
       - name: Parse Jira Keys from All Commits
         id: jira_keys
-        if: always()
+        if: ${{ always() }}
         uses: HighwayThree/jira-extract-issue-keys@master
         with:
           is-pull-request: ${{ github.event_name == 'pull_request' }}
@@ -595,7 +597,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Confirm Deploy State and Jira Key Values
-        if: always()
+        if: ${{ always() }}
         run: |
           echo "DEPLOY_STATE: ${{ env.DEPLOY_STATE }}"
           echo "Jira Keys: ${{ steps.jira_keys.outputs.jira-keys }}"
@@ -619,7 +621,7 @@ jobs:
           state: '${{ env.DEPLOY_STATE }}'
           pipeline-id: '${{ github.repository }} ${{ github.workflow }}'
           pipeline-display-name: 'Workflow: ${{ github.workflow }} (#${{ github.run_number }})'
-          pipeline-url: '${{ github.event.repository.url }}/actions/runs/${{ github.run_id }}'
+          pipeline-url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
           environment-id: 'Prod'
           environment-display-name: 'Prod'
           environment-type: 'production'
