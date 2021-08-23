@@ -286,7 +286,7 @@ jobs:
           env_name=${{ env.namespace }}
 
 
-          get_response=$(curl -X GET -so "${REPONSE_FILE}" -w "%{http_code}" ${qa_envs_route}/${env_name} \
+          get_response=$(curl -X GET -so "${RESPONSE_FILE}" -w "%{http_code}" ${qa_envs_route}/${env_name} \
           --cookie "${{ secrets.YA_AUTH_COOKIE_NAME_VALUE }}" \
           -H "accept: application/json" || true)
 
@@ -298,7 +298,7 @@ jobs:
 
           elif [ $get_response != "404" ]; then
               echo "Server returned:"
-              cat "${REPONSE_FILE}" && exit 1
+              cat "${RESPONSE_FILE}" && exit 1
           fi
 
           echo "namespace_exists=${namespace_exists}" >> $GITHUB_ENV
@@ -339,7 +339,7 @@ jobs:
 
             if [ "${put_response}" != "200" ]; then
               echo "Cannot create environment ${env_name}"
-              cat "${REPONSE_FILE}" && exit 1
+              cat "${RESPONSE_FILE}" && exit 1
             fi
 
             echo "Environment ${env_name} has been created"
@@ -439,7 +439,7 @@ jobs:
           else
             echo "Cannot create deployment"
             echo "${put_response}"
-            cat "${REPONSE_FILE}" && exit 1
+            cat "${RESPONSE_FILE}" && exit 1
           fi
 
       - name: Parse Jira Keys from All Commits
