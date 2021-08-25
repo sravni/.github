@@ -391,7 +391,7 @@ jobs:
               --set cronjobs.defaults.resources.enabled=false \
               --set resources.enabled=false \
               --set replicaCount=1 \
-              -f ./"${{ matrix.service }}".k8s/stage.yaml \
+              -f ./"${{ matrix.service }}".k8s/ya-stage.yaml \
               /charts/generic-application/ \
               2>&1
 
