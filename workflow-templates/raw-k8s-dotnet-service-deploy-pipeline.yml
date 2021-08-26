@@ -128,26 +128,6 @@ jobs:
         if: ${{ env.image_exists == 1 }}
         uses: docker/setup-buildx-action@v1
 
-      - name: Validate values files
-        if: ${{ env.image_exists == 1 }}
-        uses: addnab/docker-run-action@v3
-        with:
-          username: ${{ secrets.DOCKER_LOGIN }}
-          password: ${{ secrets.DOCKER_PASS }}
-          registry: ${{ secrets.CONTAINER_REGISTRY }}
-          image: ${{ secrets.CONTAINER_REGISTRY }}/qa-environment-helpers:${{ secrets.QA_ENVIRONMENT_HELPERS_TAG }}
-          options: --rm -i -v ${{ github.workspace }}:/app
-          run: |
-            for file in /app/${{ matrix.service }}/.k8s/*.yaml;
-            do
-            	if [[ $file =~ ".Job" ]]
-                then
-                	continue
-                fi
-
-                yamale -s /charts/generic-application/schema.yaml $file
-            done
-
       - name: Docker Build
         if: ${{ env.image_exists == 1 }}
         run: |
