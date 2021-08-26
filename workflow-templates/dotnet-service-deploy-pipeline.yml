@@ -349,14 +349,13 @@ jobs:
             cat k8s-manifests/new-namespace-yandex.yml | envsubst | kubectl apply -f - 1>/dev/null 2>/dev/null
             echo "Manifest has been applied"
 
-            /bin/bash /scripts/identity-key/new-identity-key.sh 1>/dev/null 2>/dev/null
+            /bin/bash /charts/qa-environment-helpers/scripts/identity-key/new-identity-key.sh
             echo "Identity key has been generated"
 
-            kubectl -n ${env_name} create secret generic identity-key --from-file identity.pfx 1>/dev/null 2>/dev/null
+            kubectl -n ${env_name} create secret generic identity-key --from-file identity.pfx
             echo "Identity key secret has been created"
-            kubectl -n ${env_name} create secret generic labs-identity-key --from-file identity.pfx 1>/dev/null 2>/dev/null
+            kubectl -n ${env_name} create secret generic labs-identity-key --from-file identity.pfx
             echo "Labs identity key secret has been created"
-
       - name: Publish
         uses: addnab/docker-run-action@v3
 
