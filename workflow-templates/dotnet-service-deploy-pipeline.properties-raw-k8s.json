@@ -1,0 +1,8 @@
+{
+    "name": "[RAW k8s] Build And Deploy Dotnet Services Workflow",
+    "description": "Dotnet services build and deploy workflow template without helm.",
+    "iconName": "dotnet-service-deploy-pipeline-raw-k8s",
+    "categories": [
+        "C#"
+    ]
+}
