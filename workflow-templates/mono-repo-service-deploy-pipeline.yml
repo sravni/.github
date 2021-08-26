@@ -1,4 +1,4 @@
-name: CI
+name: CD-pipeline
 on:
   push:
     branches:
@@ -18,8 +18,10 @@ jobs:
   build_and_test:
     runs-on: ubuntu-latest
     outputs:
-      build_number: ${{ env.build_number }}
       branch: ${{ env.branch }}
+      author: ${{ steps.get-ids.outputs.author }}
+      committer: ${{ steps.get-ids.outputs.committer }}
+      build_number: ${{ env.build_number }}
 
     steps:
 
@@ -27,6 +29,33 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
+
+      - name: Expose git commit data
+        uses: rlespinasse/git-commit-data-action@1.1.2
+
+      - name: Get ids
+        id: get-ids
+        run: |
+          set -x
+
+          committer=${{ env.GIT_COMMIT_COMMITTER_EMAIL }}
+
+          if [[ $committer == *sravni.ru ]]; then
+            committer=$(echo $committer | awk -F@ '{print $1}')
+          else
+            committer="${{ env.GIT_COMMIT_COMMITTER_EMAIL }}"
+          fi
+
+          author=${{ env.GIT_COMMIT_AUTHOR_EMAIL }}
+
+          if [[ $author == *sravni.ru ]]; then
+            author=$(echo $author | awk -F@ '{print $1}')
+          else
+            author="${{ env.GIT_COMMIT_AUTHOR_EMAIL }}"
+          fi
+
+          echo "::set-output name=author::${author}"
+          echo "::set-output name=committer::${committer}"
 
       - name: Set build vars to GITHUB_ENV
         run: |
@@ -419,8 +448,7 @@ jobs:
 
 
   publish_to_azure:
-    if: ${{ false }}
-#    if: startsWith(github.ref, 'refs/tags') || contains(github.event_name, 'release')
+    if: startsWith(github.ref, 'refs/tags') || contains(github.event_name, 'release')
 
     needs:
       - 'build_and_test'
@@ -429,6 +457,9 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
+      author: ${{ needs.build_and_test.outputs.author }}
+      branch: ${{ needs.build_and_test.outputs.branch }}
+      committer: ${{ needs.build_and_test.outputs.committer }}
       build_number: ${{ needs.build_and_test.outputs.build_number }}
 
     steps:
@@ -491,24 +522,13 @@ jobs:
 
             echo "Done"
 
+      - name: Successful Deployment
+        if: ${{ success() }}
+        run: echo "DEPLOY_STATE=successful" >> $GITHUB_ENV
+
       - name: Failed Deployment
         if: ${{ failure() }}
         run: echo "DEPLOY_STATE=failed" >> $GITHUB_ENV
-
-      - name: Inform about release
-        if: ${{ success() }}
-        run: |
-          echo "DEPLOY_STATE=successful" >> $GITHUB_ENV
-
-          sha=$(echo ${GITHUB_SHA} | cut -c1-7)
-
-          curl -XPOST \
-            ${{ secrets.RELEASE_NOTIFIER_URL }} \
-            -d '{
-              "build_id": "${{ github.run_id }}",
-              "version": "${sha}",
-              "build_status_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-            }'
 
       - name: Parse Jira Keys from All Commits
         id: jira_keys
@@ -526,6 +546,14 @@ jobs:
           echo "DEPLOY_STATE: ${{ env.DEPLOY_STATE }}"
           echo "Jira Keys: ${{ steps.jira_keys.outputs.jira-keys }}"
 
+      - name: Build deployment name
+        if: ${{ always() }}
+        run: |
+          dep_url="${{ github.event.repository.url }}/actions/runs/${{ github.run_id }}"
+          title="@${{env.committer}} опубликовал(а) релиз \`${{env.service_name}}\`"
+          title+=" версии <${dep_url}|'${{env.build_number}}'> из ветки \`${{env.branch}}\`"
+          echo "DEPLOY_NAME=${title}" >> $GITHUB_ENV
+
       - name: Push Deployment Info to Jira
         if: steps.jira_keys.outputs.jira-keys != ''
         id: push_deployment_info_to_jira
@@ -537,7 +565,7 @@ jobs:
           deployment-sequence-number: '${{ github.run_id }}'
           update-sequence-number: '${{ github.run_id }}'
           issue-keys: "${{ steps.jira_keys.outputs.jira-keys }}"
-          display-name: "Deployment number ${GITHUB_SHA}"
+          display-name: "${{ env.DEPLOY_NAME }}"
           url: "${{ github.event.repository.url }}/actions/runs/${{ github.run_id }}"
           description: "Prod Deployment"
           last-updated: '${{ github.event.head_commit.timestamp }}'
@@ -546,6 +574,6 @@ jobs:
           pipeline-id: '${{ github.repository }} ${{ github.workflow }}'
           pipeline-display-name: 'Workflow: ${{ github.workflow }} (#${{ github.run_number }})'
           pipeline-url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
-          environment-id: 'Prod'
-          environment-display-name: 'Prod'
+          environment-id: 'Production'
+          environment-display-name: 'Production'
           environment-type: 'production'
