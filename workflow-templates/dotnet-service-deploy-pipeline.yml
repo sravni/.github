@@ -19,11 +19,40 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       services: ${{ steps.get-services.outputs.services }}
+      author: ${{ steps.get-ids.outputs.author }}
+      committer: ${{ steps.get-ids.outputs.committer }}
 
     steps:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
+
+      - name: Expose git commit data
+        uses: rlespinasse/git-commit-data-action@1.1.2
+
+      - name: Get ids
+        id: get-ids
+        run: |
+          set -x
+
+          committer=${{ env.GIT_COMMIT_COMMITTER_EMAIL }}
+
+          if [[ $committer == *sravni.ru ]]; then
+            committer=$(echo $committer | awk -F@ '{print $1}')
+          else
+            committer="${{ env.GIT_COMMIT_COMMITTER_EMAIL }}"
+          fi
+
+          author=${{ env.GIT_COMMIT_AUTHOR_EMAIL }}
+
+          if [[ $author == *sravni.ru ]]; then
+            author=$(echo $author | awk -F@ '{print $1}')
+          else
+            author="${{ env.GIT_COMMIT_AUTHOR_EMAIL }}"
+          fi
+
+          echo "::set-output name=author::${author}"
+          echo "::set-output name=committer::${committer}"
 
       - name: Get Services
         id: get-services
@@ -441,6 +470,8 @@ jobs:
     env:
       branch: ${{ needs.build_and_test.outputs.branch }}
       build_number: ${{ needs.build_and_test.outputs.build_number }}
+      author: ${{ needs.get_services.outputs.author }}
+      committer: ${{ needs.get_services.outputs.committer }}
 
     steps:
       - name: Set service name to GITHUB_ENV
