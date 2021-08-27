@@ -276,7 +276,7 @@ jobs:
               echo "Environment ${env_name} has been created"
               # substitute the environment name inside the new-namespace-yandex.yml file
               export EnvironmentName=$env_name
-              cat k8s-manifests/new-namespace-yandex.yml | envsubst | kubectl apply -f - 1>/dev/null 2>/dev/null
+              cat /charts/qa-environment-helpers/k8s-manifests/new-namespace-yandex.yml | envsubst | kubectl apply -f - 1>/dev/null 2>/dev/null
               echo "Manifest has been applied"
 
               /bin/bash /charts/qa-environment-helpers/scripts/identity-key/new-identity-key.sh
