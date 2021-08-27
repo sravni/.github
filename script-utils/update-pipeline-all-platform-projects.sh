@@ -1,8 +1,27 @@
-#!/usr/local/bin/bash
+#!/bin/bash
 
-PRJ_ROOT=/Users/vla8islav/repos/team-platform
+# ./update-pipeline-all-platform-projects.sh -p '/Users/vla8islav/repos/team-platform' -b pe-666
+
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 WORKFLOW_TEMPLATES_DIR=$SCRIPT_DIR/../workflow-templates
+
+usage() { echo "Usage: $0 [-p dir_for_git_checkout] [-b new_branch_name]" 1>&2; exit 1; }
+
+while getopts ":p:b:" o; do
+    case "${o}" in
+        p)
+            PRJ_ROOT=${OPTARG}
+            ;;
+        b)
+            TARGET_BRANCH=${OPTARG}
+            ;;
+        *)
+            usage
+            ;;
+    esac
+done
+shift $((OPTIND-1))
+
 
 declare -A platPrj
 
@@ -31,9 +50,13 @@ for key in "${!platPrj[@]}"; do
     prj_name=$key;
     pipeline_filename=${platPrj[$key]} 
     cd $PRJ_ROOT
-    # git clone git@github.com:sravni/${prj_name}.git
+    git clone git@github.com:sravni/${prj_name}.git
     cd $prj_name
+    git checkout -b $TARGET_BRANCH
     cp $WORKFLOW_TEMPLATES_DIR/$pipeline_filename $PRJ_ROOT/$prj_name/.github/workflows/
+    git branch --show-current
+    git add . && git commit -m "Added a separate yaml for yandex stage deployment" && git push
+    # git checkout -b pe-666
     # git checkout pe-657
     # git checkout pe-666
 done
