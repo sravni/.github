@@ -1,4 +1,4 @@
-name: CI
+name: CD-pipeline
 on:
   push:
     branches:
@@ -19,33 +19,57 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       services: ${{ steps.get-services.outputs.services }}
+      author: ${{ steps.get-ids.outputs.author }}
+      committer: ${{ steps.get-ids.outputs.committer }}
 
     steps:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
 
+      - name: Expose git commit data
+        uses: rlespinasse/git-commit-data-action@1.1.2
+
+      - name: Get ids
+        id: get-ids
+        run: |
+          set -x
+
+          committer=${{ env.GIT_COMMIT_COMMITTER_EMAIL }}
+
+          if [[ $committer == *sravni.ru ]]; then
+            committer=$(echo $committer | awk -F@ '{print $1}')
+          else
+            committer="${{ env.GIT_COMMIT_COMMITTER_EMAIL }}"
+          fi
+
+          author=${{ env.GIT_COMMIT_AUTHOR_EMAIL }}
+
+          if [[ $author == *sravni.ru ]]; then
+            author=$(echo $author | awk -F@ '{print $1}')
+          else
+            author="${{ env.GIT_COMMIT_AUTHOR_EMAIL }}"
+          fi
+
+          echo "::set-output name=author::${author}"
+          echo "::set-output name=committer::${committer}"
+
       - name: Get Services
         id: get-services
         run: |
-
           services=()
-
           for dir in *.Service/;
           do
             if [ ! -d "${dir}" ]; then
               echo "${dir} is not a directory, skipped"
               continue
             fi
-
             services+=( "\"${dir}\"" )
           done
           services=$(IFS=, ; echo "${services[*]}")
           services="[${services}]"
-
           echo "Services list: ${services}"
           echo "::set-output name=services::${services}"
-
   build_and_test:
     needs: get_services
     runs-on: ubuntu-latest
@@ -72,12 +96,9 @@ jobs:
           svc=$(echo "${svc}" | tr '[:upper:]' '[:lower:]') # convert to lowercase
           svc=${svc//./-}                                   # replace "." with "-"
           echo "service_name=${svc}" >> $GITHUB_ENV
-
           raw=$(git branch -r --contains ${{ github.ref }})
           branch=${raw##*/}
-
           echo "branch=${branch}" >> $GITHUB_ENV
-
           sha=$(echo ${GITHUB_SHA} | cut -c1-7)
           case $branch in
               master)
@@ -87,13 +108,10 @@ jobs:
                   build_number="${sha}-qa"
           esac
           echo "build_number=${build_number}" >> $GITHUB_ENV
-
           image_name="${{ secrets.CONTAINER_REGISTRY }}/${svc}:${build_number}"
           image_latest="${{ secrets.CONTAINER_REGISTRY }}/${svc}:latest"
-
           echo "image_name=${image_name}" >> $GITHUB_ENV
           echo "image_latest=${image_latest}" >> $GITHUB_ENV
-
       - name: Login to ACR
         uses: docker/login-action@v1
         with:
@@ -105,12 +123,10 @@ jobs:
         run: |
           image_exists=$(docker manifest inspect "${{ env.image_name }}" > /dev/null; echo $?)
           echo "image_exists=${image_exists}" >> $GITHUB_ENV
-
           if [ "${image_exists}" == 1 ]
           then
             pull_latest=$(docker pull "${image_latest}" > /dev/null; echo $?)
           fi
-
       - name: Check settings exists
         if: ${{ env.image_exists == 1 }}
         run: |
@@ -122,7 +138,6 @@ jobs:
           [[ ! -f $stage_settings ]] && echo "File $stage_settings doesn't exist" && exit 1
           [[ ! -f $prod_settings ]] && echo "File $prod_settings doesn't exist" && exit 1
           echo $dir-s settings OK
-
       - name: Set up Docker Buildx
         id: buildx
         if: ${{ env.image_exists == 1 }}
@@ -144,10 +159,8 @@ jobs:
                 then
                 	continue
                 fi
-
                 yamale -s /charts/generic-application/schema.yaml $file
             done
-
       - name: Docker Build
         if: ${{ env.image_exists == 1 }}
         run: |
@@ -159,7 +172,6 @@ jobs:
             --build-arg GITHUB_USERNAME=${{ secrets.NUGET_USERNAME }} \
             --build-arg GITHUB_TOKEN=${{ secrets.GH_TOKEN }} \
             -t "${{ env.image_name }}" -f "./${{ matrix.service }}/Dockerfile" .
-
       - name: Trivy Scanning
         if: ${{ env.image_exists == 1 }}
         run: |
@@ -172,20 +184,16 @@ jobs:
           --no-progress \
           --ignore-unfixed \
           --exit-code 0 "${{ env.image_name }}"
-
       - name: Docker Push
         if: ${{ env.image_exists == 1 }}
         run: |
-
           docker push "${{ env.image_name }}"
           if [ ${{ env.branch }} = "master" ]
           then
               docker tag "${{ env.image_name }}" "${{ env.image_latest }}"
               docker push "${{ env.image_latest }}"
           fi
-
           echo "BUILD_STATE=successful" >> $GITHUB_ENV
-
       - name: Failed Build
         if: ${{ failure() }}
         run: echo "BUILD_STATE=failed" >> $GITHUB_ENV
@@ -224,7 +232,6 @@ jobs:
         if: ${{ success() }}
         run: |
           echo "Jira Upload Build Info response: ${{ steps.push_build_info_to_jira.outputs.response }}"
-
   publish_to_stage:
     runs-on: ubuntu-latest
     needs: [build_and_test, get_services]
@@ -242,32 +249,25 @@ jobs:
           # этот шаг задублирован из джобы build_and_test, потому что гитхаб считает
           # что в нем лежит какой-то секрет и не даёт его передать в качестве аутпута
           # предыдущей джобы
-
-
           dir=${{ matrix.service }}
           svc=${dir%?}                                      # trim / at the end
           svc=$(echo "${svc}" | tr '[:upper:]' '[:lower:]') # convert to lowercase
           svc=${svc//./-}                                   # replace "." with "-"
           echo "service_name=${svc}" >> $GITHUB_ENV
-
       - name: Get namespace name
         id: get_namespace
         run: |
           echo "Current branch is ${{ env.branch }}"
           namespace=$(echo ${{ env.branch }} | awk -F '/' '{print $NF}')
           namespace=${namespace,,}
-
           regexp='^|[a-z|]|[-a-z0-9|]{1,12}|[a-z0-9|]$'
-
           if echo $namespace | grep -Eq $regexp; then
               echo "${namespace} is valid name"
           else
             echo "Only: letters, numbers, no more than 14 characters";
             exit 1;
           fi
-
           echo "namespace=${namespace}" >> $GITHUB_ENV
-
       - name: Login to ACR
         uses: docker/login-action@v1
         with:
@@ -281,28 +281,20 @@ jobs:
       - name: Check if namespace already exists
         run: |
           RESPONSE_FILE=/tmp/$(uuidgen).txt
-
           qa_envs_route="${{ secrets.QA_API_URL }}/environments"
           env_name=${{ env.namespace }}
-
-
           get_response=$(curl -X GET -so "${RESPONSE_FILE}" -w "%{http_code}" ${qa_envs_route}/${env_name} \
           --cookie "${{ secrets.YA_AUTH_COOKIE_NAME_VALUE }}" \
           -H "accept: application/json" || true)
-
           namespace_exists=0
-
           if [ $get_response == "200" ]; then
               echo "Environment ${env_name} already exists"
               namespace_exists=1
-
           elif [ $get_response != "404" ]; then
               echo "Server returned:"
               cat "${RESPONSE_FILE}" && exit 1
           fi
-
           echo "namespace_exists=${namespace_exists}" >> $GITHUB_ENV
-
       - name: Create namespace
         if: ${{ env.namespace_exists == 0 }}
         uses: addnab/docker-run-action@v3
@@ -314,21 +306,16 @@ jobs:
           options: -w=/charts/qa-environment-helpers
           run: |
             echo ${{ secrets.YANDEX_KEY }} | base64 --decode > /key.json
-
             yc config profile create github
             yc config set service-account-key /key.json
-
             yc managed-kubernetes \
               cluster get-credentials \
               --cloud-id ${{ secrets.YANDEX_CLOUD_ID }} \
               --folder-id ${{ secrets.YANDEX_FOLDER_ID }} \
               yc-stage-k8s --external
-
             RESPONSE_FILE=/tmp/$(uuidgen).txt
-
             qa_envs_route="${{ secrets.QA_API_URL }}/environments"
             env_name=${{ env.namespace }}
-
             put_response=$(curl -X PUT \
               -so "${RESPONSE_FILE}" \
               -w "%{http_code}" $qa_envs_route \
@@ -336,27 +323,21 @@ jobs:
               -H "Content-Type: application/json" \
               --cookie "${{ secrets.YA_AUTH_COOKIE_NAME_VALUE }}" \
               -d "{ \"createdBy\": \"${{ github.actor }}\", \"kind\": \"QA\", \"name\": \"${env_name}\", \"team\": \"${{ env.team }}\"}" || true)
-
             if [ "${put_response}" != "200" ]; then
               echo "Cannot create environment ${env_name}"
               cat "${RESPONSE_FILE}" && exit 1
             fi
-
             echo "Environment ${env_name} has been created"
-
             # substitute the environment name inside the new-namespace-yandex.yml file
             export EnvironmentName=$env_name
             cat k8s-manifests/new-namespace-yandex.yml | envsubst | kubectl apply -f - 1>/dev/null 2>/dev/null
             echo "Manifest has been applied"
-
             /bin/bash /scripts/identity-key/new-identity-key.sh 1>/dev/null 2>/dev/null
             echo "Identity key has been generated"
-
             kubectl -n ${env_name} create secret generic identity-key --from-file identity.pfx 1>/dev/null 2>/dev/null
             echo "Identity key secret has been created"
             kubectl -n ${env_name} create secret generic labs-identity-key --from-file identity.pfx 1>/dev/null 2>/dev/null
             echo "Labs identity key secret has been created"
-
       - name: Publish
         uses: addnab/docker-run-action@v3
 
@@ -368,18 +349,14 @@ jobs:
           options: --rm -i -v ${{ github.workspace }}:/app -w=/app
           run: |
             echo ${{ secrets.YANDEX_KEY }} | base64 --decode > /key.json
-
             yc config profile create github
             yc config set service-account-key /key.json
-
             yc managed-kubernetes \
               cluster get-credentials \
               --cloud-id ${{ secrets.YANDEX_CLOUD_ID }} \
               --folder-id ${{ secrets.YANDEX_FOLDER_ID }} \
               yc-stage-k8s --external
-
             echo "Trying to deploy ${{ env.service_name }}..."
-
             werf helm upgrade --install \
               "${{ env.service_name }}" \
               --namespace "${{ env.namespace }}" \
@@ -394,13 +371,10 @@ jobs:
               -f ./"${{ matrix.service }}".k8s/ya-stage.yaml \
               /charts/generic-application/ \
               2>&1
-
             if [ $? != 0 ]; then
               echo "Publish failed, see logs" && exit 1
             fi
-
             echo "Done"
-
       - name: Failed Deployment
         if: ${{ failure() }}
         run: echo "DEPLOY_STATE=failed" >> $GITHUB_ENV
@@ -409,11 +383,8 @@ jobs:
         if: ${{ success() }}
         run: |
           echo "DEPLOY_STATE=successful" >> $GITHUB_ENV
-
           qa_deps_route="${{ secrets.QA_API_URL }}/deployments"
-
           RESPONSE_FILE=/tmp/$(uuidgen).txt
-
           put_response=$(curl -X PUT \
             -so "${RESPONSE_FILE}" \
             -w "%{http_code}" "${qa_deps_route}" \
@@ -429,7 +400,6 @@ jobs:
                \"buildId\": ${{ github.run_id }} \
                }" \
           || true )
-
           if [ "${put_response}" == "200" ]; then
             echo "Deployment creation OK"
             exit 0
@@ -441,7 +411,6 @@ jobs:
             echo "${put_response}"
             cat "${RESPONSE_FILE}" && exit 1
           fi
-
       - name: Parse Jira Keys from All Commits
         id: jira_keys
         if: ${{ always() }}
@@ -457,7 +426,6 @@ jobs:
         run: |
           echo "DEPLOY_STATE: ${{env.DEPLOY_STATE}}"
           echo "Jira Keys: ${{ steps.jira_keys.outputs.jira-keys }}"
-
       - name: Push Deployment Info to Jira
         if: steps.jira_keys.outputs.jira-keys != ''
         id: push_deployment_info_to_jira
@@ -486,7 +454,6 @@ jobs:
         if: ${{ success() }}
         run: |
           echo "Jira Upload Deploy Info response: ${{steps.push_deployment_info_to_jira.outputs.response}}"
-
   publish_to_azure:
     if: startsWith(github.ref, 'refs/tags') || contains(github.event_name, 'release')
 
@@ -501,7 +468,10 @@ jobs:
       matrix:
         service: ${{ fromJson(needs.get_services.outputs.services) }}
     env:
+      branch: ${{ needs.build_and_test.outputs.branch }}
       build_number: ${{ needs.build_and_test.outputs.build_number }}
+      author: ${{ needs.get_services.outputs.author }}
+      committer: ${{ needs.get_services.outputs.committer }}
 
     steps:
       - name: Set service name to GITHUB_ENV
@@ -510,13 +480,11 @@ jobs:
           # этот шаг задублирован из джобы build_and_test, потому что гитхаб считает
           # что в нем лежит какой-то секрет и не даёт его передать в качестве аутпута
           # предыдущей джобы
-
           dir=${{ matrix.service }}
           svc=${dir%?}                                      # trim / at the end
           svc=$(echo "${svc}" | tr '[:upper:]' '[:lower:]') # convert to lowercase
           svc=${svc//./-}                                   # replace "." with "-"
           echo "service_name=${svc}" >> $GITHUB_ENV
-
       - name: Login to ACR
         uses: docker/login-action@v1
         with:
@@ -571,20 +539,9 @@ jobs:
         if: ${{ failure() }}
         run: echo "DEPLOY_STATE=failed" >> $GITHUB_ENV
 
-      - name: Inform about release
+      - name: Successful Deployment
         if: ${{ success() }}
-        run: |
-          echo "DEPLOY_STATE=successful" >> $GITHUB_ENV
-
-          sha=$(echo ${GITHUB_SHA} | cut -c1-7)
-
-          curl -XPOST \
-            ${{ secrets.RELEASE_NOTIFIER_URL }} \
-            -d '{
-              "build_id": "${{ github.run_id }}",
-              "version": "${sha}",
-              "build_status_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-            }'
+        run: echo "DEPLOY_STATE=successful" >> $GITHUB_ENV
 
       - name: Parse Jira Keys from All Commits
         id: jira_keys
@@ -602,6 +559,14 @@ jobs:
           echo "DEPLOY_STATE: ${{ env.DEPLOY_STATE }}"
           echo "Jira Keys: ${{ steps.jira_keys.outputs.jira-keys }}"
 
+      - name: Build deployment name
+        if: ${{ always() }}
+        run: |
+          dep_url="${{ github.event.repository.url }}/actions/runs/${{ github.run_id }}"
+          title="@${{env.committer}} опубликовал(а) релиз \`${{env.service_name}}\`"
+          title+=" версии <${dep_url}|'${{env.build_number}}'> из ветки \`${{env.branch}}\`"
+          echo "DEPLOY_NAME=${title}" >> $GITHUB_ENV
+
       - name: Push Deployment Info to Jira
         if: steps.jira_keys.outputs.jira-keys != ''
         id: push_deployment_info_to_jira
@@ -613,7 +578,7 @@ jobs:
           deployment-sequence-number: '${{ github.run_id }}'
           update-sequence-number: '${{ github.run_id }}'
           issue-keys: "${{ steps.jira_keys.outputs.jira-keys }}"
-          display-name: "Deployment number ${GITHUB_SHA}"
+          display-name: "${{ env.DEPLOY_NAME }}"
           url: "${{ github.event.repository.url }}/actions/runs/${{ github.run_id }}"
           description: "Prod Deployment"
           last-updated: '${{ github.event.head_commit.timestamp }}'
@@ -622,6 +587,6 @@ jobs:
           pipeline-id: '${{ github.repository }} ${{ github.workflow }}'
           pipeline-display-name: 'Workflow: ${{ github.workflow }} (#${{ github.run_number }})'
           pipeline-url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
-          environment-id: 'Prod'
-          environment-display-name: 'Prod'
+          environment-id: 'Production'
+          environment-display-name: 'Production'
           environment-type: 'production'
