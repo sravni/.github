@@ -1,0 +1,10 @@
+{
+    "name": "Sravni pipeline build and test backoffices",
+    "description": "Backoffice build and test workflow template.",
+    "iconName": "sravni-pipeline-build-and-test",
+    "categories": [
+        "Go",
+        "Python",
+        "Node"
+    ]
+}

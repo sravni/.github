@@ -1,0 +1,10 @@
+{
+    "name": "Sravni pipeline publish to stage PHP",
+    "description": "PHP publish to stage workflow template.",
+    "iconName": "sravni-pipeline-publish-to-stage",
+    "categories": [
+        "Go",
+        "Python",
+        "Node"
+    ]
+}

@@ -1,0 +1,204 @@
+name: Publish-to-Prod-Multi-Services
+
+on:
+  push:
+    tags:
+      - v[0-9]+.[0-9]+
+  release:
+    types:
+      - published
+
+env:
+  team: ${{ secrets.TEAM }}
+  image_pull_secret_acr: sravni-azurecr-io
+
+jobs:
+  get_services:
+    runs-on: ubuntu-latest
+
+    outputs:
+      services: ${{ steps.get-services.outputs.services }}
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Get services
+        id: get-services
+        run: |
+          services=(*.Service)
+          echo "Services list: ${services}"
+          echo "::set-output name=services::${services}"
+
+  prepublish:
+    runs-on: ubuntu-latest
+
+    outputs:
+      branch: ${{ env.branch }}
+      service_name: ${{ env.service_name }}
+      build_number: ${{ env.build_number }}
+
+    strategy:
+      matrix:
+        service: ${{ needs.get_services.outputs.services }}
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Set build vars to GITHUB_ENV
+        run: |
+          service_name=${{ matrix.service }}
+          service_name=$(echo "${service_name}" | tr '[:upper:]' '[:lower:]')
+          service_name=${service_name//./-}
+          branch=$(echo ${GITHUB_REF#refs/heads/})
+          sha=$(echo ${GITHUB_SHA} | cut -c1-7)
+          build_number=$sha
+          image_name="${{ secrets.CONTAINER_REGISTRY }}/${service_name}:${build_number}"
+          echo "service_name=$service_name" >> $GITHUB_ENV
+          echo "branch=$branch" >> $GITHUB_ENV
+          echo "build_number=$build_number" >> $GITHUB_ENV
+          echo "image_name=$image_name" >> $GITHUB_ENV
+
+      - name: Login to ACR
+        uses: docker/login-action@v1
+        with:
+          registry: ${{ secrets.CONTAINER_REGISTRY }}
+          username: ${{ secrets.DOCKER_LOGIN }}
+          password: ${{ secrets.DOCKER_PASS }}
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Docker build
+        id: docker_build
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./${{ matrix.service }}/Dockerfile
+          build-args: |
+            GITHUB_NPM_TOKEN=${{ secrets.GH_TOKEN }}
+            build_number=${{ env.build_number }}
+          push: true
+          tags: "${{ env.image_name }}"
+
+  publish:
+    runs-on: ubuntu-latest
+    needs: [prepublish, get_services]
+
+    strategy:
+      matrix:
+        service: ${{ needs.get_services.outputs.services) }}
+
+    env:
+      branch: ${{ needs.prepublish.outputs.branch }}
+      build_number: ${{ needs.prepublish.outputs.build_number }}
+
+    steps:
+      - name: Login to ACR
+        uses: docker/login-action@v1
+        with:
+          registry: ${{ secrets.CONTAINER_REGISTRY }}
+          username: ${{ secrets.DOCKER_LOGIN }}
+          password: ${{ secrets.DOCKER_PASS }}
+
+      - name: Checkout source
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          
+      - name: Publish
+        uses: addnab/docker-run-action@v3
+
+        with:
+          username: ${{ secrets.DOCKER_LOGIN }}
+          password: ${{ secrets.DOCKER_PASS }}
+          registry: ${{ secrets.CONTAINER_REGISTRY }}
+          image: ${{ secrets.CONTAINER_REGISTRY }}/qa-environment-helpers:${{ secrets.QA_ENVIRONMENT_HELPERS_TAG }}
+          options: --rm -i -v ${{ github.workspace }}:/app -w=/app
+          run: |
+            az login --service-principal \
+              --username ${{ secrets.ARM_CLIENT_ID }} \
+              --password ${{ secrets.ARM_CLIENT_SECRET }} \
+              --tenant ${{ secrets.ARM_TENANT_ID }}
+            az aks get-credentials --admin \
+              --resource-group sravni \
+              --name az-prod-k8s
+            echo "Deploying service ${{ env.service_name }}..."
+            werf helm upgrade --install \
+              "${{ env.service_name }}" \
+              --namespace sravni \
+              --atomic \
+              --timeout 10m \
+              --set global.image.repository="${{ secrets.CONTAINER_REGISTRY }}/${{ env.service_name }}" \
+              --set global.image.tag="${{ env.build_number }}" \
+              --set global.imagePullSecrets[0]="${{ env.image_pull_secret_acr }}" \
+              --set azureRedis.uri=${{ secrets.AZURE_REDIS_URI }} \
+              --set linkerd.enabled=false \
+              -f ./"${{ matrix.service }}".k8s/azure.yaml \
+              /charts/generic-application/
+              2>&1
+            if [ $? != 0 ]; then
+              echo "Publish failed, see logs" && exit 1
+            fi
+            echo "Done"
+
+      - name: Failed Deployment
+        if: ${{ failure() }}
+        run: echo "DEPLOY_STATE=failed" >> $GITHUB_ENV
+
+      - name: Successful Deployment
+        if: ${{ success() }}
+        run: echo "DEPLOY_STATE=successful" >> $GITHUB_ENV
+
+      - name: Parse Jira Keys from All Commits
+        id: jira_keys
+        if: ${{ always() }}
+        uses: HighwayThree/jira-extract-issue-keys@master
+        with:
+          is-pull-request: ${{ github.event_name == 'pull_request' }}
+          parse-all-commits: ${{ github.event_name == 'push' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Confirm Deploy State and Jira Key Values
+        if: ${{ always() }}
+        run: |
+          echo "DEPLOY_STATE: ${{ env.DEPLOY_STATE }}"
+          echo "Jira Keys: ${{ steps.jira_keys.outputs.jira-keys }}"
+
+      - name: Build deployment name
+        if: ${{ always() }}
+        run: |
+          dep_url="${{ github.event.repository.url }}/actions/runs/${{ github.run_id }}"
+          title="@${{env.committer}} опубликовал(а) релиз \`${{env.service_name}}\`"
+          title+=" версии <${dep_url}|'${{env.build_number}}'> из ветки \`${{env.branch}}\`"
+          echo "DEPLOY_NAME=${title}" >> $GITHUB_ENV
+
+      - name: Push Deployment Info to Jira
+        if: steps.jira_keys.outputs.jira-keys != ''
+        id: push_deployment_info_to_jira
+        uses: HighwayThree/jira-upload-deployment-info@master
+        with:
+          cloud-instance-base-url: 'https://sravniru.atlassian.net'
+          client-id: '${{ secrets.JIRA_CLIENT_ID }}'
+          client-secret: '${{ secrets.JIRA_CLIENT_SECRET }}'
+          deployment-sequence-number: '${{ github.run_id }}'
+          update-sequence-number: '${{ github.run_id }}'
+          issue-keys: "${{ steps.jira_keys.outputs.jira-keys }}"
+          display-name: "${{ env.DEPLOY_NAME }}"
+          url: "${{ github.event.repository.url }}/actions/runs/${{ github.run_id }}"
+          description: "Prod Deployment"
+          last-updated: '${{ github.event.head_commit.timestamp }}'
+          label: 'Prod Deployment Label'
+          state: '${{ env.DEPLOY_STATE }}'
+          pipeline-id: '${{ github.repository }} ${{ github.workflow }}'
+          pipeline-display-name: 'Workflow: ${{ github.workflow }} (#${{ github.run_number }})'
+          pipeline-url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+          environment-id: 'Production'
+          environment-display-name: 'Production'
+          environment-type: 'production'

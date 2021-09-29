@@ -1,0 +1,148 @@
+name: Publish-to-Prod-Jobs
+
+on:
+  push:
+    tags:
+      - v[0-9]+.[0-9]+
+  release:
+    types:
+      - published
+
+env:
+  team: ${{ secrets.TEAM }}
+  image_pull_secret_acr: sravni-azurecr-io
+
+jobs:
+  get_jobs:
+    runs-on: ubuntu-latest
+
+    outputs:
+      jobs: ${{ steps.get-jobs.outputs.jobs }}
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Get jobs
+        id: get-jobs
+        run: |
+          jobs=(*.job)
+          echo "jobs list: ${jobs}"
+          echo "::set-output name=jobs::${jobs}"
+
+  prepublish:
+    runs-on: ubuntu-latest
+
+    outputs:
+      branch: ${{ env.branch }}
+      job_name: ${{ env.job_name }}
+      build_number: ${{ env.build_number }}
+
+    strategy:
+      matrix:
+        job: ${{ needs.get_jobs.outputs.jobs }}
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Set build vars to GITHUB_ENV
+        run: |
+          job_name=${{ matrix.job }}
+          job_name=$(echo "${job_name}" | tr '[:upper:]' '[:lower:]')
+          job_name=${job_name//./-}
+          branch=$(echo ${GITHUB_REF#refs/heads/})
+          sha=$(echo ${GITHUB_SHA} | cut -c1-7)
+          build_number=$sha
+          image_name="${{ secrets.CONTAINER_REGISTRY }}/${job_name}:${build_number}"
+          echo "job_name=$job_name" >> $GITHUB_ENV
+          echo "branch=$branch" >> $GITHUB_ENV
+          echo "build_number=$build_number" >> $GITHUB_ENV
+          echo "image_name=$image_name" >> $GITHUB_ENV
+
+      - name: Login to ACR
+        uses: docker/login-action@v1
+        with:
+          registry: ${{ secrets.CONTAINER_REGISTRY }}
+          username: ${{ secrets.DOCKER_LOGIN }}
+          password: ${{ secrets.DOCKER_PASS }}
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Docker build
+        id: docker_build
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./${{ matrix.job }}/Dockerfile
+          build-args: |
+            GITHUB_NPM_TOKEN=${{ secrets.GH_TOKEN }}
+            build_number=${{ env.build_number }}
+          push: true
+          tags: "${{ env.image_name }}"
+
+  publish:
+    runs-on: ubuntu-latest
+    needs: [prepublish, get_jobs]
+
+    strategy:
+      matrix:
+        job: ${{ needs.get_jobs.outputs.jobs) }}
+
+    env:
+      branch: ${{ needs.prepublish.outputs.branch }}
+      build_number: ${{ needs.prepublish.outputs.build_number }}
+
+    steps:
+      - name: Login to ACR
+        uses: docker/login-action@v1
+        with:
+          registry: ${{ secrets.CONTAINER_REGISTRY }}
+          username: ${{ secrets.DOCKER_LOGIN }}
+          password: ${{ secrets.DOCKER_PASS }}
+
+      - name: Checkout source
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          
+      - name: Publish
+        uses: addnab/docker-run-action@v3
+
+        with:
+          username: ${{ secrets.DOCKER_LOGIN }}
+          password: ${{ secrets.DOCKER_PASS }}
+          registry: ${{ secrets.CONTAINER_REGISTRY }}
+          image: ${{ secrets.CONTAINER_REGISTRY }}/qa-environment-helpers:${{ secrets.QA_ENVIRONMENT_HELPERS_TAG }}
+          options: --rm -i -v ${{ github.workspace }}:/app -w=/app
+          run: |
+            az login --job-principal \
+              --username ${{ secrets.ARM_CLIENT_ID }} \
+              --password ${{ secrets.ARM_CLIENT_SECRET }} \
+              --tenant ${{ secrets.ARM_TENANT_ID }}
+            az aks get-credentials --admin \
+              --resource-group sravni \
+              --name az-prod-k8s
+            echo "Deploying job ${{ env.job_name }}..."
+            werf helm upgrade --install \
+              "${{ env.job_name }}" \
+              --namespace sravni \
+              --atomic \
+              --timeout 10m \
+              --set global.image.repository="${{ secrets.CONTAINER_REGISTRY }}/${{ env.job_name }}" \
+              --set global.image.tag="${{ env.build_number }}" \
+              --set global.imagePullSecrets[0]="${{ env.image_pull_secret_acr }}" \
+              --set azureRedis.uri=${{ secrets.AZURE_REDIS_URI }} \
+              --set linkerd.enabled=false \
+              -f ./"${{ matrix.job }}".k8s/azure.yaml \
+              /charts/generic-application/
+              2>&1
+            if [ $? != 0 ]; then
+              echo "Publish failed, see logs" && exit 1
+            fi
+            echo "Done"

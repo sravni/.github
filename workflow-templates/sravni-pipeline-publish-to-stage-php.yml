@@ -1,0 +1,257 @@
+name: Publish-to-Stage-Mono
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+    types: [opened, edited]
+
+env:
+  team: ${{ secrets.TEAM }}
+  image_pull_secret_acr: sravni-azurecr-io
+
+jobs:
+  get_services:
+    runs-on: ubuntu-latest
+
+    outputs:
+      services: ${{ steps.get-services.outputs.services }}
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v2
+
+      - name: Get services
+        id: get-services
+        run: |
+          services=(*.Service)
+          echo "Services list: ${services}"
+          echo "::set-output name=services::${services}"
+
+  prepublish:
+    runs-on: ubuntu-latest
+
+    outputs:
+      branch: ${{ env.branch }}
+      service_name: ${{ env.service_name }}
+      build_number: ${{ env.build_number }}
+
+    strategy:
+      matrix:
+        service: ${{ needs.get_services.outputs.services }}
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v2
+
+      - name: Get branch name (merge)
+        if: github.event_name != 'pull_request'
+        run: echo "branch=$(echo ${GITHUB_REF#refs/heads/} | tr / -)" >> $GITHUB_ENV
+
+      - name: Get branch name (pull request)
+        if: github.event_name == 'pull_request'
+        run: echo "branch=$(echo ${GITHUB_HEAD_REF} | tr / -)" >> $GITHUB_ENV
+
+      - name: Set build vars to GITHUB_ENV
+        run: |
+          service_name=${{ matrix.service }}
+          service_name=$(echo "${service_name}" | tr '[:upper:]' '[:lower:]')
+          service_name=${service_name//./-}
+          sha=$(echo ${GITHUB_SHA} | cut -c1-7)
+          build_number=$sha-qa
+          image_name="${{ secrets.CONTAINER_REGISTRY }}/${service_name}:${build_number}"
+          echo "service_name=$service_name" >> $GITHUB_ENV
+          echo "build_number=$build_number" >> $GITHUB_ENV
+          echo "image_name=$image_name" >> $GITHUB_ENV
+
+      - name: Login to ACR
+        uses: docker/login-action@v1
+        with:
+          registry: ${{ secrets.CONTAINER_REGISTRY }}
+          username: ${{ secrets.DOCKER_LOGIN }}
+          password: ${{ secrets.DOCKER_PASS }}
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Docker build
+        id: docker_build
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./${{ matrix.service }}/Dockerfile
+          build-args: |
+            GITHUB_NPM_TOKEN=${{ secrets.GH_TOKEN }}
+            build_number=${{ env.build_number }}
+          push: true
+          tags: "${{ env.image_name }}"
+
+  publish:
+    runs-on: ubuntu-latest
+    needs: [prepublish, get_services]
+
+    strategy:
+      matrix:
+        service: ${{ needs.get_services.outputs.services) }}
+
+    env:
+      build_number: ${{ needs.prepublish.outputs.build_number }}
+      branch: ${{ needs.prepublish.outputs.branch }}
+
+    steps:
+      - name: Get namespace name
+        id: get_namespace
+        run: |
+          echo "Current branch is ${{ env.branch }}"
+          namespace=$(echo ${{ env.branch }} | awk -F '/' '{print $NF}')
+          namespace=${namespace,,}
+          regexp='^|[a-z|]|[-a-z0-9|]{1,12}|[a-z0-9|]$'
+          if echo $namespace | grep -Eq $regexp; then
+              echo "${namespace} is valid name"
+          else
+            echo "Only: letters, numbers, no more than 14 characters";
+            exit 1;
+          fi
+          echo "namespace=${namespace}" >> $GITHUB_ENV
+
+      - name: Login to ACR
+        uses: docker/login-action@v1
+        with:
+          registry: ${{ secrets.CONTAINER_REGISTRY }}
+          username: ${{ secrets.DOCKER_LOGIN }}
+          password: ${{ secrets.DOCKER_PASS }}
+
+      - name: Checkout source
+        uses: actions/checkout@v2
+
+      - name: Check if namespace already exists
+        run: |
+          RESPONSE_FILE=/tmp/$(uuidgen).txt
+          qa_envs_route="${{ secrets.QA_API_URL }}/environments"
+          get_response=$(curl -X GET -so "${RESPONSE_FILE}" -w "%{http_code}" ${qa_envs_route}/{{ env.namespace }} \
+          --cookie "${{ secrets.YA_AUTH_COOKIE_NAME_VALUE }}" \
+          -H "accept: application/json")
+          namespace_exists=0
+          if [ $get_response == "200" ]; then
+              echo "Environment {{ env.namespace }} already exists"
+              namespace_exists=1
+          elif [ $get_response != "404" ]; then
+              echo "Server returned:"
+              cat "${RESPONSE_FILE}" && exit 1
+          fi
+          echo "namespace_exists=${namespace_exists}" >> $GITHUB_ENV
+
+      - name: Create namespace
+        if: ${{ env.namespace_exists == 0 }}
+        uses: addnab/docker-run-action@v3
+        with:
+          username: ${{ secrets.DOCKER_LOGIN }}
+          password: ${{ secrets.DOCKER_PASS }}
+          registry: ${{ secrets.CONTAINER_REGISTRY }}
+          image: ${{ secrets.CONTAINER_REGISTRY }}/qa-environment-helpers:${{ secrets.QA_ENVIRONMENT_HELPERS_TAG }}
+          options: -w=/charts/qa-environment-helpers
+          run: |
+            echo ${{ secrets.YANDEX_KEY }} | base64 --decode > /key.json
+            yc config profile create github
+            yc config set service-account-key /key.json
+            yc managed-kubernetes \
+              cluster get-credentials \
+              --cloud-id ${{ secrets.YANDEX_CLOUD_ID }} \
+              --folder-id ${{ secrets.YANDEX_FOLDER_ID }} \
+              yc-stage-k8s --external
+            RESPONSE_FILE=/tmp/$(uuidgen).txt
+            qa_envs_route="${{ secrets.QA_API_URL }}/environments"
+            env_name=${{ env.namespace }}
+            put_response=$(curl -X PUT \
+              -so "${RESPONSE_FILE}" \
+              -w "%{http_code}" $qa_envs_route \
+              -H "accept: application/json" \
+              -H "Content-Type: application/json" \
+              --cookie "${{ secrets.YA_AUTH_COOKIE_NAME_VALUE }}" \
+              -d "{ \"createdBy\": \"${{ github.actor }}\", \"kind\": \"QA\", \"name\": \"{{ env.namespace }}\", \"team\": \"${{ secrets.TEAM }}\"}")
+            if [ "${put_response}" != "200" ]; then
+              echo "Cannot create environment {{ env.namespace }}"
+              cat "${RESPONSE_FILE}" && exit 1
+            fi
+            echo "Environment {{ env.namespace }} has been created"
+            export EnvironmentName=${{ env.namespace }}
+            cat k8s-manifests/new-namespace-yandex.yml | envsubst | kubectl apply -f -
+            echo "Manifest has been applied"
+            /bin/bash /charts/qa-environment-helpers/scripts/identity-key/new-identity-key.sh
+            echo "Identity key has been generated"
+            kubectl -n {{ env.namespace }} create secret generic identity-key --from-file identity.pfx
+            echo "Identity key secret has been created"
+            kubectl -n {{ env.namespace }} create secret generic labs-identity-key --from-file identity.pfx
+            echo "Labs identity key secret has been created"
+
+      - name: Publish
+        uses: addnab/docker-run-action@v3
+        with:
+          username: ${{ secrets.DOCKER_LOGIN }}
+          password: ${{ secrets.DOCKER_PASS }}
+          registry: ${{ secrets.CONTAINER_REGISTRY }}
+          image: ${{ secrets.CONTAINER_REGISTRY }}/helm-charts:${{ secrets.HELM_CHARTS_TAG }}
+          options: --rm -i -v ${{ github.workspace }}:/app -w=/app
+          run: |
+            echo ${{ secrets.YANDEX_KEY }} | base64 --decode > /key.json
+            yc config profile create github
+            yc config set service-account-key /key.json
+            yc managed-kubernetes \
+              cluster get-credentials \
+              --cloud-id ${{ secrets.YANDEX_CLOUD_ID }} \
+              --folder-id ${{ secrets.YANDEX_FOLDER_ID }} \
+              yc-stage-k8s --external
+            echo "Trying to deploy ${{ env.service_name }}..."
+            werf helm upgrade --install \
+              "${{ env.service_name }}" \
+              --namespace "${{ env.namespace }}" \
+              --timeout 10m \
+              --wait \
+              --set global.image.repository="${{ secrets.CONTAINER_REGISTRY }}/${{ env.service_name }}" \
+              --set global.image.tag="${{ env.build_number }}" \
+              --set global.imagePullSecrets[0]="${{ env.image_pull_secret_acr }}" \
+              --set cronjobs.defaults.resources.enabled=false \
+              --set resources.enabled=false \
+              -f ./"${{ matrix.service }}".k8s/ya-stage.yaml \
+              /charts/generic-application/ \
+              2>&1
+            if [ $? != 0 ]; then
+              echo "Publish failed, see logs" && exit 1
+            fi
+            echo "Done"
+
+      - name: Set info about deployment to qa-environment-service
+        if: ${{ success() }}
+        run: |
+          echo "DEPLOY_STATE=successful" >> $GITHUB_ENV
+          qa_deps_route="${{ secrets.QA_API_URL }}/deployments"
+          RESPONSE_FILE=/tmp/$(uuidgen).txt
+          put_response=$(curl -X PUT \
+            -so "${RESPONSE_FILE}" \
+            -w "%{http_code}" "${qa_deps_route}" \
+            -H "accept: application/json" \
+            -H "Content-Type: application/json" \
+            --cookie "${{ secrets.YA_AUTH_COOKIE_NAME_VALUE }}" \
+            -d "{ \
+               \"Branch\": \"${{ env.branch }}\", \
+               \"Project\": \"${{ env.service_name }}\", \
+               \"Stand\": \"${{ env.namespace }}\", \
+               \"TriggeredBy\": \"${{ github.actor }}\", \
+               \"VcsNumber\": \"${{ env.build_number }}\", \
+               \"buildId\": ${{ github.run_id }} \
+               }")
+          if [ "${put_response}" == "200" ]; then
+            echo "Deployment creation OK"
+            exit 0
+          elif [ "${put_response}" == "409" ]; then
+            echo "Deployment already exists"
+            exit 0
+          else
+            echo "Cannot create deployment"
+            echo "${put_response}"
+            cat "${RESPONSE_FILE}" && exit 1
+          fi
