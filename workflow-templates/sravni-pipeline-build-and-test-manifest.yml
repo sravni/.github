@@ -1,0 +1,98 @@
+name: Build-and-Test-Manifest
+
+#Запуск на любой пуш в ветку отличную от мастера
+on:
+  push:
+    branches-ignore:
+      - master
+env:
+  #Переменная для определения пренадлежности к команде, задается в secrets репозитория
+  team: platform
+  image_pull_secret_acr: sravni-azurecr-io
+
+jobs:
+  build_and_test:
+    runs-on: sravni_ycloud_stage
+
+    outputs:
+      branch: ${{ env.branch }}
+      service_name: ${{ env.service_name }}
+      build_number: ${{ env.build_number }}
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v2
+
+      - name: Setup docker context for buildx
+        id: buildx-context
+        run: |
+          docker context create builders
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+        with:
+          endpoint: builders
+          driver: kubernetes
+
+      #Шаг получения необходимых переменных для работы пайплайна
+      #service_name - получается из имени репозитория, например osago-frontend
+      #branch - собственно бранча на которой запустился пайплайн
+      #build_number - тег нашего образа, состоит из sha коммита и постфикса qa для стейдж окружения, для прода постфикс отсутствует
+      #image_name - полное имя образа, к примеру sravni.azurecr.io/osago-frontend:ha751ufq
+      - name: Set build vars to GITHUB_ENV
+        run: |
+          service_name=$(basename `git rev-parse --show-toplevel`)
+          branch=$(echo ${GITHUB_REF#refs/heads/})
+          sha=$(echo ${GITHUB_SHA} | cut -c1-7)
+          build_number=$sha-qa
+          image_name="${{ secrets.CONTAINER_REGISTRY }}/${service_name}-service:${build_number}"
+          echo "service_name=$service_name" >> $GITHUB_ENV
+          echo "branch=$branch" >> $GITHUB_ENV
+          echo "build_number=$build_number" >> $GITHUB_ENV
+          echo "image_name=$image_name" >> $GITHUB_ENV
+
+      - name: Login to ACR
+        uses: docker/login-action@v1
+        with:
+          registry: ${{ secrets.CONTAINER_REGISTRY }}
+          username: ${{ secrets.DOCKER_LOGIN }}
+          password: ${{ secrets.DOCKER_PASS }}
+
+      #Шаг валидации ямликов
+      - name: Validate values files
+        uses: addnab/docker-run-action@v3
+        with:
+          username: ${{ secrets.DOCKER_LOGIN }}
+          password: ${{ secrets.DOCKER_PASS }}
+          registry: ${{ secrets.CONTAINER_REGISTRY }}
+          image: ${{ secrets.CONTAINER_REGISTRY }}/qa-environment-helpers:${{ secrets.QA_ENVIRONMENT_HELPERS_TAG }}
+          options: --rm -i -v ${{ github.workspace }}:/app
+          run: |
+            for file in /app/.k8s/*.yaml;
+            do
+              yamale -s /charts/generic-application/schema.yaml $file
+            done
+
+      #Шаг билда контейнера без пуша
+      - name: Docker build
+        id: docker_build
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: Dockerfile
+          build-args: |
+            GITHUB_NPM_TOKEN=${{ secrets.GH_TOKEN }}
+            build_number=${{ env.build_number }}
+            GITHUB_USERNAME=sravni
+            GITHUB_TOKEN=${{ secrets.GH_TOKEN }}
+          push: false
+          tags: "${{ env.image_name }}"
+
+      #Сканирование образа на уязвимости
+#      - name: Trivy Scanning
+#        uses: aquasecurity/trivy-action@master
+#        with:
+#          image-ref: '${{ env.image_name }}'
+#          exit-code: '0'
+#          ignore-unfixed: true
+#          severity: 'CRITICAL,HIGH'
