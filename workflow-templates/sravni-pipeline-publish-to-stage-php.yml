@@ -10,7 +10,7 @@ on:
     types: [opened, edited]
 
 env:
-  team: ${{ secrets.TEAM }}
+  team: <team_name>
   image_pull_secret_acr: sravni-azurecr-io
 
 jobs:
@@ -172,7 +172,7 @@ jobs:
               -H "accept: application/json" \
               -H "Content-Type: application/json" \
               --cookie "${{ secrets.YA_AUTH_COOKIE_NAME_VALUE }}" \
-              -d "{ \"createdBy\": \"${{ github.actor }}\", \"kind\": \"QA\", \"name\": \"{{ env.namespace }}\", \"team\": \"${{ secrets.TEAM }}\"}")
+              -d "{ \"createdBy\": \"${{ github.actor }}\", \"kind\": \"QA\", \"name\": \"{{ env.namespace }}\", \"team\": \"<team_name>\"}")
             if [ "${put_response}" != "200" ]; then
               echo "Cannot create environment {{ env.namespace }}"
               cat "${RESPONSE_FILE}" && exit 1

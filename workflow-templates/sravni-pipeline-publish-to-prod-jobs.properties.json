@@ -1,10 +1,5 @@
 {
     "name": "Sravni pipeline publish to prod jobs",
     "description": "Jobs publish to prod workflow template.",
-    "iconName": "sravni-pipeline-publish-to-prod",
-    "categories": [
-        "Go",
-        "Python",
-        "Node"
-    ]
+    "iconName": "sravni-pipeline-publish-to-prod"
 }

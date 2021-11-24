@@ -1,10 +1,5 @@
 {
     "name": "Sravni pipeline publish to stage manifest",
     "description": "Manifest publish to stage workflow template.",
-    "iconName": "sravni-pipeline-publish-to-stage",
-    "categories": [
-        "Go",
-        "Python",
-        "Node"
-    ]
+    "iconName": "sravni-pipeline-publish-to-stage"
 }

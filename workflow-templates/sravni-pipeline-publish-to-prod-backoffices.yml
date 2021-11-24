@@ -1,5 +1,6 @@
-name: Publish-to-Prod-BackOffices
+name: Publish-to-Prod-Multi-Backoffices
 
+#Запуск на проставление тега или выпуск релиза
 on:
   push:
     tags:
@@ -8,11 +9,15 @@ on:
     types:
       - published
 
+#Переменные окружения !!!!!!!!ВАЖНО!!!!!!!!! необходимо прописать свою команду
 env:
-  team: ${{ secrets.TEAM }}
+  team: <team_name>
   image_pull_secret_acr: sravni-azurecr-io
 
+#Описание Джобов воркфлоу
 jobs:
+  #Описание Джобы get_backoffices и ее шага, в котором происходит составление
+  #матрицы бэкоффисов по маске *.backoffices и ее сохранения для дальнейшего использования
   get_backoffices:
     runs-on: ubuntu-latest
 
@@ -20,19 +25,27 @@ jobs:
       backoffices: ${{ steps.get-backoffices.outputs.backoffices }}
 
     steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
+      - name: Checkout source
+        uses: actions/checkout@v2
 
       - name: Get backoffices
         id: get-backoffices
         run: |
-          backoffices=(*.backoffice)
+          backoffices=$(ls -d *.Backoffice | jq -R '[.]' | jq -s -c 'add')
           echo "backoffices list: ${backoffices}"
           echo "::set-output name=backoffices::${backoffices}"
 
+#Описание джобы prepublish
   prepublish:
+    #runs-on указывает какой раннер будет использоваться для запуска данной Джобы
+    #ubuntu-latest - офф раннер гитхаба на основе дистрибутива ubuntu
+    #раннеры на основе других дистрибутивов можно найти в следующей доке:
+    #https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources
+    #                           !!!!!!!!!!!!ВАЖНО!!!!!!!!!!
+    #sravni_ycloud_stage - наш раннер, необходимо указывать при наличии интегротестов
+    #                          !!!!!!!!!!!!!!!!!!!!!!!!!!!!
     runs-on: ubuntu-latest
+    needs: [get_backoffices]
 
     outputs:
       branch: ${{ env.branch }}
@@ -41,28 +54,30 @@ jobs:
 
     strategy:
       matrix:
-        backoffice: ${{ needs.get_backoffices.outputs.backoffices }}
+        backoffice: ${{ fromJson(needs.get_backoffices.outputs.backoffices) }}
 
     steps:
+      #checkout - собственно чекаут репозитория
       - name: Checkout source
         uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
 
+      #Шаг получения необходимых переменных для работы пайплайна
+      #backoffice_name - получается из имени репозитория, например osago-frontend
+      #build_number - тег нашего образа, состоит из sha коммита и постфикса qa для стейдж окружения, для прода постфикс отсутствует
+      #image_name - полное имя образа, к примеру sravni.azurecr.io/osago-frontend:ha751ufq
       - name: Set build vars to GITHUB_ENV
         run: |
           backoffice_name=${{ matrix.backoffice }}
           backoffice_name=$(echo "${backoffice_name}" | tr '[:upper:]' '[:lower:]')
           backoffice_name=${backoffice_name//./-}
-          branch=$(echo ${GITHUB_REF#refs/heads/})
-          sha=$(echo ${GITHUB_SHA} | cut -c1-7)
-          build_number=$sha
+          build_number=$(echo ${GITHUB_SHA} | cut -c1-7)
           image_name="${{ secrets.CONTAINER_REGISTRY }}/${backoffice_name}:${build_number}"
           echo "backoffice_name=$backoffice_name" >> $GITHUB_ENV
           echo "branch=$branch" >> $GITHUB_ENV
           echo "build_number=$build_number" >> $GITHUB_ENV
           echo "image_name=$image_name" >> $GITHUB_ENV
 
+      #Шаг логина в наш реджестри в Azure
       - name: Login to ACR
         uses: docker/login-action@v1
         with:
@@ -70,33 +85,37 @@ jobs:
           username: ${{ secrets.DOCKER_LOGIN }}
           password: ${{ secrets.DOCKER_PASS }}
 
-      - name: Set up Docker Buildx
-        id: buildx
-        uses: docker/setup-buildx-action@v1
-
+      #Шаг сборки образа (с пушем)
       - name: Docker build
         id: docker_build
         uses: docker/build-push-action@v2
         with:
           context: .
-          file: ./${{ matrix.backoffice }}/Dockerfile
+          file: ${{ matrix.backoffice }}/Dockerfile
           build-args: |
-            GITHUB_NPM_TOKEN=${{ secrets.GH_TOKEN }}
             build_number=${{ env.build_number }}
+            GITHUB_TOKEN=${{ secrets.GH_TOKEN }}
+            GITHUB_USERNAME=${{ secrets.NUGET_USERNAME }}
+            GITHUB_NPM_TOKEN=${{ secrets.GH_TOKEN }}
           push: true
           tags: "${{ env.image_name }}"
 
+
+#Описание джобы publish
   publish:
     runs-on: ubuntu-latest
     needs: [prepublish, get_backoffices]
 
+    #Все шаги будут примерняться на матрице, полученной в предыдущей джобе
     strategy:
       matrix:
-        backoffice: ${{ needs.get_backoffices.outputs.backoffices) }}
+        backoffice: ${{ fromJson(needs.get_backoffices.outputs.backoffices) }}
 
+    #Все шаги будут использовать переменные окружения с предыдущей джобы
     env:
-      branch: ${{ needs.prepublish.outputs.branch }}
       build_number: ${{ needs.prepublish.outputs.build_number }}
+      branch: ${{ needs.prepublish.outputs.branch }}
+      backoffice_name: ${{ needs.prepublish.outputs.backoffice_name }}
 
     steps:
       - name: Login to ACR
@@ -108,12 +127,10 @@ jobs:
 
       - name: Checkout source
         uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
 
+      #Шаг деплоя в прод Azure
       - name: Publish
         uses: addnab/docker-run-action@v3
-
         with:
           username: ${{ secrets.DOCKER_LOGIN }}
           password: ${{ secrets.DOCKER_PASS }}
@@ -121,7 +138,7 @@ jobs:
           image: ${{ secrets.CONTAINER_REGISTRY }}/qa-environment-helpers:${{ secrets.QA_ENVIRONMENT_HELPERS_TAG }}
           options: --rm -i -v ${{ github.workspace }}:/app -w=/app
           run: |
-            az login --backoffice-principal \
+            az login --service-principal \
               --username ${{ secrets.ARM_CLIENT_ID }} \
               --password ${{ secrets.ARM_CLIENT_SECRET }} \
               --tenant ${{ secrets.ARM_TENANT_ID }}
@@ -139,7 +156,7 @@ jobs:
               --set global.imagePullSecrets[0]="${{ env.image_pull_secret_acr }}" \
               --set azureRedis.uri=${{ secrets.AZURE_REDIS_URI }} \
               --set linkerd.enabled=false \
-              -f ./"${{ matrix.backoffice }}".k8s/azure.yaml \
+              -f ./"${{ matrix.backoffice }}"/.k8s/azure.yaml \
               /charts/generic-application/
               2>&1
             if [ $? != 0 ]; then
@@ -147,6 +164,7 @@ jobs:
             fi
             echo "Done"
 
+      #Шаги выставления стейда деплоя
       - name: Failed Deployment
         if: ${{ failure() }}
         run: echo "DEPLOY_STATE=failed" >> $GITHUB_ENV
@@ -155,6 +173,7 @@ jobs:
         if: ${{ success() }}
         run: echo "DEPLOY_STATE=successful" >> $GITHUB_ENV
 
+      #Шаги подготовки данных для пуша деплоймента в Jira
       - name: Parse Jira Keys from All Commits
         id: jira_keys
         if: ${{ always() }}
@@ -179,6 +198,7 @@ jobs:
           title+=" версии <${dep_url}|'${{env.build_number}}'> из ветки \`${{env.branch}}\`"
           echo "DEPLOY_NAME=${title}" >> $GITHUB_ENV
 
+      #Шаг пуша деплоймента в Jira
       - name: Push Deployment Info to Jira
         if: steps.jira_keys.outputs.jira-keys != ''
         id: push_deployment_info_to_jira

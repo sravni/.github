@@ -1,56 +1,72 @@
-name: Build-and-Test-BackOffices
+#Имя воркфлоу - будет отображаться во вкладке Actions в гитхабе
+name: Build-and-Test-Multi-Backoffices
 
+#Запуск на любой пуш в любую ветку отличную от master/yandex
 on:
   push:
     branches-ignore:
       - master
+      - yandex
 
 env:
-  team: ${{ secrets.TEAM }}
   image_pull_secret_acr: sravni-azurecr-io
 
+#Описание Джобов воркфлоу
 jobs:
+  #Описание Джобы get_backoffices и ее шага, в котором происходит составление
+  #матрицы бэкоффисов по маске *.backoffices и ее сохранения для дальнейшего использования
   get_backoffices:
     runs-on: ubuntu-latest
+
     outputs:
       backoffices: ${{ steps.get-backoffices.outputs.backoffices }}
+
     steps:
       - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
       - name: Get backoffices
         id: get-backoffices
         run: |
-          backoffices=(*.Backoffice)
+          backoffices=$(ls -d *.Backoffice | jq -R '[.]' | jq -s -c 'add')
           echo "backoffices list: ${backoffices}"
           echo "::set-output name=backoffices::${backoffices}"
 
+#Описание Джобы build_and_test и ее шагов:
   build_and_test:
+    #runs-on указывает какой раннер будет использоваться для запуска данной Джобы
+    #ubuntu-latest - офф раннер гитхаба на основе дистрибутива ubuntu
+    #раннеры на основе других дистрибутивов можно найти в следующей доке:
+    #https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources
+    #                           !!!!!!!!!!!!ВАЖНО!!!!!!!!!!
+    #sravni_ycloud_stage - наш раннер, необходимо указывать при наличии интегротестов
+    #                          !!!!!!!!!!!!!!!!!!!!!!!!!!!!
     runs-on: ubuntu-latest
     needs: [get_backoffices]
 
+    #Все шаги будут примерняться на матрице, полученной в предыдущей джобе
     strategy:
       matrix:
-        backoffice: ${{ needs.get_backoffices.outputs.backoffices }}
+        backoffice: ${{ fromJson(needs.get_backoffices.outputs.backoffices) }}
 
+    #checkout - собственно чекаут репозитория
     steps:
       - name: Checkout source
         uses: actions/checkout@v2
 
+      #Шаг получения необходимых переменных для работы пайплайна
+      #backoffice_name - получается из имени репозитория, например osago-frontend
+      #build_number - тег нашего образа, состоит из sha коммита и постфикса qa для стейдж окружения, для прода постфикс отсутствует
+      #image_name - полное имя образа, к примеру sravni.azurecr.io/osago-frontend:ha751ufq
       - name: Set build vars to GITHUB_ENV
         run: |
           backoffice_name=${{ matrix.backoffice }}
           backoffice_name=$(echo "${backoffice_name}" | tr '[:upper:]' '[:lower:]')
           backoffice_name=${backoffice_name//./-}
-          branch=$(echo ${GITHUB_REF#refs/heads/})
-          sha=$(echo ${GITHUB_SHA} | cut -c1-7)
-          build_number=$sha-qa
+          build_number=$(echo ${GITHUB_SHA} | cut -c1-7)
           image_name="${{ secrets.CONTAINER_REGISTRY }}/${backoffice_name}:${build_number}"
-          echo "backoffice_name=$backoffice_name" >> $GITHUB_ENV
-          echo "branch=$branch" >> $GITHUB_ENV
           echo "build_number=$build_number" >> $GITHUB_ENV
           echo "image_name=$image_name" >> $GITHUB_ENV
 
+      #Шаг логина в наш реджестри в Azure
       - name: Login to ACR
         uses: docker/login-action@v1
         with:
@@ -58,39 +74,16 @@ jobs:
           username: ${{ secrets.DOCKER_LOGIN }}
           password: ${{ secrets.DOCKER_PASS }}
 
-      - name: Validate values files
-        uses: addnab/docker-run-action@v3
+      #Шаг сборки образа (без пуша)
+      - name: Docker build
+        uses: docker/build-push-action@v2
         with:
-          username: ${{ secrets.DOCKER_LOGIN }}
-          password: ${{ secrets.DOCKER_PASS }}
-          registry: ${{ secrets.CONTAINER_REGISTRY }}
-          image: ${{ secrets.CONTAINER_REGISTRY }}/qa-environment-helpers:${{ secrets.QA_ENVIRONMENT_HELPERS_TAG }}
-          options: --rm -i -v ${{ github.workspace }}:/app
-          run: |
-            for file in /app/${{ matrix.backoffice }}/.k8s/*.yaml;
-            do
-              yamale -s /charts/generic-application/schema.yaml $file
-            done
-
-      - name: Set up Docker Buildx
-        id: buildx
-        uses: docker/setup-buildx-action@v1
-
-      - name: Docker Build
-        run: |
-          echo "Building image ${{ env.image_name }}"
-          docker buildx build \
-            --progress plain \
-            --load \
-            --force-rm \
-            --build-arg GITHUB_USERNAME=${{ secrets.NUGET_USERNAME }} \
-            --build-arg GITHUB_TOKEN=${{ secrets.GH_TOKEN }} \
-            -t "${{ env.image_name }}" -f "./${{ matrix.backoffice }}/Dockerfile" .
-
-      - name: Trivy Scanning
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: '${{ env.image_name }}'
-          exit-code: '0'
-          ignore-unfixed: true
-          severity: 'CRITICAL,HIGH'
+          context: .
+          file: ${{ matrix.backoffice }}/Dockerfile
+          build-args: |
+            build_number=${{ env.build_number }}
+            GITHUB_TOKEN=${{ secrets.GH_TOKEN }}
+            GITHUB_USERNAME=${{ secrets.NUGET_USERNAME }}
+            GITHUB_NPM_TOKEN=${{ secrets.GH_TOKEN }}
+          push: false
+          tags: "${{ env.image_name }}"
