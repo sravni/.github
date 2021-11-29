@@ -9,7 +9,7 @@ on:
       - published
 
 env:
-  team: ${{ secrets.TEAM }}
+  team: <team_name>
   image_pull_secret_acr: sravni-azurecr-io
 
 jobs:
@@ -110,7 +110,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
-          
+
       - name: Publish
         uses: addnab/docker-run-action@v3
 

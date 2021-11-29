@@ -6,7 +6,6 @@ on:
       - master
 
 env:
-  team: ${{ secrets.TEAM }}
   image_pull_secret_acr: sravni-azurecr-io
 
 jobs:

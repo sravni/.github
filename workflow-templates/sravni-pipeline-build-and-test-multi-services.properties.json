@@ -1,10 +1,5 @@
 {
     "name": "Sravni pipeline build and test multi services",
     "description": "Multi services build and test workflow template.",
-    "iconName": "sravni-pipeline-build-and-test",
-    "categories": [
-        "Go",
-        "Python",
-        "Node"
-    ]
+    "iconName": "sravni-pipeline-build-and-test"
 }

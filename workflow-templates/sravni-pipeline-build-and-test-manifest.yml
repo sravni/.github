@@ -1,5 +1,4 @@
-#Имя воркфлоу - будет отображаться во вкладке Actions в гитхабе
-name: Build-and-Test-Multi-Backoffices
+name: Build-and-Test-Manifest
 
 #Запуск на любой пуш в любую ветку отличную от master/yandex
 on:
@@ -13,23 +12,6 @@ env:
 
 #Описание Джобов воркфлоу
 jobs:
-  #Описание Джобы get_backoffices и ее шага, в котором происходит составление
-  #матрицы бэкоффисов по маске *.backoffices и ее сохранения для дальнейшего использования
-  get_backoffices:
-    runs-on: ubuntu-latest
-
-    outputs:
-      backoffices: ${{ steps.get-backoffices.outputs.backoffices }}
-
-    steps:
-      - uses: actions/checkout@v2
-      - name: Get backoffices
-        id: get-backoffices
-        run: |
-          backoffices=$(ls -d *.Backoffice | jq -R '[.]' | jq -s -c 'add')
-          echo "backoffices list: ${backoffices}"
-          echo "::set-output name=backoffices::${backoffices}"
-
 #Описание Джобы build_and_test и ее шагов:
   build_and_test:
     #runs-on указывает какой раннер будет использоваться для запуска данной Джобы
@@ -40,33 +22,36 @@ jobs:
     #sravni_ycloud_stage - наш раннер, необходимо указывать при наличии интегротестов
     #                          !!!!!!!!!!!!!!!!!!!!!!!!!!!!
     runs-on: ubuntu-latest
-    needs: [get_backoffices]
 
-    #Все шаги будут примерняться на матрице, полученной в предыдущей джобе
-    strategy:
-      matrix:
-        backoffice: ${{ fromJson(needs.get_backoffices.outputs.backoffices) }}
-
-    #checkout - собственно чекаут репозитория
     steps:
+      #checkout - собственно чекаут репозитория
       - name: Checkout source
         uses: actions/checkout@v2
 
+      - name: Setup docker context for buildx
+        id: buildx-context
+        run: |
+          docker context create builders
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+        with:
+          endpoint: builders
+          driver: kubernetes
+
       #Шаг получения необходимых переменных для работы пайплайна
-      #backoffice_name - получается из имени репозитория, например osago-frontend
+      #service_name - получается из имени репозитория, например osago-frontend
+      #branch - собственно бранча на которой запустился пайплайн
       #build_number - тег нашего образа, состоит из sha коммита и постфикса qa для стейдж окружения, для прода постфикс отсутствует
       #image_name - полное имя образа, к примеру sravni.azurecr.io/osago-frontend:ha751ufq
       - name: Set build vars to GITHUB_ENV
         run: |
-          backoffice_name=${{ matrix.backoffice }}
-          backoffice_name=$(echo "${backoffice_name}" | tr '[:upper:]' '[:lower:]')
-          backoffice_name=${backoffice_name//./-}
+          service_name=$(basename `git rev-parse --show-toplevel`)
           build_number=$(echo ${GITHUB_SHA} | cut -c1-7)
-          image_name="${{ secrets.CONTAINER_REGISTRY }}/${backoffice_name}:${build_number}"
+          image_name="${{ secrets.CONTAINER_REGISTRY }}/${service_name}-service:${build_number}"
           echo "build_number=$build_number" >> $GITHUB_ENV
           echo "image_name=$image_name" >> $GITHUB_ENV
 
-      #Шаг логина в наш реджестри в Azure
       - name: Login to ACR
         uses: docker/login-action@v1
         with:
@@ -74,16 +59,17 @@ jobs:
           username: ${{ secrets.DOCKER_LOGIN }}
           password: ${{ secrets.DOCKER_PASS }}
 
-      #Шаг сборки образа (без пуша)
+      #Шаг билда контейнера без пуша
       - name: Docker build
+        id: docker_build
         uses: docker/build-push-action@v2
         with:
           context: .
-          file: ${{ matrix.backoffice }}/Dockerfile
+          file: Dockerfile
           build-args: |
             build_number=${{ env.build_number }}
-            GITHUB_TOKEN=${{ secrets.GH_TOKEN }}
-            GITHUB_USERNAME=${{ secrets.NUGET_USERNAME }}
             GITHUB_NPM_TOKEN=${{ secrets.GH_TOKEN }}
+            GITHUB_USERNAME=${{ secrets.NUGET_USERNAME }}
+            GITHUB_TOKEN=${{ secrets.GH_TOKEN }}
           push: false
           tags: "${{ env.image_name }}"
