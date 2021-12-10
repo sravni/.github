@@ -188,7 +188,7 @@ jobs:
           repository: sravni/qa-environment-helpers
           path: qaenv
           token: ${{ secrets.GH_TOKEN }}
-          ref: DEV-103
+          ref: ${{ secrets.QAENV_REF }}
 
       - name: Checkout helm repo
         uses: actions/checkout@v2
@@ -196,7 +196,7 @@ jobs:
           repository: sravni/helm-charts
           path: charts
           token: ${{ secrets.GH_TOKEN }}
-          ref: 'v0.4.10'
+          ref: '${{ secrets.CHARTS_REF }}'
 
       #Шаг проверки наличия уже созданного неймспейса
       - name: Check if namespace already exists
@@ -250,7 +250,7 @@ jobs:
         working-directory: ./charts/generic-application/
           run: |
             echo "Trying to deploy ${{ env.service_name }}..."
-            helm dependencies update 
+            helm dependencies update
             werf helm upgrade --install \
               "${{ env.service_name }}" \
               --namespace "${{ env.namespace }}" \

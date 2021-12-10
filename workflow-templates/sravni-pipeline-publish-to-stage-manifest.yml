@@ -154,7 +154,7 @@ jobs:
           repository: sravni/qa-environment-helpers
           path: qaenv
           token: ${{ secrets.GH_TOKEN }}
-          ref: DEV-103
+          ref: ${{ secrets.QAENV_REF }}
 
       - name: Checkout helm repo
         uses: actions/checkout@v2
@@ -162,7 +162,7 @@ jobs:
           repository: sravni/helm-charts
           path: charts
           token: ${{ secrets.GH_TOKEN }}
-          ref: 'v0.4.10'
+          ref: '${{ secrets.CHARTS_REF }}'
 
       #Шаг получения проверки существования неймспейса в qa-dashboard
       - name: Check if namespace already exists
@@ -218,7 +218,7 @@ jobs:
             echo $IMAGE_VERSION
             export DEPLOY_NAMESPACE=${{ env.namespace }}
             echo $DEPLOY_NAMESPACE
-            cat app/k8s/ya-stage.yaml | envsubst | kubectl apply -f -
+            cat ./app/k8s/ya-stage.yaml | envsubst | kubectl apply -f -
 
       #Шаг отправки информации в qa-enviroment-service
       - name: Set info about deployment to qa-environment-service
