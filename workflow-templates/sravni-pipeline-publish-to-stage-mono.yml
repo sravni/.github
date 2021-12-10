@@ -109,6 +109,20 @@ jobs:
       - name: Install Helm
         uses: azure/setup-helm@v1
 
+      - name: Install Yandex cli
+        run:  |
+          wget -P tmp/ https://storage.yandexcloud.net/yandexcloud-yc/release/0.85.0/linux/amd64/yc
+          chmod +x tmp/yc
+          mv tmp/yc /usr/local/bin/yc
+          echo ${{ secrets.YANDEX_KEY }} | base64 --decode > tmp/key.json
+          yc config profile create github
+          yc config set service-account-key tmp/key.json
+          yc managed-kubernetes \
+            cluster get-credentials \
+            --cloud-id ${{ secrets.YANDEX_CLOUD_ID }} \
+            --folder-id ${{ secrets.YANDEX_FOLDER_ID }} \
+            yc-stage-k8s --external
+
       - name: Get namespace name
         id: get_namespace
         run: |
@@ -140,7 +154,7 @@ jobs:
           repository: sravni/qa-environment-helpers
           path: qaenv
           token: ${{ secrets.GH_TOKEN }}
-          ref: 'v0.5.0'
+          ref: DEV-103
 
       - name: Checkout helm repo
         uses: actions/checkout@v2
@@ -172,15 +186,6 @@ jobs:
       - name: Create namespace
         if: ${{ env.namespace_exists == 0 }}
         run: |
-          curl https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
-          echo ${{ secrets.YANDEX_KEY }} | base64 --decode > /key.json
-          yc config profile create github
-          yc config set service-account-key /key.json
-          yc managed-kubernetes \
-            cluster get-credentials \
-            --cloud-id ${{ secrets.YANDEX_CLOUD_ID }} \
-            --folder-id ${{ secrets.YANDEX_FOLDER_ID }} \
-            yc-stage-k8s --external
           RESPONSE_FILE=/tmp/$(uuidgen).txt
           qa_envs_route="${{ secrets.QA_API_URL }}/environments"
           put_response=$(curl -X PUT \
@@ -196,9 +201,9 @@ jobs:
           fi
           echo "Environment ${{ env.namespace }} has been created"
           export EnvironmentName=${{ env.namespace }}
-          cat /qaenv/k8s-manifests/new-namespace-yandex.yml | envsubst | kubectl apply -f -
+          cat qaenv/k8s-manifests/new-namespace-yandex.yml | envsubst | kubectl apply -f -
           echo "Manifest has been applied"
-          /bin/bash /charts/qa-environment-helpers/scripts/identity-key/new-identity-key.sh
+          /bin/bash qaenv/scripts/identity-key/new-identity-key.sh
           echo "Identity key has been generated"
           kubectl -n ${{ env.namespace }} create secret generic identity-key --from-file identity.pfx
           echo "Identity key secret has been created"
@@ -207,17 +212,10 @@ jobs:
 
       #Шаг деплоя приложения в Stage
       - name: Publish
+        working-directory: ./charts/generic-application/
         run: |
-          curl https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
-          echo ${{ secrets.YANDEX_KEY }} | base64 --decode > /key.json
-          yc config profile create github
-          yc config set service-account-key /key.json
-          yc managed-kubernetes \
-            cluster get-credentials \
-            --cloud-id ${{ secrets.YANDEX_CLOUD_ID }} \
-            --folder-id ${{ secrets.YANDEX_FOLDER_ID }} \
-            yc-stage-k8s --external
           echo "Trying to deploy ${{ env.service_name }}..."
+          helm dependencies update
           werf helm upgrade --install \
             "${{ env.service_name }}" \
             --namespace "${{ env.namespace }}" \
@@ -228,8 +226,8 @@ jobs:
             --set global.imagePullSecrets[0]="${{ env.image_pull_secret_acr }}" \
             --set cronjobs.defaults.resources.enabled=false \
             --set resources.enabled=false \
-            -f ./.k8s/ya-stage.yaml \
-            /charts/generic-application/ \
+            -f ../../.k8s/ya-stage.yaml \
+            ./ \
             2>&1
           if [ $? != 0 ]; then
             echo "Publish failed, see logs" && exit 1
