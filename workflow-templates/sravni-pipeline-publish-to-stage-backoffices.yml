@@ -237,13 +237,13 @@ jobs:
           fi
           echo "Environment {{ env.namespace }} has been created"
           export EnvironmentName=${{ env.namespace }}
-          cat qaenv/k8s-manifests/new-namespace-yandex.yml | envsubst | kubectl apply -f -
+          cat ./qaenv/k8s-manifests/new-namespace-yandex.yml | envsubst | kubectl apply -f -
           echo "Manifest has been applied"
-          /bin/bash qaenv/scripts/identity-key/new-identity-key.sh
+          /bin/bash ./qaenv/scripts/identity-key/new-identity-key.sh
           echo "Identity key has been generated"
-          kubectl -n {{ env.namespace }} create secret generic identity-key --from-file identity.pfx
+          kubectl -n {{ env.namespace }} create secret generic identity-key --from-file ./identity.pfx
           echo "Identity key secret has been created"
-          kubectl -n {{ env.namespace }} create secret generic labs-identity-key --from-file identity.pfx
+          kubectl -n {{ env.namespace }} create secret generic labs-identity-key --from-file ./identity.pfx
           echo "Labs identity key secret has been created"
 
       #Шаг деплоя в стейдж
