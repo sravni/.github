@@ -103,6 +103,26 @@ jobs:
     #Имя неймспейса образуется из названия ветки, не должно содержать спецсимволов
     #и должно быть не более 14 символов
     steps:
+      - name: Install werf CLI
+        uses: werf/actions/install@v1.2
+
+      - name: Install Helm
+        uses: azure/setup-helm@v1
+
+      - name: Install Yandex cli
+        run:  |
+          wget -P tmp/ https://storage.yandexcloud.net/yandexcloud-yc/release/0.85.0/linux/amd64/yc
+          chmod +x tmp/yc
+          mv tmp/yc /usr/local/bin/yc
+          echo ${{ secrets.YANDEX_KEY }} | base64 --decode > tmp/key.json
+          yc config profile create github
+          yc config set service-account-key tmp/key.json
+          yc managed-kubernetes \
+            cluster get-credentials \
+            --cloud-id ${{ secrets.YANDEX_CLOUD_ID }} \
+            --folder-id ${{ secrets.YANDEX_FOLDER_ID }} \
+            yc-stage-k8s --external
+
       - name: Get namespace name
         id: get_namespace
         run: |
@@ -128,6 +148,22 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v2
 
+      - name: Checkout qaenv helpers
+        uses: actions/checkout@v2
+        with:
+          repository: sravni/qa-environment-helpers
+          path: qaenv
+          token: ${{ secrets.GH_TOKEN }}
+          ref: ${{ secrets.QAENV_REF }}
+
+      - name: Checkout helm repo
+        uses: actions/checkout@v2
+        with:
+          repository: sravni/helm-charts
+          path: charts
+          token: ${{ secrets.GH_TOKEN }}
+          ref: '${{ secrets.CHARTS_REF }}'
+
       #Шаг получения проверки существования неймспейса в qa-dashboard
       - name: Check if namespace already exists
         run: |
@@ -149,22 +185,7 @@ jobs:
       #Шаг создания неймспейса и всех необходимых для его работоспособности секретов
       - name: Create namespace
         if: ${{ env.namespace_exists == 0 }}
-        uses: addnab/docker-run-action@v3
-        with:
-          username: ${{ secrets.DOCKER_LOGIN }}
-          password: ${{ secrets.DOCKER_PASS }}
-          registry: ${{ secrets.CONTAINER_REGISTRY }}
-          image: ${{ secrets.CONTAINER_REGISTRY }}/qa-environment-helpers:${{ secrets.QA_ENVIRONMENT_HELPERS_TAG }}
-          options: -w=/charts/qa-environment-helpers
           run: |
-            echo ${{ secrets.YANDEX_KEY }} | base64 --decode > /key.json
-            yc config profile create github
-            yc config set service-account-key /key.json
-            yc managed-kubernetes \
-              cluster get-credentials \
-              --cloud-id ${{ secrets.YANDEX_CLOUD_ID }} \
-              --folder-id ${{ secrets.YANDEX_FOLDER_ID }} \
-              yc-stage-k8s --external
             RESPONSE_FILE=/tmp/$(uuidgen).txt
             qa_envs_route="${{ secrets.QA_API_URL }}/environments"
             put_response=$(curl -X PUT \
@@ -180,39 +201,24 @@ jobs:
             fi
             echo "Environment ${{ env.namespace }} has been created"
             export EnvironmentName=${{ env.namespace }}
-            cat k8s-manifests/new-namespace-yandex.yml | envsubst | kubectl apply -f -
+            cat ./qaenv/k8s-manifests/new-namespace-yandex.yml | envsubst | kubectl apply -f -
             echo "Manifest has been applied"
-            /bin/bash /charts/qa-environment-helpers/scripts/identity-key/new-identity-key.sh
+            /bin/bash ./qaenv/scripts/identity-key/new-identity-key.sh
             echo "Identity key has been generated"
-            kubectl -n ${{ env.namespace }} create secret generic identity-key --from-file identity.pfx
+            kubectl -n ${{ env.namespace }} create secret generic identity-key --from-file ./identity.pfx
             echo "Identity key secret has been created"
-            kubectl -n ${{ env.namespace }} create secret generic labs-identity-key --from-file identity.pfx
+            kubectl -n ${{ env.namespace }} create secret generic labs-identity-key --from-file ./identity.pfx
             echo "Labs identity key secret has been created"
 
       #Шаг деплоя приложения в Stage
       - name: Publish
-        uses: addnab/docker-run-action@v3
-        with:
-          username: ${{ secrets.DOCKER_LOGIN }}
-          password: ${{ secrets.DOCKER_PASS }}
-          registry: ${{ secrets.CONTAINER_REGISTRY }}
-          image: ${{ secrets.CONTAINER_REGISTRY }}/helm-charts:${{ secrets.HELM_CHARTS_TAG }}
-          options: --rm -i -v ${{ github.workspace }}:/app -w=/app
           run: |
-            echo ${{ secrets.YANDEX_KEY }} | base64 --decode > /key.json
-            yc config profile create github
-            yc config set service-account-key /key.json
-            yc managed-kubernetes \
-              cluster get-credentials \
-              --cloud-id ${{ secrets.YANDEX_CLOUD_ID }} \
-              --folder-id ${{ secrets.YANDEX_FOLDER_ID }} \
-              yc-stage-k8s --external
             echo "Trying to deploy ${{ env.service_name }}..."
             export IMAGE_VERSION=${{ env.build_number }}
             echo $IMAGE_VERSION
             export DEPLOY_NAMESPACE=${{ env.namespace }}
             echo $DEPLOY_NAMESPACE
-            cat /app/k8s/ya-stage.yaml | envsubst | kubectl apply -f -
+            cat ./app/k8s/ya-stage.yaml | envsubst | kubectl apply -f -
 
       #Шаг отправки информации в qa-enviroment-service
       - name: Set info about deployment to qa-environment-service
