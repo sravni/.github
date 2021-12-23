@@ -63,7 +63,6 @@ jobs:
           sha=$(echo ${GITHUB_SHA} | cut -c1-7)
           build_number=$sha-qa
           image_name="${{ secrets.CONTAINER_REGISTRY }}/${service_name}:${build_number}"
-          echo "service_name=$service_name" >> $GITHUB_ENV
           echo "build_number=$build_number" >> $GITHUB_ENV
           echo "image_name=$image_name" >> $GITHUB_ENV
 
@@ -132,12 +131,12 @@ jobs:
         run: |
           RESPONSE_FILE=/tmp/$(uuidgen).txt
           qa_envs_route="${{ secrets.QA_API_URL }}/environments"
-          get_response=$(curl -X GET -so "${RESPONSE_FILE}" -w "%{http_code}" ${qa_envs_route}/{{ env.namespace }} \
+          get_response=$(curl -X GET -so "${RESPONSE_FILE}" -w "%{http_code}" ${qa_envs_route}/${{ env.namespace }} \
           --cookie "${{ secrets.YA_AUTH_COOKIE_NAME_VALUE }}" \
           -H "accept: application/json")
           namespace_exists=0
           if [ $get_response == "200" ]; then
-              echo "Environment {{ env.namespace }} already exists"
+              echo "Environment ${{ env.namespace }} already exists"
               namespace_exists=1
           elif [ $get_response != "404" ]; then
               echo "Server returned:"
@@ -172,20 +171,20 @@ jobs:
               -H "accept: application/json" \
               -H "Content-Type: application/json" \
               --cookie "${{ secrets.YA_AUTH_COOKIE_NAME_VALUE }}" \
-              -d "{ \"createdBy\": \"${{ github.actor }}\", \"kind\": \"QA\", \"name\": \"{{ env.namespace }}\", \"team\": \"<team_name>\"}")
+              -d "{ \"createdBy\": \"${{ github.actor }}\", \"kind\": \"QA\", \"name\": \"${{ env.namespace }}\", \"team\": \"<team_name>\"}")
             if [ "${put_response}" != "200" ]; then
-              echo "Cannot create environment {{ env.namespace }}"
+              echo "Cannot create environment ${{ env.namespace }}"
               cat "${RESPONSE_FILE}" && exit 1
             fi
-            echo "Environment {{ env.namespace }} has been created"
+            echo "Environment ${{ env.namespace }} has been created"
             export EnvironmentName=${{ env.namespace }}
             cat k8s-manifests/new-namespace-yandex.yml | envsubst | kubectl apply -f -
             echo "Manifest has been applied"
             /bin/bash /charts/qa-environment-helpers/scripts/identity-key/new-identity-key.sh
             echo "Identity key has been generated"
-            kubectl -n {{ env.namespace }} create secret generic identity-key --from-file identity.pfx
+            kubectl -n ${{ env.namespace }} create secret generic identity-key --from-file identity.pfx
             echo "Identity key secret has been created"
-            kubectl -n {{ env.namespace }} create secret generic labs-identity-key --from-file identity.pfx
+            kubectl -n ${{ env.namespace }} create secret generic labs-identity-key --from-file identity.pfx
             echo "Labs identity key secret has been created"
 
       - name: Publish
@@ -205,6 +204,9 @@ jobs:
               --cloud-id ${{ secrets.YANDEX_CLOUD_ID }} \
               --folder-id ${{ secrets.YANDEX_FOLDER_ID }} \
               yc-stage-k8s --external
+            service_name=${{ matrix.service }}
+            service_name=$(echo "${service_name}" | tr '[:upper:]' '[:lower:]')
+            service_name=${service_name//./-}
             echo "Trying to deploy ${{ env.service_name }}..."
             werf helm upgrade --install \
               "${{ env.service_name }}" \

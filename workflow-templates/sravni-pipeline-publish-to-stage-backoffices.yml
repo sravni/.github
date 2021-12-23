@@ -89,7 +89,6 @@ jobs:
           backoffice_name=${backoffice_name//./-}
           build_number=$(echo ${GITHUB_SHA} | cut -c1-7)
           image_name="${{ secrets.CONTAINER_REGISTRY }}/${backoffice_name}:${build_number}"
-          echo "backoffice_name=$backoffice_name" >> $GITHUB_ENV
           echo "branch=$branch" >> $GITHUB_ENV
           echo "build_number=$build_number" >> $GITHUB_ENV
           echo "image_name=$image_name" >> $GITHUB_ENV
@@ -166,7 +165,7 @@ jobs:
         run: |
           RESPONSE_FILE=/tmp/${{ env.build_number }}.txt
           qa_envs_route="${{ secrets.QA_API_URL }}/environments"
-          get_response=$(curl -X GET -so "${RESPONSE_FILE}" -w "%{http_code}" ${qa_envs_route}/{{ env.namespace }} \
+          get_response=$(curl -X GET -so "${RESPONSE_FILE}" -w "%{http_code}" ${qa_envs_route}/${{ env.namespace }} \
           --cookie "${{ secrets.YA_AUTH_COOKIE_NAME_VALUE }}" \
           -H "accept: application/json")
           namespace_exists=0
@@ -207,7 +206,7 @@ jobs:
               -H "accept: application/json" \
               -H "Content-Type: application/json" \
               --cookie "${{ secrets.YA_AUTH_COOKIE_NAME_VALUE }}" \
-              -d "{ \"createdBy\": \"${{ github.actor }}\", \"kind\": \"QA\", \"name\": \"{{ env.namespace }}\", \"team\": \"${{ env.team }}\"}")
+              -d "{ \"createdBy\": \"${{ github.actor }}\", \"kind\": \"QA\", \"name\": \"${{ env.namespace }}\", \"team\": \"${{ env.team }}\"}")
             if [ "${put_response}" != "200" ]; then
               echo "Cannot create environment {{ env.namespace }}"
               cat "${RESPONSE_FILE}" && exit 1
@@ -241,6 +240,9 @@ jobs:
               --cloud-id ${{ secrets.YANDEX_CLOUD_ID }} \
               --folder-id ${{ secrets.YANDEX_FOLDER_ID }} \
               yc-stage-k8s --external
+            backoffice_name=${{ matrix.backoffice }}
+            backoffice_name=$(echo "${backoffice_name}" | tr '[:upper:]' '[:lower:]')
+            backoffice_name=${backoffice_name//./-}
             echo "Trying to deploy ${{ env.backoffice_name }}..."
             werf helm upgrade --install \
               "${{ env.backoffice_name }}" \
