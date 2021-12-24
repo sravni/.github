@@ -111,7 +111,7 @@ jobs:
           build-args: |
             build_number=${{ env.build_number }}
             GITHUB_TOKEN=${{ secrets.GH_TOKEN }}
-            GITHUB_USERNAME=${{ secrets.NUGET_USERNAME }}
+            GITHUB_USERNAME=sravni
             GITHUB_NPM_TOKEN=${{ secrets.GH_TOKEN }}
           push: true
           tags: "${{ env.image_name }}"
