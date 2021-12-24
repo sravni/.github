@@ -66,7 +66,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: .
-          file: ${{ matrix.service }}/Dockerfile
+          file: Dockerfile
           build-args: |
             build_number=${{ env.build_number }}
             GITHUB_TOKEN=${{ secrets.GH_TOKEN }}

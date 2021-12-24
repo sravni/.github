@@ -67,12 +67,8 @@ jobs:
       #image_name - полное имя образа, к примеру sravni.azurecr.io/osago-frontend:ha751ufq
       - name: Set build vars to GITHUB_ENV
         run: |
-          service_name=${{ matrix.service }}
-          service_name=$(echo "${service_name}" | tr '[:upper:]' '[:lower:]')
-          service_name=${service_name//./-}
           build_number=$(echo ${GITHUB_SHA} | cut -c1-7)
           image_name="${{ secrets.CONTAINER_REGISTRY }}/${service_name}:${build_number}"
-          echo "service_name=$service_name" >> $GITHUB_ENV
           echo "branch=$branch" >> $GITHUB_ENV
           echo "build_number=$build_number" >> $GITHUB_ENV
           echo "image_name=$image_name" >> $GITHUB_ENV
@@ -137,6 +133,9 @@ jobs:
           image: ${{ secrets.CONTAINER_REGISTRY }}/qa-environment-helpers:${{ secrets.QA_ENVIRONMENT_HELPERS_TAG }}
           options: --rm -i -v ${{ github.workspace }}:/app -w=/app
           run: |
+            service_name=${{ matrix.service }}
+            service_name=$(echo "${service_name}" | tr '[:upper:]' '[:lower:]')
+            service_name=${service_name//./-}
             az login --service-principal \
               --username ${{ secrets.ARM_CLIENT_ID }} \
               --password ${{ secrets.ARM_CLIENT_SECRET }} \
@@ -144,13 +143,13 @@ jobs:
             az aks get-credentials --admin \
               --resource-group sravni \
               --name az-prod-k8s
-            echo "Deploying service ${{ env.service_name }}..."
+            echo "Deploying service ${service_name}..."
             werf helm upgrade --install \
-              "${{ env.service_name }}" \
+              "${service_name}" \
               --namespace sravni \
               --atomic \
               --timeout 10m \
-              --set global.image.repository="${{ secrets.CONTAINER_REGISTRY }}/${{ env.service_name }}" \
+              --set global.image.repository="${{ secrets.CONTAINER_REGISTRY }}/${service_name}" \
               --set global.image.tag="${{ env.build_number }}" \
               --set global.imagePullSecrets[0]="${{ env.image_pull_secret_acr }}" \
               --set azureRedis.uri=${{ secrets.AZURE_REDIS_URI }} \
@@ -193,7 +192,7 @@ jobs:
         if: ${{ always() }}
         run: |
           dep_url="${{ github.event.repository.url }}/actions/runs/${{ github.run_id }}"
-          title="@${{env.committer}} опубликовал(а) релиз \`${{env.service_name}}\`"
+          title="@${{env.committer}} опубликовал(а) релиз \`${{ matrix.service }}\`"
           title+=" версии <${dep_url}|'${{env.build_number}}'> из ветки \`${{env.branch}}\`"
           echo "DEPLOY_NAME=${title}" >> $GITHUB_ENV
 

@@ -89,7 +89,6 @@ jobs:
           backoffice_name=${backoffice_name//./-}
           build_number=$(echo ${GITHUB_SHA} | cut -c1-7)
           image_name="${{ secrets.CONTAINER_REGISTRY }}/${backoffice_name}:${build_number}"
-          echo "backoffice_name=$backoffice_name" >> $GITHUB_ENV
           echo "branch=$branch" >> $GITHUB_ENV
           echo "build_number=$build_number" >> $GITHUB_ENV
           echo "image_name=$image_name" >> $GITHUB_ENV
@@ -204,12 +203,12 @@ jobs:
         run: |
           RESPONSE_FILE=/tmp/${{ env.build_number }}.txt
           qa_envs_route="${{ secrets.QA_API_URL }}/environments"
-          get_response=$(curl -X GET -so "${RESPONSE_FILE}" -w "%{http_code}" ${qa_envs_route}/{{ env.namespace }} \
+          get_response=$(curl -X GET -so "${RESPONSE_FILE}" -w "%{http_code}" ${qa_envs_route}/${{ env.namespace }} \
           --cookie "${{ secrets.YA_AUTH_COOKIE_NAME_VALUE }}" \
           -H "accept: application/json")
           namespace_exists=0
           if [ $get_response == "200" ]; then
-              echo "Environment {{ env.namespace }} already exists"
+              echo "Environment ${{ env.namespace }} already exists"
               namespace_exists=1
           elif [ $get_response != "404" ]; then
               echo "Server returned:"
@@ -230,34 +229,37 @@ jobs:
             -H "accept: application/json" \
             -H "Content-Type: application/json" \
             --cookie "${{ secrets.YA_AUTH_COOKIE_NAME_VALUE }}" \
-            -d "{ \"createdBy\": \"${{ github.actor }}\", \"kind\": \"QA\", \"name\": \"{{ env.namespace }}\", \"team\": \"${{ env.team }}\"}")
+            -d "{ \"createdBy\": \"${{ github.actor }}\", \"kind\": \"QA\", \"name\": \"${{ env.namespace }}\", \"team\": \"${{ env.team }}\"}")
           if [ "${put_response}" != "200" ]; then
-            echo "Cannot create environment {{ env.namespace }}"
+            echo "Cannot create environment ${{ env.namespace }}"
             cat "${RESPONSE_FILE}" && exit 1
           fi
-          echo "Environment {{ env.namespace }} has been created"
+          echo "Environment ${{ env.namespace }} has been created"
           export EnvironmentName=${{ env.namespace }}
           cat ./qaenv/k8s-manifests/new-namespace-yandex.yml | envsubst | kubectl apply -f -
           echo "Manifest has been applied"
           /bin/bash ./qaenv/scripts/identity-key/new-identity-key.sh
           echo "Identity key has been generated"
-          kubectl -n {{ env.namespace }} create secret generic identity-key --from-file ./identity.pfx
+          kubectl -n ${{ env.namespace }} create secret generic identity-key --from-file ./identity.pfx
           echo "Identity key secret has been created"
-          kubectl -n {{ env.namespace }} create secret generic labs-identity-key --from-file ./identity.pfx
+          kubectl -n ${{ env.namespace }} create secret generic labs-identity-key --from-file ./identity.pfx
           echo "Labs identity key secret has been created"
 
       #Шаг деплоя в стейдж
       - name: Publish
         working-directory: ./charts/generic-application/
         run: |
-          echo "Trying to deploy ${{ env.backoffice_name }}..."
+          backoffice_name=${{ matrix.backoffice }}
+          backoffice_name=$(echo "${backoffice_name}" | tr '[:upper:]' '[:lower:]')
+          backoffice_name=${backoffice_name//./-}
+          echo "Trying to deploy ${backoffice_name}..."
           helm dependencies update
           werf helm upgrade --install \
-            "${{ env.backoffice_name }}" \
+            "${backoffice_name}" \
             --namespace "${{ env.namespace }}" \
             --timeout 10m \
             --wait \
-            --set global.image.repository="${{ secrets.CONTAINER_REGISTRY }}/${{ env.backoffice_name }}" \
+            --set global.image.repository="${{ secrets.CONTAINER_REGISTRY }}/${backoffice_name}" \
             --set global.image.tag="${{ env.build_number }}" \
             --set global.imagePullSecrets[0]="${{ env.image_pull_secret_acr }}" \
             --set cronjobs.defaults.resources.enabled=false \
@@ -274,6 +276,9 @@ jobs:
       - name: Set info about deployment to qa-environment-service
         if: ${{ success() }}
         run: |
+          backoffice_name=${{ matrix.backoffice }}
+          backoffice_name=$(echo "${backoffice_name}" | tr '[:upper:]' '[:lower:]')
+          backoffice_name=${backoffice_name//./-}
           echo "DEPLOY_STATE=successful" >> $GITHUB_ENV
           qa_deps_route="${{ secrets.QA_API_URL }}/deployments"
           RESPONSE_FILE=/tmp/${{ env.build_number }}.txt
@@ -285,7 +290,7 @@ jobs:
             --cookie "${{ secrets.YA_AUTH_COOKIE_NAME_VALUE }}" \
             -d "{ \
                \"Branch\": \"${{ env.branch }}\", \
-               \"Project\": \"${{ env.backoffice_name }}\", \
+               \"Project\": \"${backoffice_name}\", \
                \"Stand\": \"${{ env.namespace }}\", \
                \"TriggeredBy\": \"${{ github.actor }}\", \
                \"VcsNumber\": \"${{ env.build_number }}\", \
