@@ -67,12 +67,8 @@ jobs:
       #image_name - полное имя образа, к примеру sravni.azurecr.io/osago-frontend:ha751ufq
       - name: Set build vars to GITHUB_ENV
         run: |
-          backoffice_name=${{ matrix.backoffice }}
-          backoffice_name=$(echo "${backoffice_name}" | tr '[:upper:]' '[:lower:]')
-          backoffice_name=${backoffice_name//./-}
           build_number=$(echo ${GITHUB_SHA} | cut -c1-7)
           image_name="${{ secrets.CONTAINER_REGISTRY }}/${backoffice_name}:${build_number}"
-          echo "backoffice_name=$backoffice_name" >> $GITHUB_ENV
           echo "branch=$branch" >> $GITHUB_ENV
           echo "build_number=$build_number" >> $GITHUB_ENV
           echo "image_name=$image_name" >> $GITHUB_ENV
@@ -138,6 +134,9 @@ jobs:
           image: ${{ secrets.CONTAINER_REGISTRY }}/qa-environment-helpers:${{ secrets.QA_ENVIRONMENT_HELPERS_TAG }}
           options: --rm -i -v ${{ github.workspace }}:/app -w=/app
           run: |
+            backoffice_name=${{ matrix.backoffice }}
+            backoffice_name=$(echo "${backoffice_name}" | tr '[:upper:]' '[:lower:]')
+            backoffice_name=${backoffice_name//./-}
             az login --service-principal \
               --username ${{ secrets.ARM_CLIENT_ID }} \
               --password ${{ secrets.ARM_CLIENT_SECRET }} \
@@ -145,9 +144,9 @@ jobs:
             az aks get-credentials --admin \
               --resource-group sravni \
               --name az-prod-k8s
-            echo "Deploying backoffice ${{ env.backoffice_name }}..."
+            echo "Deploying backoffice ${backoffice_name}..."
             werf helm upgrade --install \
-              "${{ env.backoffice_name }}" \
+              "${backoffice_name}" \
               --namespace sravni \
               --atomic \
               --timeout 10m \
@@ -194,7 +193,7 @@ jobs:
         if: ${{ always() }}
         run: |
           dep_url="${{ github.event.repository.url }}/actions/runs/${{ github.run_id }}"
-          title="@${{env.committer}} опубликовал(а) релиз \`${{env.backoffice_name}}\`"
+          title="@${{env.committer}} опубликовал(а) релиз \`${{ matrix.backoffice }}\`"
           title+=" версии <${dep_url}|'${{env.build_number}}'> из ветки \`${{env.branch}}\`"
           echo "DEPLOY_NAME=${title}" >> $GITHUB_ENV
 
