@@ -107,7 +107,7 @@ jobs:
           build-args: |
             build_number=${{ env.build_number }}
             GITHUB_TOKEN=${{ secrets.GH_TOKEN }}
-            GITHUB_USERNAME=${{ secrets.NUGET_USERNAME }}
+            GITHUB_USERNAME=sravni
             GITHUB_NPM_TOKEN=${{ secrets.GH_TOKEN }}
           push: true
           tags: "${{ env.image_name }}"
@@ -214,31 +214,31 @@ jobs:
       #Шаг создания неймспейса в qa-dashboard, необходимых ресурсов и ключей identity
       - name: Create namespace
         if: ${{ env.namespace_exists == 0 }}
-          run: |
-            RESPONSE_FILE=/tmp/${{ env.build_number }}.txt
-            qa_envs_route="${{ secrets.QA_API_URL }}/environments"
-            env_name=${{ env.namespace }}
-            put_response=$(curl -X PUT \
-              -so "${RESPONSE_FILE}" \
-              -w "%{http_code}" $qa_envs_route \
-              -H "accept: application/json" \
-              -H "Content-Type: application/json" \
-              --cookie "${{ secrets.YA_AUTH_COOKIE_NAME_VALUE }}" \
-              -d "{ \"createdBy\": \"${{ github.actor }}\", \"kind\": \"QA\", \"name\": \"${{ env.namespace }}\", \"team\": \"${{ env.team }}\"}")
-            if [ "${put_response}" != "200" ]; then
-              echo "Cannot create environment ${{ env.namespace }}"
-              cat "${RESPONSE_FILE}" && exit 1
-            fi
-            echo "Environment ${{ env.namespace }} has been created"
-            export EnvironmentName=${{ env.namespace }}
-            cat ./qaenv/k8s-manifests/new-namespace-yandex.yml | envsubst | kubectl apply -f -
-            echo "Manifest has been applied"
-            /bin/bash ./qaenv/scripts/identity-key/new-identity-key.sh
-            echo "Identity key has been generated"
-            kubectl -n ${{ env.namespace }} create secret generic identity-key --from-file ./identity.pfx
-            echo "Identity key secret has been created"
-            kubectl -n ${{ env.namespace }} create secret generic labs-identity-key --from-file ./identity.pfx
-            echo "Labs identity key secret has been created"
+        run: |
+          RESPONSE_FILE=/tmp/${{ env.build_number }}.txt
+          qa_envs_route="${{ secrets.QA_API_URL }}/environments"
+          env_name=${{ env.namespace }}
+          put_response=$(curl -X PUT \
+            -so "${RESPONSE_FILE}" \
+            -w "%{http_code}" $qa_envs_route \
+            -H "accept: application/json" \
+            -H "Content-Type: application/json" \
+            --cookie "${{ secrets.YA_AUTH_COOKIE_NAME_VALUE }}" \
+            -d "{ \"createdBy\": \"${{ github.actor }}\", \"kind\": \"QA\", \"name\": \"${{ env.namespace }}\", \"team\": \"${{ env.team }}\"}")
+          if [ "${put_response}" != "200" ]; then
+            echo "Cannot create environment ${{ env.namespace }}"
+            cat "${RESPONSE_FILE}" && exit 1
+          fi
+          echo "Environment ${{ env.namespace }} has been created"
+          export EnvironmentName=${{ env.namespace }}
+          cat ./qaenv/k8s-manifests/new-namespace-yandex.yml | envsubst | kubectl apply -f -
+          echo "Manifest has been applied"
+          /bin/bash ./qaenv/scripts/identity-key/new-identity-key.sh
+          echo "Identity key has been generated"
+          kubectl -n ${{ env.namespace }} create secret generic identity-key --from-file ./identity.pfx
+          echo "Identity key secret has been created"
+          kubectl -n ${{ env.namespace }} create secret generic labs-identity-key --from-file ./identity.pfx
+          echo "Labs identity key secret has been created"
 
       #Шаг деплоя в стейдж
       - name: Publish

@@ -89,7 +89,7 @@ jobs:
             --progress plain \
             --load \
             --force-rm \
-            --build-arg GITHUB_USERNAME=${{ secrets.NUGET_USERNAME }} \
+            --build-arg GITHUB_USERNAME=sravni \
             --build-arg GITHUB_TOKEN=${{ secrets.GH_TOKEN }} \
             -t "${{ env.image_name }}" -f "./${{ matrix.service }}/Dockerfile" .
 
