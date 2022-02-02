@@ -1,0 +1,65 @@
+#Имя воркфлоу - будет отображаться во вкладке Actions в гитхабе
+name: Build-and-Test-Manual-Job
+
+#Ручной запуск деплоя конкретной джобы
+on:
+  workflow_dispatch:
+    inputs:
+      job_name:
+        description: Job Name
+        default: Sravni.*.Job
+        required: true
+
+env:
+  image_pull_secret_acr: sravni-azurecr-io
+
+#Описание Джобов воркфлоу
+jobs:
+  #Описание Джобы build_and_test и ее шагов:
+  build_and_test:
+    #runs-on указывает какой раннер будет использоваться для запуска данной Джобы
+    #ubuntu-latest - офф раннер гитхаба на основе дистрибутива ubuntu
+    #раннеры на основе других дистрибутивов можно найти в следующей доке:
+    #https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources
+    #                           !!!!!!!!!!!!ВАЖНО!!!!!!!!!!
+    #sravni_ycloud_stage - наш раннер, необходимо указывать при наличии интегротестов
+    #                          !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    runs-on: ubuntu-latest
+
+    #checkout - собственно чекаут репозитория
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v2
+
+      #Шаг получения необходимых переменных для работы пайплайна
+      #job_name - получается из имени репозитория, например osago-frontend
+      #build_number - тег нашего образа, состоит из sha коммита и постфикса qa для стейдж окружения, для прода постфикс отсутствует
+      #image_name - полное имя образа, к примеру sravni.azurecr.io/osago-frontend:ha751ufq
+      - name: Set build vars to GITHUB_ENV
+        run: |
+          build_number=$(echo ${GITHUB_SHA} | cut -c1-7)
+          image_name="${{ secrets.CONTAINER_REGISTRY }}/${{ inputs.job_name }}:${build_number}"
+          echo "build_number=$build_number" >> $GITHUB_ENV
+          echo "image_name=$image_name" >> $GITHUB_ENV
+
+      #Шаг логина в наш реджестри в Azure
+      - name: Login to ACR
+        uses: docker/login-action@v1
+        with:
+          registry: ${{ secrets.CONTAINER_REGISTRY }}
+          username: ${{ secrets.DOCKER_LOGIN }}
+          password: ${{ secrets.DOCKER_PASS }}
+
+      #Шаг сборки образа (без пуша)
+      - name: Docker build
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: Dockerfile
+          build-args: |
+            build_number=${{ env.build_number }}
+            GITHUB_TOKEN=${{ secrets.GH_TOKEN }}
+            GITHUB_USERNAME=sravni
+            GITHUB_NPM_TOKEN=${{ secrets.GH_TOKEN }}
+          push: false
+          tags: "${{ env.image_name }}"
