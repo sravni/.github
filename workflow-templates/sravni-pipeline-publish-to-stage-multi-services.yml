@@ -84,6 +84,9 @@ jobs:
       #image_name - полное имя образа, к примеру sravni.azurecr.io/osago-frontend:ha751ufq
       - name: Set build vars to GITHUB_ENV
         run: |
+          service_name=${{ matrix.service }}
+          service_name=$(echo "${service_name}" | tr '[:upper:]' '[:lower:]')
+          service_name=${service_name//./-}
           build_number=$(echo ${GITHUB_SHA} | cut -c1-7)
           image_name="${{ secrets.CONTAINER_REGISTRY }}/${service_name}:${build_number}"
           echo "build_number=$build_number" >> $GITHUB_ENV
