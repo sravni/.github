@@ -1,13 +1,13 @@
-name: Publish-to-Prod-Multi-Jobs
+name: Publish-to-Prod-Manual-Jobs
 
-#Запуск на проставление тега или выпуск релиза
+#Ручной запуск деплоя конкретной джобы
 on:
-  push:
-    tags:
-      - v[0-9]+.[0-9]+
-  release:
-    types:
-      - published
+  workflow_dispatch:
+    inputs:
+      job_name:
+        description: Job Name
+        default: Sravni.*.Job
+        required: true
 
 #Переменные окружения !!!!!!!!ВАЖНО!!!!!!!!! необходимо прописать свою команду
 env:
@@ -16,26 +16,7 @@ env:
 
 #Описание Джобов воркфлоу
 jobs:
-  #Описание Джобы get_jobs и ее шага, в котором происходит составление
-  #матрицы бэкоффисов по маске *.jobs и ее сохранения для дальнейшего использования
-  get_jobs:
-    runs-on: ubuntu-latest
-
-    outputs:
-      jobs: ${{ steps.get-jobs.outputs.jobs }}
-
-    steps:
-      - name: Checkout source
-        uses: actions/checkout@v2
-
-      - name: Get jobs
-        id: get-jobs
-        run: |
-          jobs=$(ls -d *.Job | jq -R '[.]' | jq -s -c 'add')
-          echo "jobs list: ${jobs}"
-          echo "::set-output name=jobs::${jobs}"
-
-#Описание джобы prepublish
+  #Описание джобы prepublish
   prepublish:
     #runs-on указывает какой раннер будет использоваться для запуска данной Джобы
     #ubuntu-latest - офф раннер гитхаба на основе дистрибутива ubuntu
@@ -45,16 +26,10 @@ jobs:
     #sravni_ycloud_stage - наш раннер, необходимо указывать при наличии интегротестов
     #                          !!!!!!!!!!!!!!!!!!!!!!!!!!!!
     runs-on: ubuntu-latest
-    needs: [get_jobs]
 
     outputs:
-      branch: ${{ env.branch }}
       job_name: ${{ env.job_name }}
       build_number: ${{ env.build_number }}
-
-    strategy:
-      matrix:
-        job: ${{ fromJson(needs.get_jobs.outputs.jobs) }}
 
     steps:
       #checkout - собственно чекаут репозитория
@@ -67,13 +42,11 @@ jobs:
       #image_name - полное имя образа, к примеру sravni.azurecr.io/osago-frontend:ha751ufq
       - name: Set build vars to GITHUB_ENV
         run: |
-          job_name=${{ matrix.job }}
-          job_name=$(echo "${job_name}" | tr '[:upper:]' '[:lower:]')
+          job_name=$(echo "${{ inputs.job_name }}" | tr '[:upper:]' '[:lower:]')
           job_name=${job_name//./-}
           build_number=$(echo ${GITHUB_SHA} | cut -c1-7)
           image_name="${{ secrets.CONTAINER_REGISTRY }}/${job_name}:${build_number}"
           echo "job_name=$job_name" >> $GITHUB_ENV
-          echo "branch=$branch" >> $GITHUB_ENV
           echo "build_number=$build_number" >> $GITHUB_ENV
           echo "image_name=$image_name" >> $GITHUB_ENV
 
@@ -91,7 +64,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: .
-          file: ${{ matrix.job }}/Dockerfile
+          file: ${{ inputs.job_name }}/Dockerfile
           build-args: |
             build_number=${{ env.build_number }}
             GITHUB_TOKEN=${{ secrets.GH_TOKEN }}
@@ -104,20 +77,34 @@ jobs:
 #Описание джобы publish
   publish:
     runs-on: ubuntu-latest
-    needs: [prepublish, get_jobs]
-
-    #Все шаги будут примерняться на матрице, полученной в предыдущей джобе
-    strategy:
-      matrix:
-        job: ${{ fromJson(needs.get_jobs.outputs.jobs) }}
+    needs: [prepublish]
 
     #Все шаги будут использовать переменные окружения с предыдущей джобы
     env:
       build_number: ${{ needs.prepublish.outputs.build_number }}
-      branch: ${{ needs.prepublish.outputs.branch }}
       job_name: ${{ needs.prepublish.outputs.job_name }}
 
     steps:
+      - name: Install werf CLI
+        uses: werf/actions/install@v1.2
+
+      - name: Install Helm
+        uses: azure/setup-helm@v1
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Azure CLI script
+        uses: azure/CLI@v1
+        with:
+          azcliversion: 2.30.0
+          inlineScript: |
+            az aks get-credentials --admin \
+              --resource-group sravni \
+              --name az-prod-k8s
+
       - name: Login to ACR
         uses: docker/login-action@v1
         with:
@@ -128,38 +115,41 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v2
 
+      - name: Checkout qaenv helpers
+        uses: actions/checkout@v2
+        with:
+          repository: sravni/qa-environment-helpers
+          path: qaenv
+          token: ${{ secrets.GH_TOKEN }}
+          ref: ${{ secrets.QAENV_REF }}
+
+      - name: Checkout helm repo
+        uses: actions/checkout@v2
+        with:
+          repository: sravni/helm-charts
+          path: charts
+          token: ${{ secrets.GH_TOKEN }}
+          ref: '${{ secrets.CHARTS_REF }}'
+
       #Шаг деплоя в прод Azure
       - name: Publish
-        uses: addnab/docker-run-action@v3
-        with:
-          username: ${{ secrets.DOCKER_LOGIN }}
-          password: ${{ secrets.DOCKER_PASS }}
-          registry: ${{ secrets.CONTAINER_REGISTRY }}
-          image: ${{ secrets.CONTAINER_REGISTRY }}/qa-environment-helpers:${{ secrets.QA_ENVIRONMENT_HELPERS_TAG }}
-          options: --rm -i -v ${{ github.workspace }}:/app -w=/app
-          run: |
-            az login --service-principal \
-              --username ${{ secrets.ARM_CLIENT_ID }} \
-              --password ${{ secrets.ARM_CLIENT_SECRET }} \
-              --tenant ${{ secrets.ARM_TENANT_ID }}
-            az aks get-credentials --admin \
-              --resource-group sravni \
-              --name az-prod-k8s
-            echo "Deploying job ${{ env.job_name }}..."
-            werf helm upgrade --install \
-              "${{ env.job_name }}" \
-              --namespace sravni \
-              --atomic \
-              --timeout 10m \
-              --set global.image.repository="${{ secrets.CONTAINER_REGISTRY }}/${{ env.job_name }}" \
-              --set global.image.tag="${{ env.build_number }}" \
-              --set global.imagePullSecrets[0]="${{ env.image_pull_secret_acr }}" \
-              --set azureRedis.uri=${{ secrets.AZURE_REDIS_URI }} \
-              --set linkerd.enabled=false \
-              -f ./"${{ matrix.job }}"/.k8s/azure.yaml \
-              /charts/generic-application/
-              2>&1
-            if [ $? != 0 ]; then
-              echo "Publish failed, see logs" && exit 1
-            fi
-            echo "Done"
+        working-directory: ./charts/cronjobs/
+        run: |
+          echo "Deploying job ${{ env.job_name }}..."
+          werf helm upgrade --install \
+            "${{ env.job_name }}" \
+            --namespace sravni \
+            --atomic \
+            --timeout 10m \
+            --set global.image.repository="${{ secrets.CONTAINER_REGISTRY }}/${{ env.job_name }}" \
+            --set global.image.tag="${{ env.build_number }}" \
+            --set global.imagePullSecrets[0]="${{ env.image_pull_secret_acr }}" \
+            --set azureRedis.uri=${{ secrets.AZURE_REDIS_URI }} \
+            --set linkerd.enabled=false \
+            -f ../../${{ inputs.job_name }}/.k8s/azure.yaml \
+            ./ \
+            2>&1
+          if [ $? != 0 ]; then
+            echo "Publish failed, see logs" && exit 1
+          fi
+          echo "Done"

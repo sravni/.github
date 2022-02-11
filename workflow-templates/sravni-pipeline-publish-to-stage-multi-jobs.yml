@@ -1,0 +1,187 @@
+name: Publish-to-Stage-Multi-Jobs
+
+#Запуск на любой пуш в ветку master/yandex или на PR в них
+on:
+  push:
+    branches:
+      - master
+      - yandex
+
+#Переменные окружения !!!!!!!!ВАЖНО!!!!!!!!! необходимо прописать свою команду
+env:
+  team: <team_name>
+  image_pull_secret_acr: sravni-azurecr-io
+
+#Описание Джобов воркфлоу
+jobs:
+  #Описание Джобы get_jobs и ее шага, в котором происходит составление
+  #матрицы бэкоффисов по маске *.Job и ее сохранения для дальнейшего использования
+  get_jobs:
+    runs-on: ubuntu-latest
+
+    outputs:
+      jobs: ${{ steps.get-jobs.outputs.jobs }}
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v2
+
+      - name: Get jobs
+        id: get-jobs
+        run: |
+          jobs=$(ls -d *.Job | jq -R '[.]' | jq -s -c 'add')
+          echo "Jobs list: ${jobs}"
+          echo "::set-output name=jobs::${jobs}"
+
+#Описание джобы prepublish
+  prepublish:
+    #runs-on указывает какой раннер будет использоваться для запуска данной Джобы
+    #ubuntu-latest - офф раннер гитхаба на основе дистрибутива ubuntu
+    #раннеры на основе других дистрибутивов можно найти в следующей доке:
+    #https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources
+    #                           !!!!!!!!!!!!ВАЖНО!!!!!!!!!!
+    #sravni_ycloud_stage - наш раннер, необходимо указывать при наличии интегротестов
+    #                          !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    runs-on: ubuntu-latest
+    needs: [get_jobs]
+
+    outputs:
+      job_name: ${{ env.job_name }}
+      build_number: ${{ env.build_number }}
+
+    strategy:
+      matrix:
+        job: ${{ fromJson(needs.get_jobs.outputs.jobs) }}
+
+    steps:
+      #checkout - собственно чекаут репозитория
+      - name: Checkout source
+        uses: actions/checkout@v2
+
+      #Шаг получения необходимых переменных для работы пайплайна
+      #job_name - получается из имени репозитория, например osago-frontend
+      #build_number - тег нашего образа, состоит из sha коммита и постфикса qa для стейдж окружения, для прода постфикс отсутствует
+      #image_name - полное имя образа, к примеру sravni.azurecr.io/osago-frontend:ha751ufq
+      - name: Set build vars to GITHUB_ENV
+        run: |
+          job_name=${{ matrix.job }}
+          job_name=$(echo "${job_name}" | tr '[:upper:]' '[:lower:]')
+          job_name=${job_name//./-}
+          build_number=$(echo ${GITHUB_SHA} | cut -c1-7)
+          image_name="${{ secrets.CONTAINER_REGISTRY }}/${job_name}:${build_number}"
+          echo "build_number=$build_number" >> $GITHUB_ENV
+          echo "image_name=$image_name" >> $GITHUB_ENV
+
+      #Шаг логина в наш реджестри в Azure
+      - name: Login to ACR
+        uses: docker/login-action@v1
+        with:
+          registry: ${{ secrets.CONTAINER_REGISTRY }}
+          username: ${{ secrets.DOCKER_LOGIN }}
+          password: ${{ secrets.DOCKER_PASS }}
+
+      #Шаг сборки образа (с пушем)
+      - name: Docker build
+        id: docker_build
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ${{ matrix.job }}/Dockerfile
+          build-args: |
+            build_number=${{ env.build_number }}
+            GITHUB_TOKEN=${{ secrets.GH_TOKEN }}
+            GITHUB_USERNAME=sravni
+            GITHUB_NPM_TOKEN=${{ secrets.GH_TOKEN }}
+          push: true
+          tags: "${{ env.image_name }}"
+
+
+#Описание джобы publish
+  publish:
+    runs-on: ubuntu-latest
+    needs: [prepublish, get_jobs]
+
+    #Все шаги будут примерняться на матрице, полученной в предыдущей джобе
+    strategy:
+      matrix:
+        job: ${{ fromJson(needs.get_jobs.outputs.jobs) }}
+
+    #Все шаги будут использовать переменные окружения с предыдущей джобы
+    env:
+      build_number: ${{ needs.prepublish.outputs.build_number }}
+      job_name: ${{ needs.prepublish.outputs.job_name }}
+
+    steps:
+
+      - name: Install werf CLI
+        uses: werf/actions/install@v1.2
+
+      - name: Install Helm
+        uses: azure/setup-helm@v1
+
+      - name: Install Yandex cli
+        run:  |
+          wget -P tmp/ https://storage.yandexcloud.net/yandexcloud-yc/release/0.85.0/linux/amd64/yc
+          chmod +x tmp/yc
+          mv tmp/yc /usr/local/bin/yc
+          echo ${{ secrets.YANDEX_KEY }} | base64 --decode > tmp/key.json
+          yc config profile create github
+          yc config set job-account-key tmp/key.json
+          yc managed-kubernetes \
+            cluster get-credentials \
+            --cloud-id ${{ secrets.YANDEX_CLOUD_ID }} \
+            --folder-id ${{ secrets.YANDEX_FOLDER_ID }} \
+            yc-stage-k8s --external
+
+      - name: Login to ACR
+        uses: docker/login-action@v1
+        with:
+          registry: ${{ secrets.CONTAINER_REGISTRY }}
+          username: ${{ secrets.DOCKER_LOGIN }}
+          password: ${{ secrets.DOCKER_PASS }}
+
+      - name: Checkout source
+        uses: actions/checkout@v2
+
+      - name: Checkout qaenv helpers
+        uses: actions/checkout@v2
+        with:
+          repository: sravni/qa-environment-helpers
+          path: qaenv
+          token: ${{ secrets.GH_TOKEN }}
+          ref: ${{ secrets.QAENV_REF }}
+
+      - name: Checkout helm repo
+        uses: actions/checkout@v2
+        with:
+          repository: sravni/helm-charts
+          path: charts
+          token: ${{ secrets.GH_TOKEN }}
+          ref: '${{ secrets.CHARTS_REF }}'
+
+      #Шаг деплоя в стейдж
+      - name: Publish
+        working-directory: ./charts/cronjobs/
+        run: |
+          job_name=${{ matrix.job }}
+          job_name=$(echo "${job_name}" | tr '[:upper:]' '[:lower:]')
+          job_name=${job_name//./-}
+          echo "Trying to deploy ${job_name}..."
+          helm dependencies update
+          werf helm upgrade --install \
+            "${job_name}" \
+            --namespace "${{ env.namespace }}" \
+            --timeout 10m \
+            --wait \
+            --set global.image.repository="${{ secrets.CONTAINER_REGISTRY }}/${job_name}" \
+            --set global.image.tag="${{ env.build_number }}" \
+            --set global.imagePullSecrets[0]="${{ env.image_pull_secret_acr }}" \
+            --set cronjobs.defaults.resources.enabled=false \
+            --set resources.enabled=false \
+            -f ../.././"${{ matrix.job }}"/.k8s/ya-stage.yaml \
+            ./ \
+            2>&1
+          if [ $? != 0 ]; then
+            echo "Publish failed, see logs" && exit 1
+          fi
+          echo "Done"
