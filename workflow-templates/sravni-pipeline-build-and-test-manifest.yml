@@ -59,6 +59,12 @@ jobs:
           username: ${{ secrets.DOCKER_LOGIN }}
           password: ${{ secrets.DOCKER_PASS }}
 
+      #Шаг установки buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+        with:
+          driver: docker
+
       #Шаг билда контейнера без пуша
       - name: Docker build
         id: docker_build
@@ -73,3 +79,12 @@ jobs:
             GITHUB_TOKEN=${{ secrets.GH_TOKEN }}
           push: false
           tags: "${{ env.image_name }}"
+
+      # Сканирование образа на уязвимости
+      - name: Trivy Scanning
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ env.image_name }}'
+          exit-code: '0'
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'
