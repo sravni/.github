@@ -1,4 +1,4 @@
-name: CD-pipeline
+name: CD pipeline
 on:
   push:
     branches:
@@ -24,11 +24,26 @@ jobs:
       build_number: ${{ env.build_number }}
 
     steps:
+      # удалить как выставите team на значение своей команды
+      - name: Check if team variable is set
+        run: |
+          if [[ "${{ env.team }}" == "team" ]]; then
+            echo "Change the value of the `team` variable, start again";
+            exit 1;
+          fi
 
       - name: Checkout source
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
+
+      - uses: chrnorm/deployment-action@releases/v1
+        name: Create GitHub deployment
+        id: deployment
+        with:
+          token: "${{ secrets.GH_TOKEN }}"
+          target_url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+          environment: build
 
       - name: Expose git commit data
         uses: rlespinasse/git-commit-data-action@1.1.2
@@ -150,47 +165,19 @@ jobs:
               docker push "${{ env.image_latest }}"
           fi
 
-          echo "BUILD_STATE=successful" >> $GITHUB_ENV
+          echo "BUILD_STATE=success" >> $GITHUB_ENV
 
       - name: Failed Build
         if: ${{ failure() }}
-        run: echo "BUILD_STATE=failed" >> $GITHUB_ENV
+        run: echo "BUILD_STATE=failure" >> $GITHUB_ENV
 
-      - name: Parse Jira Keys from Commit
-        id: jira_keys
-        if: ${{ always() }}
-        uses: HighwayThree/jira-extract-issue-keys@master
+      - name: Update deployment status
+        uses: chrnorm/deployment-status@releases/v1
         with:
-          is-pull-request: ${{ github.event_name == 'pull_request' }}
-          parse-all-commits: ${{ github.event_name == 'push' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Push Build Info to Jira
-        if: steps.jira_keys.outputs.jira-keys != ''
-        id: push_build_info_to_jira
-        uses: HighwayThree/jira-upload-build-info@master
-        with:
-          cloud-instance-base-url: 'https://sravniru.atlassian.net'
-          client-id: '${{ secrets.JIRA_CLIENT_ID }}'
-          client-secret: '${{ secrets.JIRA_CLIENT_SECRET }}'
-          pipeline-id: '${{ github.repository }} ${{ github.workflow }}'
-          build-number: ${{ github.run_number }}
-          build-display-name: 'Workflow: ${{ github.workflow }} (#${{ github.run_number }})'
-          build-state: "${{ env.BUILD_STATE }}"
-          build-url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
-          update-sequence-number: '${{ github.run_id }}'
-          last-updated: '${{ github.event.head_commit.timestamp }}'
-          issue-keys: "${{ steps.jira_keys.outputs.jira-keys }}"
-          commit-id: '${{ github.sha }}'
-          repo-url: '${{ github.event.repository.url }}'
-          build-ref-url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
-
-      - name: Confirm Jira Build Output
-        if: ${{ success() }}
-        run: |
-          echo "Jira Upload Build Info response: ${{ steps.push_build_info_to_jira.outputs.response }}"
-
+          token: "${{ secrets.GH_TOKEN }}"
+          target_url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+          state: "${{ env.BUILD_STATE }}"
+          deployment_id: ${{ steps.deployment.outputs.deployment_id }}
 
   publish_to_stage:
     runs-on: ubuntu-latest
@@ -198,8 +185,11 @@ jobs:
     env:
       build_number: ${{ needs.build_and_test.outputs.build_number }}
       branch: ${{ needs.build_and_test.outputs.branch }}
+    outputs:
+      namespace: ${{ env.namespace }}
 
     steps:
+
       - name: Set service name to GITHUB_ENV
         id: set_service_name
         run: |
@@ -228,6 +218,14 @@ jobs:
 
           echo "namespace=${namespace}" >> $GITHUB_ENV
 
+      - uses: chrnorm/deployment-action@releases/v1
+        name: Create GitHub deployment
+        id: deployment
+        with:
+          token: "${{ secrets.GH_TOKEN }}"
+          target_url: "http://${{ env.namespace }}.stage.yandex.sravni-team.ru"
+          environment: staging
+
       - name: Login to ACR
         uses: docker/login-action@v1
         with:
@@ -244,7 +242,6 @@ jobs:
 
           qa_envs_route="${{ secrets.QA_API_URL }}/environments"
           env_name=${{ env.namespace }}
-
 
           get_response=$(curl -X GET -so "${RESPONSE_FILE}" -w "%{http_code}" ${qa_envs_route}/${env_name} \
           --cookie "${{ secrets.YA_AUTH_COOKIE_NAME_VALUE }}" \
@@ -367,7 +364,7 @@ jobs:
       - name: Set info about deployment to qa-environment-service
         if: ${{ success() }}
         run: |
-          echo "DEPLOY_STATE=successful" >> $GITHUB_ENV
+          echo "DEPLOY_STATE=success" >> $GITHUB_ENV
 
           qa_deps_route="${{ secrets.QA_API_URL }}/deployments"
 
@@ -401,51 +398,13 @@ jobs:
             cat "${RESPONSE_FILE}" && exit 1
           fi
 
-      - name: Parse Jira Keys from All Commits
-        id: jira_keys
-        if: ${{ always() }}
-        uses: HighwayThree/jira-extract-issue-keys@master
+      - name: Update deployment status
+        uses: chrnorm/deployment-status@releases/v1
         with:
-          is-pull-request: ${{ github.event_name == 'pull_request' }}
-          parse-all-commits: ${{ github.event_name == 'push' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Confirm Deploy State and Jira Key Values
-        if: ${{ always() }}
-        run: |
-          echo "DEPLOY_STATE: ${{env.DEPLOY_STATE}}"
-          echo "Jira Keys: ${{ steps.jira_keys.outputs.jira-keys }}"
-
-      - name: Push Deployment Info to Jira
-        if: steps.jira_keys.outputs.jira-keys != ''
-        id: push_deployment_info_to_jira
-        uses: HighwayThree/jira-upload-deployment-info@master
-        with:
-          cloud-instance-base-url: 'https://sravniru.atlassian.net'
-          client-id: '${{ secrets.JIRA_CLIENT_ID }}'
-          client-secret: '${{ secrets.JIRA_CLIENT_SECRET }}'
-          deployment-sequence-number: '${{ github.run_id }}'
-          update-sequence-number: '${{ github.run_id }}'
-          issue-keys: "${{ steps.jira_keys.outputs.jira-keys }}"
-          display-name: "Deployment number ${GITHUB_SHA}"
-          url: "${{ github.event.repository.url }}/actions/runs/${{ github.run_id }}"
-          description: "Test Deployment"
-          last-updated: '${{ github.event.head_commit.timestamp }}'
-          label: 'Test Deployment Label'
-          state: '${{ env.DEPLOY_STATE }}'
-          pipeline-id: '${{ github.repository }} ${{ github.workflow }}'
-          pipeline-display-name: 'Workflow: ${{ github.workflow }} (#${{ github.run_number }})'
-          pipeline-url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
-          environment-id: 'Test'
-          environment-display-name: 'Test'
-          environment-type: 'testing'
-
-      - name: Confirm Jira Deploy Output
-        if: ${{ success() }}
-        run: |
-          echo "Jira Upload Deploy Info response: ${{steps.push_deployment_info_to_jira.outputs.response}}"
-
+          token: "${{ secrets.GH_TOKEN }}"
+          target_url: "http://${{ env.namespace }}.stage.yandex.sravni-team.ru"
+          state: "${{ env.DEPLOY_STATE }}"
+          deployment_id: ${{ steps.deployment.outputs.deployment_id }}
 
   publish_to_azure:
     if: startsWith(github.ref, 'refs/tags') || contains(github.event_name, 'release')
