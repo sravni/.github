@@ -23,6 +23,15 @@ jobs:
       committer: ${{ steps.get-ids.outputs.committer }}
 
     steps:
+
+      # удалить как выставите team на значение своей команды
+      - name: Check if team variable is set
+        run: |
+          if [[ "${{ env.team }}" == "team" ]]; then
+            echo "Change the value of the `team` variable, start again";
+            exit 1;
+          fi
+
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
