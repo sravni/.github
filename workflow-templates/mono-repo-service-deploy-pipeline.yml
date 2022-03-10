@@ -468,6 +468,14 @@ jobs:
           svc=$(echo '${{ github.repository }}' | awk -F '/' '{print $2}')
           echo "service_name=$svc" >> $GITHUB_ENV
 
+      - uses: chrnorm/deployment-action@releases/v1
+        name: Create GitHub deployment
+        id: deployment
+        with:
+          token: "${{ secrets.GH_TOKEN }}"
+          target_url: "http://${{ env.namespace }}.stage.yandex.sravni-team.ru"
+          environment: production
+
       - name: Login to ACR
         uses: docker/login-action@v1
         with:
@@ -519,27 +527,11 @@ jobs:
 
       - name: Successful Deployment
         if: ${{ success() }}
-        run: echo "DEPLOY_STATE=successful" >> $GITHUB_ENV
+        run: echo "DEPLOY_STATE=success" >> $GITHUB_ENV
 
       - name: Failed Deployment
         if: ${{ failure() }}
-        run: echo "DEPLOY_STATE=failed" >> $GITHUB_ENV
-
-      - name: Parse Jira Keys from All Commits
-        id: jira_keys
-        if: ${{ always() }}
-        uses: HighwayThree/jira-extract-issue-keys@master
-        with:
-          is-pull-request: ${{ github.event_name == 'pull_request' }}
-          parse-all-commits: ${{ github.event_name == 'push' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Confirm Deploy State and Jira Key Values
-        if: ${{ always() }}
-        run: |
-          echo "DEPLOY_STATE: ${{ env.DEPLOY_STATE }}"
-          echo "Jira Keys: ${{ steps.jira_keys.outputs.jira-keys }}"
+        run: echo "DEPLOY_STATE=failure" >> $GITHUB_ENV
 
       - name: Build deployment name
         if: ${{ always() }}
@@ -549,26 +541,10 @@ jobs:
           title+=" версии <${dep_url}|'${{env.build_number}}'> из ветки \`${{env.branch}}\`"
           echo "DEPLOY_NAME=${title}" >> $GITHUB_ENV
 
-      - name: Push Deployment Info to Jira
-        if: steps.jira_keys.outputs.jira-keys != ''
-        id: push_deployment_info_to_jira
-        uses: HighwayThree/jira-upload-deployment-info@master
+      - name: Update deployment status
+        uses: chrnorm/deployment-status@releases/v1
         with:
-          cloud-instance-base-url: 'https://sravniru.atlassian.net'
-          client-id: '${{ secrets.JIRA_CLIENT_ID }}'
-          client-secret: '${{ secrets.JIRA_CLIENT_SECRET }}'
-          deployment-sequence-number: '${{ github.run_id }}'
-          update-sequence-number: '${{ github.run_id }}'
-          issue-keys: "${{ steps.jira_keys.outputs.jira-keys }}"
-          display-name: "${{ env.DEPLOY_NAME }}"
-          url: "${{ github.event.repository.url }}/actions/runs/${{ github.run_id }}"
-          description: "Prod Deployment"
-          last-updated: '${{ github.event.head_commit.timestamp }}'
-          label: 'Prod Deployment Label'
-          state: '${{ env.DEPLOY_STATE }}'
-          pipeline-id: '${{ github.repository }} ${{ github.workflow }}'
-          pipeline-display-name: 'Workflow: ${{ github.workflow }} (#${{ github.run_number }})'
-          pipeline-url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
-          environment-id: 'Production'
-          environment-display-name: 'Production'
-          environment-type: 'production'
+          token: "${{ secrets.GH_TOKEN }}"
+          target_url: "${{ github.event.repository.url }}/actions/runs/${{ github.run_id }}"
+          state: "${{ env.DEPLOY_STATE }}"
+          deployment_id: ${{ steps.deployment.outputs.deployment_id }}
