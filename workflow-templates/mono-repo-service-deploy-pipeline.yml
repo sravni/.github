@@ -21,6 +21,7 @@ env:
 jobs:
   build_and_test:
     runs-on: ubuntu-20.4
+    # runs-on: sravni_ycloud_stage, если тестам нужен доступ к инфре
     outputs:
       branch: ${{ env.branch }}
       author: ${{ steps.get-ids.outputs.author }}
@@ -393,6 +394,7 @@ jobs:
 
     if: startsWith(github.ref, 'delete the stopper')
     runs-on: ubuntu-20.4
+    # runs-on: sravni_ycloud_stage, если тестам нужен доступ к инфре
     needs:
       - publish_to_stage
 

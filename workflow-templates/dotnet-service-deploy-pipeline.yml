@@ -86,6 +86,7 @@ jobs:
   build_and_test:
     needs: get_services
     runs-on: ubuntu-20.4
+    # runs-on: sravni_ycloud_stage, если тестам нужен доступ к инфре
 
     outputs:
       build_number: ${{ env.build_number }}
