@@ -41,14 +41,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: chrnorm/deployment-action@releases/v1
-        name: Create GitHub deployment
-        id: deployment
-        with:
-          token: "${{ secrets.GH_TOKEN }}"
-          target_url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
-          environment: build
-
       - name: Expose git commit data
         uses: rlespinasse/git-commit-data-action@1.1.2
 
@@ -168,20 +160,6 @@ jobs:
               docker tag "${{ env.image_name }}" "${{ env.image_latest }}"
               docker push "${{ env.image_latest }}"
           fi
-
-          echo "BUILD_STATE=success" >> $GITHUB_ENV
-
-      - name: Failed Build
-        if: ${{ failure() }}
-        run: echo "BUILD_STATE=failure" >> $GITHUB_ENV
-
-      - name: Update deployment status
-        uses: chrnorm/deployment-status@releases/v1
-        with:
-          token: "${{ secrets.GH_TOKEN }}"
-          target_url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
-          state: "${{ env.BUILD_STATE }}"
-          deployment_id: ${{ steps.deployment.outputs.deployment_id }}
 
   publish_to_stage:
     if: github.event_name == 'pull_request'
