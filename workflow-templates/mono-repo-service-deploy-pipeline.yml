@@ -20,7 +20,7 @@ env:
 
 jobs:
   build_and_test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.4
     outputs:
       branch: ${{ env.branch }}
       author: ${{ steps.get-ids.outputs.author }}
@@ -163,7 +163,7 @@ jobs:
 
   publish_to_stage:
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.4
     needs: [ build_and_test ]
     env:
       build_number: ${{ needs.build_and_test.outputs.build_number }}
@@ -392,7 +392,7 @@ jobs:
   run_e2e_tests:
 
     if: startsWith(github.ref, 'delete the stopper')
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.4
     needs:
       - publish_to_stage
 
@@ -432,7 +432,7 @@ jobs:
       - 'build_and_test'
       - 'publish_to_stage'
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.4
 
     env:
       author: ${{ needs.build_and_test.outputs.author }}

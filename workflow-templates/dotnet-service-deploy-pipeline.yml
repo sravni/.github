@@ -20,7 +20,7 @@ env:
 
 jobs:
   get_services:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.4
     outputs:
       services: ${{ steps.get-services.outputs.services }}
       author: ${{ steps.get-ids.outputs.author }}
@@ -85,7 +85,7 @@ jobs:
           echo "::set-output name=services::${services}"
   build_and_test:
     needs: get_services
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.4
 
     outputs:
       build_number: ${{ env.build_number }}
@@ -216,7 +216,7 @@ jobs:
   publish_to_stage:
     if: github.event_name == 'pull_request'
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.4
     needs: [build_and_test, get_services]
     strategy:
       matrix:
@@ -425,7 +425,7 @@ jobs:
       - 'build_and_test'
       - 'publish_to_stage'
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.4
 
     strategy:
       matrix:
