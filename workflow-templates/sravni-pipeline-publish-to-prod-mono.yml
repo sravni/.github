@@ -96,15 +96,6 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Azure CLI script
-        uses: azure/CLI@v1
-        with:
-          azcliversion: 2.30.0
-          inlineScript: |
-            az aks get-credentials --admin \
-              --resource-group sravni \
-              --name az-prod-k8s
-
       - name: Login to ACR
         uses: docker/login-action@v1
         with:
@@ -136,6 +127,10 @@ jobs:
         working-directory: ./charts/generic-application/
         run: |
           echo "Deploying service ${{ env.service_name }}..."
+          az aks get-credentials --admin \
+            --resource-group sravni \
+            --name az-prod-k8s
+          helm dependencies update
           werf helm upgrade --install \
             "${{ env.service_name }}" \
             --namespace sravni \
