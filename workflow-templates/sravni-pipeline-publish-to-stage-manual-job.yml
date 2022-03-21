@@ -99,7 +99,7 @@ jobs:
           mv tmp/yc /usr/local/bin/yc
           echo ${{ secrets.YANDEX_KEY }} | base64 --decode > tmp/key.json
           yc config profile create github
-          yc config set job-account-key tmp/key.json
+          yc config set service-account-key tmp/key.json
           yc managed-kubernetes \
             cluster get-credentials \
             --cloud-id ${{ secrets.YANDEX_CLOUD_ID }} \
