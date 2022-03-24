@@ -1,0 +1,5 @@
+{
+    "name": "Sravni pipeline publish to stage multi services light version",
+    "description": "Multi services repo publish to stage workflow light template.",
+    "iconName": "sravni-pipeline-publish-to-stage-light"
+}
