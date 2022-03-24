@@ -1,4 +1,4 @@
-name: Publish-to-Stage-Jobs
+name: publish to stage base module
 
 #Запуск на любой пуш в ветку master/yandex или на PR в них
 on:

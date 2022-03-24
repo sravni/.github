@@ -1,4 +1,4 @@
-name: publish to stage services base module
+name: publish to stage backoffice base module
 
 #Запуск на любой пуш в ветку master/yandex или на PR в них
 on:
@@ -39,24 +39,24 @@ env:
 
 #Описание Джобов воркфлоу
 jobs:
-  #Описание Джобы get_services и ее шага, в котором происходит составление
-  #матрицы бэкоффисов по маске *.Services и ее сохранения для дальнейшего использования
-  get_services:
+  #Описание Джобы get_backoffices и ее шага, в котором происходит составление
+  #матрицы бэкоффисов по маске *.backoffices и ее сохранения для дальнейшего использования
+  get_backoffices:
     runs-on: ubuntu-latest
 
     outputs:
-      services: ${{ steps.get-services.outputs.services }}
+      backoffices: ${{ steps.get-backoffices.outputs.backoffices }}
 
     steps:
       - name: Checkout source
         uses: actions/checkout@v2
 
-      - name: Get services
-        id: get-services
+      - name: Get backoffices
+        id: get-backoffices
         run: |
-          services=$(ls -d *.Service | jq -R '[.]' | jq -s -c 'add')
-          echo "Services list: ${services}"
-          echo "::set-output name=services::${services}"
+          backoffices=$(ls -d *.Backoffice | jq -R '[.]' | jq -s -c 'add')
+          echo "backoffices list: ${backoffices}"
+          echo "::set-output name=backoffices::${backoffices}"
 
 #Описание джобы prepublish
   prepublish:
@@ -68,16 +68,16 @@ jobs:
     #sravni_ycloud_stage - наш раннер, необходимо указывать при наличии интегротестов
     #                          !!!!!!!!!!!!!!!!!!!!!!!!!!!!
     runs-on: sravni_ycloud_stage
-    needs: [get_services]
+    needs: [get_backoffices]
 
     outputs:
       branch: ${{ env.branch }}
-      service_name: ${{ env.service_name }}
+      backoffice_name: ${{ env.backoffice_name }}
       build_number: ${{ env.build_number }}
 
     strategy:
       matrix:
-        service: ${{ fromJson(needs.get_services.outputs.services) }}
+        backoffice: ${{ fromJson(needs.get_backoffices.outputs.backoffices) }}
 
     steps:
       #checkout - собственно чекаут репозитория
@@ -100,16 +100,17 @@ jobs:
           echo "branch=$branch" >> $GITHUB_ENV
 
       #Шаг получения необходимых переменных для работы пайплайна
-      #service_name - получается из имени репозитория, например osago-frontend
+      #backoffice_name - получается из имени репозитория, например osago-frontend
       #build_number - тег нашего образа, состоит из sha коммита и постфикса qa для стейдж окружения, для прода постфикс отсутствует
       #image_name - полное имя образа, к примеру sravni.azurecr.io/osago-frontend:ha751ufq
       - name: Set build vars to GITHUB_ENV
         run: |
-          service_name=${{ matrix.service }}
-          service_name=$(echo "${service_name}" | tr '[:upper:]' '[:lower:]')
-          service_name=${service_name//./-}
+          backoffice_name=${{ matrix.backoffice }}
+          backoffice_name=$(echo "${backoffice_name}" | tr '[:upper:]' '[:lower:]')
+          backoffice_name=${backoffice_name//./-}
           build_number=$(echo ${GITHUB_SHA} | cut -c1-7)
-          image_name="${{ secrets.CONTAINER_REGISTRY }}/${service_name}:${build_number}"
+          image_name="${{ secrets.CONTAINER_REGISTRY }}/${backoffice_name}:${build_number}"
+          echo "branch=$branch" >> $GITHUB_ENV
           echo "build_number=$build_number" >> $GITHUB_ENV
           echo "image_name=$image_name" >> $GITHUB_ENV
 
@@ -133,7 +134,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: .
-          file: ${{ matrix.service }}/Dockerfile
+          file: ${{ matrix.backoffice }}/Dockerfile
           build-args: |
             build_number=${{ env.build_number }}
             GITHUB_TOKEN=${{ secrets.GH_TOKEN }}
@@ -146,21 +147,20 @@ jobs:
 #Описание джобы publish
   publish:
     runs-on: ubuntu-latest
-    needs: [prepublish, get_services]
+    needs: [prepublish, get_backoffices]
 
     #Все шаги будут примерняться на матрице, полученной в предыдущей джобе
     strategy:
       matrix:
-        service: ${{ fromJson(needs.get_services.outputs.services) }}
+        backoffice: ${{ fromJson(needs.get_backoffices.outputs.backoffices) }}
 
     #Все шаги будут использовать переменные окружения с предыдущей джобы
     env:
       build_number: ${{ needs.prepublish.outputs.build_number }}
       branch: ${{ needs.prepublish.outputs.branch }}
-      service_name: ${{ needs.prepublish.outputs.service_name }}
+      backoffice_name: ${{ needs.prepublish.outputs.backoffice_name }}
 
     steps:
-
       - name: Install werf CLI
         uses: werf/actions/install@v1.2
 
@@ -223,6 +223,8 @@ jobs:
           token: ${{ secrets.GH_TOKEN }}
           ref: '${{ secrets.CHARTS_REF }}'
 
+
+
       #Шаг проверки наличия уже созданного неймспейса
       - name: Check if namespace already exists
         run: |
@@ -274,22 +276,22 @@ jobs:
       - name: Publish
         working-directory: ./charts/generic-application/
         run: |
-          service_name=${{ matrix.service }}
-          service_name=$(echo "${service_name}" | tr '[:upper:]' '[:lower:]')
-          service_name=${service_name//./-}
-          echo "Trying to deploy ${service_name}..."
+          backoffice_name=${{ matrix.backoffice }}
+          backoffice_name=$(echo "${backoffice_name}" | tr '[:upper:]' '[:lower:]')
+          backoffice_name=${backoffice_name//./-}
+          echo "Trying to deploy ${backoffice_name}..."
           helm dependencies update
           werf helm upgrade --install \
-            "${service_name}" \
+            "${backoffice_name}" \
             --namespace "${{ env.namespace }}" \
             --timeout 10m \
             --wait \
-            --set global.image.repository="${{ secrets.CONTAINER_REGISTRY }}/${service_name}" \
+            --set global.image.repository="${{ secrets.CONTAINER_REGISTRY }}/${backoffice_name}" \
             --set global.image.tag="${{ env.build_number }}" \
             --set global.imagePullSecrets[0]="${{ env.image_pull_secret_acr }}" \
             --set cronjobs.defaults.resources.enabled=false \
             --set resources.enabled=false \
-            -f ../.././"${{ matrix.service }}"/.k8s/ya-stage.yaml \
+            -f ../.././"${{ matrix.backoffice }}"/.k8s/ya-stage.yaml \
             ./ \
             2>&1
           if [ $? != 0 ]; then
@@ -301,9 +303,9 @@ jobs:
       - name: Set info about deployment to qa-environment-service
         if: ${{ success() }}
         run: |
-          service_name=${{ matrix.service }}
-          service_name=$(echo "${service_name}" | tr '[:upper:]' '[:lower:]')
-          service_name=${service_name//./-}
+          backoffice_name=${{ matrix.backoffice }}
+          backoffice_name=$(echo "${backoffice_name}" | tr '[:upper:]' '[:lower:]')
+          backoffice_name=${backoffice_name//./-}
           echo "DEPLOY_STATE=successful" >> $GITHUB_ENV
           qa_deps_route="${{ secrets.QA_API_URL }}/deployments"
           RESPONSE_FILE=/tmp/${{ env.build_number }}.txt
@@ -315,7 +317,7 @@ jobs:
             --cookie "${{ secrets.YA_AUTH_COOKIE_NAME_VALUE }}" \
             -d "{ \
                \"Branch\": \"${{ env.branch }}\", \
-               \"Project\": \"${service_name}\", \
+               \"Project\": \"${backoffice_name}\", \
                \"Stand\": \"${{ env.namespace }}\", \
                \"TriggeredBy\": \"${{ github.actor }}\", \
                \"VcsNumber\": \"${{ env.build_number }}\", \
