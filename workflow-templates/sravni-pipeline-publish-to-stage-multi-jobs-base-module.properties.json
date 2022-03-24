@@ -1,0 +1,5 @@
+{
+    "name": "Sravni pipeline publish to stage multi jobs base module",
+    "description": "Multi jobs repo publish to stage workflow base template.",
+    "iconName": "sravni-pipeline-publish-to-stage-base-module"
+}
