@@ -16,7 +16,7 @@ env:
 
 jobs:
   get_services:
-    runs-on: ubuntu-20.4
+    runs-on: ubuntu-latest
     outputs:
       services: ${{ steps.get-services.outputs.services }}
       author: ${{ steps.get-ids.outputs.author }}
@@ -81,7 +81,7 @@ jobs:
           echo "::set-output name=services::${services}"
   build_and_test:
     needs: get_services
-    runs-on: ubuntu-20.4
+    runs-on: ubuntu-latest
     # runs-on: sravni_ycloud_stage, если тестам нужен доступ к инфре
 
     outputs:
@@ -212,7 +212,7 @@ jobs:
           fi
 
   publish_to_stage:
-    runs-on: ubuntu-20.4
+    runs-on: ubuntu-latest
     needs: [build_and_test, get_services]
     strategy:
       matrix:
@@ -422,7 +422,7 @@ jobs:
       - 'build_and_test'
       - 'publish_to_stage'
 
-    runs-on: ubuntu-20.4
+    runs-on: ubuntu-latest
 
     strategy:
       matrix:

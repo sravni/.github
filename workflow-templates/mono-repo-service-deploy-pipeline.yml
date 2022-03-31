@@ -16,7 +16,7 @@ env:
 
 jobs:
   build_and_test:
-    runs-on: ubuntu-20.4
+    runs-on: ubuntu-latest
     # runs-on: sravni_ycloud_stage, если тестам нужен доступ к инфре
     outputs:
       branch: ${{ env.branch }}
@@ -159,7 +159,7 @@ jobs:
           fi
 
   publish_to_stage:
-    runs-on: ubuntu-20.4
+    runs-on: ubuntu-latest
     needs: [ build_and_test ]
     env:
       build_number: ${{ needs.build_and_test.outputs.build_number }}
@@ -389,7 +389,7 @@ jobs:
   run_e2e_tests:
 
     if: startsWith(github.ref, 'delete the stopper')
-    runs-on: ubuntu-20.4
+    runs-on: ubuntu-latest
     # runs-on: sravni_ycloud_stage, если тестам нужен доступ к инфре
     needs:
       - publish_to_stage
@@ -430,7 +430,7 @@ jobs:
       - 'build_and_test'
       - 'publish_to_stage'
 
-    runs-on: ubuntu-20.4
+    runs-on: ubuntu-latest
 
     env:
       author: ${{ needs.build_and_test.outputs.author }}
