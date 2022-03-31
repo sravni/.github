@@ -378,6 +378,7 @@ jobs:
           fi
 
       - name: Update deployment status
+        if: ${{ success() || failure() }}
         uses: chrnorm/deployment-status@releases/v1
         with:
           token: "${{ secrets.GH_TOKEN }}"
@@ -505,14 +506,6 @@ jobs:
 
             echo "Done"
 
-      - name: Successful Deployment
-        if: ${{ success() }}
-        run: echo "DEPLOY_STATE=success" >> $GITHUB_ENV
-
-      - name: Failed Deployment
-        if: ${{ failure() }}
-        run: echo "DEPLOY_STATE=failure" >> $GITHUB_ENV
-
       - name: Build deployment name
         if: ${{ always() }}
         run: |
@@ -521,7 +514,16 @@ jobs:
           title+=" версии <${dep_url}|'${{env.build_number}}'> из ветки \`${{env.branch}}\`"
           echo "DEPLOY_NAME=${title}" >> $GITHUB_ENV
 
+      - name: Successful Deployment
+        if: ${{ success() }}
+        run: echo "DEPLOY_STATE=success" >> $GITHUB_ENV
+
+      - name: Failed Deployment
+        if: ${{ failure() }}
+        run: echo "DEPLOY_STATE=failure" >> $GITHUB_ENV
+
       - name: Update deployment status
+        if: ${{ success() || failure() }}
         uses: chrnorm/deployment-status@releases/v1
         with:
           token: "${{ secrets.GH_TOKEN }}"
