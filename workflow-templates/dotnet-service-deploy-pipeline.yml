@@ -132,11 +132,12 @@ jobs:
 
       - name: Check if image already exists
         run: |
+          # exists = 0, not exists = 1
           image_exists=$(docker manifest inspect "${{ env.image_name }}" > /dev/null; echo $?)
           echo "image_exists=${image_exists}" >> $GITHUB_ENV
           if [ "${image_exists}" == 1 ]
           then
-            pull_latest=$(docker pull "${image_latest}" > /dev/null; echo $?)
+            pull_latest=$(docker pull "${{ env.image_latest }}" > /dev/null; echo $?)
           fi
 
       - name: Check settings exists
