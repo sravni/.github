@@ -429,6 +429,7 @@ jobs:
     needs:
       - 'build_and_test'
       - 'publish_to_stage'
+      - 'run_e2e_tests'
 
     runs-on: ubuntu-latest
 
