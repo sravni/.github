@@ -6,10 +6,6 @@ on:
     tags:
       - v[0-9]+.[0-9]+
 
-  pull_request:
-    branches:
-      - master
-
   release:
     types:
       - published
@@ -163,7 +159,6 @@ jobs:
           fi
 
   publish_to_stage:
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-20.4
     needs: [ build_and_test ]
     env:
