@@ -1,0 +1,149 @@
+name: build and test multi project module
+
+on:
+  workflow_call:
+    inputs:
+      is_stage:
+        description: "Запускается ли план для публикации на стейдж"
+        required: true
+        type: boolean
+      with_push:
+        description: "Пушить ли собранный образ в regystry"
+        required: true
+        type: boolean
+      dockerfile_path_mask:
+        description: "Маска пути к докерфайлам"
+        required: true
+        type: string
+      #runner указывает какой раннер будет использоваться для запуска данной Джобы
+      #ubuntu-20.04 - офф раннер гитхаба на основе дистрибутива ubuntu
+      #раннеры на основе других дистрибутивов можно найти в следующей доке:
+      #https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources
+      #                           !!!!!!!!!!!!ВАЖНО!!!!!!!!!!
+      #sravni_ycloud_stage - наш раннер, необходимо указывать при наличии интегротестов
+      #                          !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      runner:
+        description: "Указывает какой раннер будет использоваться для запуска джобы build_and_test"
+        required: false
+        default: sravni_ycloud_stage
+        type: string
+
+    secrets: 
+      GH_TOKEN:
+        required: true
+      GITHUB_NPM_TOKEN:
+        required: true
+      CONTAINER_REGISTRY:
+        required: true
+      DOCKER_LOGIN:
+        required: true
+      DOCKER_PASS:
+        required: true
+
+    outputs:
+      projects:
+        description: "Собранные проекты"
+        value: ${{ jobs.get_projects.outputs.projects }}
+env:
+  image_pull_secret_acr: sravni-azurecr-io
+
+#Описание Джобов воркфлоу
+jobs:
+  #Описание Джобы get_projects и ее шага, в котором происходит составление
+  #списка проектов для сборки.
+  #| project_name | dockerfile | project_path | branch | build_number | image_name |
+  get_projects:
+    runs-on: ubuntu-20.04
+
+    outputs:
+      projects: ${{ steps.get_projects.outputs.projects }}
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v2
+
+      #Шаги проверки ивента и выставления имени бранчи в зависимости от него
+      - name: Get branch name (merge)
+        if: github.event_name != 'pull_request'
+        run: |
+          branch=$(echo ${GITHUB_REF#refs/heads/} | tr / -)
+          if [ $branch == "yandex" ]; then branch="master";fi
+          echo "branch=$branch" >> $GITHUB_ENV
+
+      - name: Get branch name (pull request)
+        if: github.event_name == 'pull_request'
+        run: |
+          branch=$(echo ${GITHUB_HEAD_REF} | tr / -)
+          if [ $branch == "yandex" ]; then branch="master";fi
+          echo "branch=$branch" >> $GITHUB_ENV
+
+      
+      #project_name - имя проекта, определяется из директории c Dockerfile
+      #project_path - пут к директории Dockerfile
+      #build_number - тег нашего образа, состоит из sha коммита и постфикса qa для стейдж окружения, для прода постфикс отсутствует
+      #image_name - полное имя образа, к примеру sravni.azurecr.io/sravni-identity-service:ha751ufq
+      - name: Get objects to build
+        id: get-projects
+        run: |
+          projects=$(for p in $(find ${{ inputs.dockerfile_path_mask }} -name Dockerfile)
+            do
+              project_name=$(echo $p | sed -E 's|(.*/\|)(.*)/Dockerfile$|\2|' | tr '[:upper:]' '[:lower:]' | sed 's|\.|-|g')
+              project_path=$(echo $p | sed -E 's|(.*)/Dockerfile$|\1|')
+              build_number=$(echo ${GITHUB_SHA} | cut -c1-7)
+              if [ "${{ inputs.is_stage }}" = "true"]
+                then build_number="$build_number-qa"
+              fi
+              image_name="${{ secrets.CONTAINER_REGISTRY }}/${project_name}:${build_number}"
+              echo "{ \"project_name\":\"$project_name\", \
+                      \"dockerfile\":\"$p\", \
+                      \"project_path\":\"$project_path\" \
+                      \"branch\":\"${{ env.branch }}\" \
+                      \"build_number\":\"$build_number\" \
+                      \"image_name\":\"$image_name\" }"
+            done | jq -s -r -c '.')
+          echo Собираем следующие проекты:
+          echo $projects | jq -r '.[] | .project_name'
+          echo "::set-output name=projects::${$projects}"
+
+#Описание джобы build_and_test
+  build_and_test:
+    runs-on: ${{ inputs.runner }}
+    needs: [get_projects]
+
+    strategy:
+      matrix:
+        project: ${{ fromJson(needs.get_projects.outputs.projects) }}
+
+    steps:
+      #checkout - собственно чекаут репозитория
+      - name: Checkout source
+        uses: actions/checkout@v2
+
+      #Шаг логина в наш реджестри в Azure
+      - name: Login to ACR
+        uses: docker/login-action@v1
+        with:
+          registry: ${{ secrets.CONTAINER_REGISTRY }}
+          username: ${{ secrets.DOCKER_LOGIN }}
+          password: ${{ secrets.DOCKER_PASS }}
+
+      #Шаг установки buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+        with:
+          driver: docker
+
+      #Шаг сборки образа (с пушем)
+      - name: Docker build
+        id: docker_build
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ${{ matrix.project.dockerfile }}
+          build-args: |
+            build_number=${{ matrix.project.build_number }}
+            GITHUB_TOKEN=${{ secrets.GH_TOKEN }}
+            GITHUB_USERNAME=sravni
+            GITHUB_NPM_TOKEN=${{ secrets.GH_TOKEN }}
+          push: ${{ inputs.with_push }}
+          tags: "${{ matrix.project.image_name }}"
