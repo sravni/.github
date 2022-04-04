@@ -146,6 +146,7 @@ jobs:
       - name: Check if image exist
         run: |
           inspect_result=$(docker inspect ${{ matrix.project.image_name }} > /dev/null 2>&1; echo $?)
+          echo inspect_result
           if [ inspect_result -eq 1 ] 
           then 
             echo "image_exist=false" >> $GITHUB_ENV 
