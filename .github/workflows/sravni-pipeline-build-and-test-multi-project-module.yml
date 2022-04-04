@@ -90,11 +90,11 @@ jobs:
             if [ "${{ inputs.is_stage }}" = "true" ]
               then build_number="$build_number-qa"
             fi
-            image_name="${project_name}:${build_number}"
+            image_version="${build_number}"
           else
-            image_name="${project_name}:${{ inputs.image_version }}"
+            image_version="${{ inputs.image_version }}"
           fi
-          echo "image_name=$image_name" >> $GITHUB_ENV
+          echo "image_version=$image_version" >> $GITHUB_ENV
       
       #project_name - имя проекта, определяется из директории c Dockerfile
       #project_path - пут к директории Dockerfile
@@ -107,12 +107,13 @@ jobs:
             do
               project_name=$(echo $p | sed -E 's|(.*/\|)(.*)/Dockerfile$|\2|' | tr '[:upper:]' '[:lower:]' | sed 's|\.|-|g')
               project_path=$(echo $p | sed -E 's|(.*)/Dockerfile$|\1|')
+              image_name="${project_name}:${{ env.image_version }}"
               echo "{ \"project_name\":\"$project_name\", \
                       \"dockerfile\":\"$p\", \
                       \"project_path\":\"$project_path\", \
                       \"branch\":\"${{ env.branch }}\", \
                       \"build_number\":\"$build_number\", \
-                      \"image_name\":\"${{ env.image_name }}\" }"
+                      \"image_name\":\"$image_name\" }"
             done | jq -s -r -c '.')
           echo $projects
           echo Собираем следующие проекты:
