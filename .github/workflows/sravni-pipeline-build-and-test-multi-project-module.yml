@@ -145,25 +145,25 @@ jobs:
       
       - name: Check if image exist
         run: |
-          image_not_exist=$(docker inspect ${{ matrix.project.image_name }} > /dev/null 2>&1; echo $?)
-          if [ $image_not_exist -eq 1 ] 
+          inspect_result=$(docker inspect ${{ matrix.project.image_name }} > /dev/null 2>&1; echo $?)
+          if [ inspect_result -eq 1 ] 
           then 
-            echo "is_image_exist=false" >> $GITHUB_ENV 
-            echo "Образ ${{ matrix.project.image_name }} уже cуществует"
+            echo "image_exist=false" >> $GITHUB_ENV 
           else 
-            echo "is_image_exist=true" >> $GITHUB_ENV
+            echo "image_exist=true" >> $GITHUB_ENV
+            echo "Образ ${{ matrix.project.image_name }} уже cуществует"
           fi
           
       #Шаг установки buildx
       - name: Set up Docker Buildx
-        if: ${{ env.is_image_exist }}
+        if: ${{ env.image_exist == 'false' }}
         uses: docker/setup-buildx-action@v1
         with:
           driver: docker
 
       #Шаг сборки образа (с пушем)
       - name: Docker build
-        if: ${{ env.is_image_exist }}
+        if: ${{ env.image_exist == 'false' }}
         uses: docker/build-push-action@v2
         with:
           context: .
