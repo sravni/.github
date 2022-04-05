@@ -18,6 +18,12 @@ on:
         required: true
       QA_API_URL:
         required: true
+      YANDEX_KEY:
+        required: true
+      YANDEX_CLOUD_ID:
+        required: true
+      YANDEX_FOLDER_ID:
+        required: true  
     outputs:
       namespace:
         description: "Собранные проекты"
