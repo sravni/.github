@@ -1,4 +1,4 @@
-name: build and test multi project module
+name: Build and test multi project module
 
 on:
   workflow_call:
@@ -56,7 +56,7 @@ env:
 jobs:
   #Описание Джобы get_projects и ее шага, в котором происходит составление
   #списка проектов для сборки.
-  #| project_name | dockerfile | project_path | branch | build_number | image_name |
+  #| project_name | dockerfile | project_path | build_number | image_name | image_version |
   get_projects:
     runs-on: ubuntu-20.04
 
@@ -66,21 +66,6 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v2
-
-      #Шаги проверки ивента и выставления имени бранчи в зависимости от него
-      - name: Get branch name (merge)
-        if: github.event_name != 'pull_request'
-        run: |
-          branch=$(echo ${GITHUB_REF#refs/heads/} | tr / -)
-          if [ $branch == "yandex" ]; then branch="master";fi
-          echo "branch=$branch" >> $GITHUB_ENV
-
-      - name: Get branch name (pull request)
-        if: github.event_name == 'pull_request'
-        run: |
-          branch=$(echo ${GITHUB_HEAD_REF} | tr / -)
-          if [ $branch == "yandex" ]; then branch="master";fi
-          echo "branch=$branch" >> $GITHUB_ENV
 
       - name: Select image version
         run: |
@@ -111,9 +96,9 @@ jobs:
               echo "{ \"project_name\":\"$project_name\", \
                       \"dockerfile\":\"$p\", \
                       \"project_path\":\"$project_path\", \
-                      \"branch\":\"${{ env.branch }}\", \
                       \"build_number\":\"$build_number\", \
-                      \"image_name\":\"$image_name\" }"
+                      \"image_name\":\"$image_name\" \
+                      \"image_version\":\"$image_version\" }"
             done | jq -s -r -c '.')
           echo $projects
           echo Собираем следующие проекты:

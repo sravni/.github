@@ -1,0 +1,37 @@
+name: Get branch name
+
+on:
+  workflow_call:
+    outputs:
+      branch_name:
+        description: "Назавние ветки в рамках которой выполняется workflow"
+        value: ${{ jobs.get_branch_name.outputs.branch_name }}
+
+jobs:
+  get_branch_name:
+    runs-on: ubuntu-20.04
+
+    outputs:
+      projects: ${{ steps.out_branch_name.outputs.projects }}
+
+    steps:
+      #Шаги проверки ивента и выставления имени бранчи в зависимости от него
+      - name: Get branch name (merge)
+        if: github.event_name != 'pull_request'
+        run: |
+          branch=$(echo ${GITHUB_REF#refs/heads/} | tr / -)
+          if [ $branch == "yandex" ]; then branch="master";fi
+          echo "branch=$branch" >> $GITHUB_ENV
+
+      - name: Get branch name (pull request)
+        if: github.event_name == 'pull_request'
+        run: |
+          branch=$(echo ${GITHUB_HEAD_REF} | tr / -)
+          if [ $branch == "yandex" ]; then branch="master";fi
+          echo "branch=$branch" >> $GITHUB_ENV
+          
+      - id: out_branch_name
+        run: |
+          echo "::set-output name=branch_name::${{ env.branch }}"
+
+   
