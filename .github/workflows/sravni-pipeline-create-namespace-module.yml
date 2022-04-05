@@ -27,7 +27,7 @@ on:
     outputs:
       namespace:
         description: "Собранные проекты"
-        value: ${{ jobs.get_namespace.outputs.namespace }}
+        value: ${{ jobs.get_namespace_name.outputs.namespace }}
       
 env:
   TEAM: ${{ inputs.team }}
@@ -60,7 +60,7 @@ jobs:
 
       #Шаг проверки на валидность
       - name: Get namespace name
-        id: get_namespace
+        id: get_namespace_name
         run: |
           echo "Namespace is ${{ inputs.namespace }}"
           namespace=$(echo ${{ inputs.namespace }} | awk -F '/' '{print $NF}')
