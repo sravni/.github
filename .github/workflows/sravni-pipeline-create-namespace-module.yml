@@ -11,7 +11,11 @@ on:
         description: 'Имя команды'
         required: true
         type: string
-    secrets: 
+    secrets:
+      GH_TOKEN:
+        required: true
+      QAENV_REF:
+        required: true
       QA_API_URL:
         required: true
     outputs:
