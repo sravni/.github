@@ -49,9 +49,6 @@ on:
         description: "Собранные проекты"
         value: ${{ jobs.get_projects.outputs.projects }}
 
-env:
-  image_pull_secret_acr: sravni-azurecr-io
-
 #Описание Джобов воркфлоу
 jobs:
   #Описание Джобы get_projects и ее шага, в котором происходит составление
@@ -79,7 +76,7 @@ jobs:
           else
             image_version="${{ inputs.image_version }}"
           fi
-          echo "image_version=$image_version" >> $GITHUB_ENV
+          echo "IMAGE_VERSION=$image_version" >> $GITHUB_ENV
       
       #project_name - имя проекта, определяется из директории c Dockerfile
       #project_path - пут к директории Dockerfile
@@ -92,13 +89,13 @@ jobs:
             do
               project_name=$(echo $p | sed -E 's|(.*/\|)(.*)/Dockerfile$|\2|' | tr '[:upper:]' '[:lower:]' | sed 's|\.|-|g')
               project_path=$(echo $p | sed -E 's|(.*)/Dockerfile$|\1|')
-              image_name="${project_name}:${{ env.image_version }}"
+              image_name="${project_name}:${{ env.IMAGE_VERSION }}"
               echo "{ \"project_name\":\"$project_name\", \
                       \"dockerfile\":\"$p\", \
                       \"project_path\":\"$project_path\", \
                       \"build_number\":\"$build_number\", \
                       \"image_name\":\"$image_name\", \
-                      \"image_version\":\"$image_version\" }"
+                      \"image_version\":\"${{ env.IMAGE_VERSION }}\" }"
             done | jq -s -r -c '.')
           echo $projects
           echo Собираем следующие проекты:
@@ -133,22 +130,22 @@ jobs:
           inspect_result=$(docker manifest inspect "${{ secrets.CONTAINER_REGISTRY }}/${{ matrix.project.image_name }}" > /dev/null 2>&1; echo $?)
           if [ $inspect_result -eq 1 ] 
           then 
-            echo "image_exist=false" >> $GITHUB_ENV 
+            echo "IMAGE_EXIST=false" >> $GITHUB_ENV 
           else 
-            echo "image_exist=true" >> $GITHUB_ENV
+            echo "IMAGE_EXIST=true" >> $GITHUB_ENV
             echo "Образ ${{ matrix.project.image_name }} уже cуществует"
           fi
           
       #Шаг установки buildx
       - name: Set up Docker Buildx
-        if: ${{ env.image_exist == 'false' }}
+        if: ${{ env.IMAGE_EXIST == 'false' }}
         uses: docker/setup-buildx-action@v1
         with:
           driver: docker
 
       #Шаг сборки образа (с пушем)
       - name: Docker build
-        if: ${{ env.image_exist == 'false' }}
+        if: ${{ env.IMAGE_EXIST == 'false' }}
         uses: docker/build-push-action@v2
         with:
           context: .

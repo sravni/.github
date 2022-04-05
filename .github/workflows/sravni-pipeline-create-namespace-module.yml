@@ -20,8 +20,7 @@ on:
         value: ${{ jobs.get_namespace.outputs.namespace }}
       
 env:
-  team: ${{ inputs.team }}
-  namespace: ${{ inputs.namespace }}
+  TEAM: ${{ inputs.team }}
   
 jobs:
   create-namespace:
@@ -31,8 +30,8 @@ jobs:
       - name: Get namespace name
         id: get_namespace
         run: |
-          echo "Namespace is ${{ env.namespace }}"
-          namespace=$(echo ${{ env.namespace }} | awk -F '/' '{print $NF}')
+          echo "Namespace is ${{ inputs.namespace }}"
+          namespace=$(echo ${{ inputs.namespace }} | awk -F '/' '{print $NF}')
           namespace=${namespace,,}
           regexp='^|[a-z|]|[-a-z0-9|]{1,12}|[a-z0-9|]$'
           if echo $namespace | grep -Eq $regexp; then
@@ -41,51 +40,51 @@ jobs:
             echo "Only: letters, numbers, no more than 14 characters";
             exit 1;
           fi
-          echo "namespace=$namespace" >> $GITHUB_ENV
+          echo "NAMESPACE=$namespace" >> $GITHUB_ENV
           echo "::set-output name=namespace::$namespace"
       #Шаг проверки наличия уже созданного неймспейса
       - name: Check if namespace already exists
         run: |
           RESPONSE_FILE=/tmp/response.txt
           qa_envs_route="${{ secrets.QA_API_URL }}/environments"
-          get_response=$(curl -X GET -so "${RESPONSE_FILE}" -w "%{http_code}" ${qa_envs_route}/${{ env.namespace }} \
+          get_response=$(curl -X GET -so "${RESPONSE_FILE}" -w "%{http_code}" ${qa_envs_route}/${{ env.NAMESPACE }} \
           --cookie "${{ secrets.YA_AUTH_COOKIE_NAME_VALUE }}" \
           -H "accept: application/json")
           namespace_exists=0
           if [ $get_response == "200" ]; then
-              echo "Environment ${{ env.namespace }} already exists"
+              echo "Environment ${{ env.NAMESPACE }} already exists"
               namespace_exists=1
           elif [ $get_response != "404" ]; then
               echo "Server returned:"
               cat "${RESPONSE_FILE}" && exit 1
           fi
-          echo "namespace_exists=${namespace_exists}" >> $GITHUB_ENV
+          echo "NAMESPACE_EXISTS=${namespace_exists}" >> $GITHUB_ENV
 
       #Шаг создания неймспейса в qa-dashboard, необходимых ресурсов и ключей identity
       - name: Create namespace
-        if: ${{ env.namespace_exists == 0 }}
+        if: ${{ env.NAMESPACE_EXISTS == 0 }}
         run: |
           RESPONSE_FILE=/tmp/response.txt.txt
           qa_envs_route="${{ secrets.QA_API_URL }}/environments"
-          env_name=${{ env.namespace }}
+          env_name=${{ env.NAMESPACE }}
           put_response=$(curl -X PUT \
             -so "${RESPONSE_FILE}" \
             -w "%{http_code}" $qa_envs_route \
             -H "accept: application/json" \
             -H "Content-Type: application/json" \
             --cookie "${{ secrets.YA_AUTH_COOKIE_NAME_VALUE }}" \
-            -d "{ \"createdBy\": \"${{ github.actor }}\", \"kind\": \"QA\", \"name\": \"${{ env.namespace }}\", \"team\": \"${{ env.team }}\"}")
+            -d "{ \"createdBy\": \"${{ github.actor }}\", \"kind\": \"QA\", \"name\": \"${{ env.NAMESPACE }}\", \"team\": \"${{ env.TEAM }}\"}")
           if [ "${put_response}" != "200" ]; then
-            echo "Cannot create environment ${{ env.namespace }}"
+            echo "Cannot create environment ${{ env.NAMESPACE }}"
             cat "${RESPONSE_FILE}" && exit 1
           fi
-          echo "Environment ${{ env.namespace }} has been created"
-          export EnvironmentName=${{ env.namespace }}
+          echo "Environment ${{ env.NAMESPACE }} has been created"
+          export EnvironmentName=${{ env.NAMESPACE }}
           cat ./qaenv/k8s-manifests/new-namespace-yandex.yml | envsubst | kubectl apply -f -
           echo "Manifest has been applied"
           /bin/bash ./qaenv/scripts/identity-key/new-identity-key.sh
           echo "Identity key has been generated"
-          kubectl -n ${{ env.namespace }} create secret generic identity-key --from-file ./identity.pfx
+          kubectl -n ${{ env.NAMESPACE }} create secret generic identity-key --from-file ./identity.pfx
           echo "Identity key secret has been created"
-          kubectl -n ${{ env.namespace }} create secret generic labs-identity-key --from-file ./identity.pfx
+          kubectl -n ${{ env.NAMESPACE }} create secret generic labs-identity-key --from-file ./identity.pfx
           echo "Labs identity key secret has been created"

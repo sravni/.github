@@ -11,10 +11,6 @@ on:
         description: "Название ветки"
         required: true
         type: string
-      team:
-        description: 'team name'
-        required: true
-        type: string
       projects:
         description: "JSON объект со списком проектов для публикации"
         required: true
@@ -39,10 +35,9 @@ on:
 
 #Переменные окружения !!!!!!!!ВАЖНО!!!!!!!!! необходимо прописать свою команду
 env:
-  team: ${{ inputs.team }}
-  namespace: ${{ inputs.namespace }}
-  branch: ${{ inputs.branch_name }}
-  image_pull_secret_acr: sravni-azurecr-io
+  NAMESPACE: ${{ inputs.namespace }}
+  BRANCH: ${{ inputs.branch_name }}
+  IMAGE_PULL_SECRET_ACR: sravni-azurecr-io
 
 #Описание Джобов воркфлоу
 jobs:
@@ -110,12 +105,12 @@ jobs:
           helm dependencies update
           werf helm upgrade --install \
             "$project_name" \
-            --namespace "${{ env.namespace }}" \
+            --namespace "${{ env.NAMESPACE }}" \
             --timeout 10m \
             --wait \
             --set global.image.repository="${{ secrets.CONTAINER_REGISTRY }}/${{ matrix.project.project_name }}" \
             --set global.image.tag="${{ matrix.project.image_version }}" \
-            --set global.imagePullSecrets[0]="${{ env.image_pull_secret_acr }}" \
+            --set global.imagePullSecrets[0]="${{ env.IMAGE_PULL_SECRET_ACR }}" \
             --set cronjobs.defaults.resources.enabled=false \
             --set resources.enabled=false \
             -f ../.././"${{ matrix.project.project_path }}"/.k8s/ya-stage.yaml \
@@ -133,7 +128,7 @@ jobs:
           project_name="${{ matrix.project.project_name }}"
           echo "DEPLOY_STATE=successful" >> $GITHUB_ENV
           qa_deps_route="${{ secrets.QA_API_URL }}/deployments"
-          RESPONSE_FILE=/tmp/${{ env.build_number }}.txt
+          RESPONSE_FILE=/tmp/response.txt
           put_response=$(curl -X PUT \
             -so "${RESPONSE_FILE}" \
             -w "%{http_code}" "${qa_deps_route}" \
@@ -141,9 +136,9 @@ jobs:
             -H "Content-Type: application/json" \
             --cookie "${{ secrets.YA_AUTH_COOKIE_NAME_VALUE }}" \
             -d "{ \
-               \"Branch\": \"${{ env.branch }}\", \
+               \"Branch\": \"${{ env.BRANCH }}\", \
                \"Project\": \"$project_name\", \
-               \"Stand\": \"${{ env.namespace }}\", \
+               \"Stand\": \"${{ env.NAMESPACE }}\", \
                \"TriggeredBy\": \"${{ github.actor }}\", \
                \"VcsNumber\": \"${{ matrix.project.image_version }}\", \
                \"buildId\": ${{ github.run_id }} \
