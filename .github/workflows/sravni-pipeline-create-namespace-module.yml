@@ -30,6 +30,20 @@ jobs:
   create-namespace:
     runs-on: ubuntu-latest
     steps:
+        - name: Install Yandex cli
+          run: |
+            wget -P tmp/ https://storage.yandexcloud.net/yandexcloud-yc/release/0.85.0/linux/amd64/yc
+            chmod +x tmp/yc
+            mv tmp/yc /usr/local/bin/yc
+            echo ${{ secrets.YANDEX_KEY }} | base64 --decode > tmp/key.json
+            yc config profile create github
+            yc config set service-account-key tmp/key.json
+            yc managed-kubernetes \
+              cluster get-credentials \
+              --cloud-id ${{ secrets.YANDEX_CLOUD_ID }} \
+              --folder-id ${{ secrets.YANDEX_FOLDER_ID }} \
+              yc-stage-k8s --external
+      
       - name: Checkout qaenv helpers
         uses: actions/checkout@v2
         with:
@@ -76,7 +90,7 @@ jobs:
       - name: Create namespace
         if: ${{ env.NAMESPACE_EXISTS == 0 }}
         run: |
-          RESPONSE_FILE=/tmp/response.txt.txt
+          RESPONSE_FILE=/tmp/response.txt
           qa_envs_route="${{ secrets.QA_API_URL }}/environments"
           env_name=${{ env.NAMESPACE }}
           put_response=$(curl -X PUT \
