@@ -152,7 +152,6 @@ jobs:
           else 
             echo "image_exist=true" >> $GITHUB_ENV
             echo "Образ ${{ matrix.project.image_name }} уже cуществует"
-            docker pull "${{ matrix.project.image_name }}"
           fi
           
       #Шаг установки buildx
