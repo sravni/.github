@@ -27,7 +27,7 @@ on:
     outputs:
       namespace:
         description: "Собранные проекты"
-        value: ${{ jobs.get_namespace_name.outputs.namespace }}
+        value: ${{ jobs.create-namespace.outputs.namespace }}
       
 env:
   TEAM: ${{ inputs.team }}
@@ -35,6 +35,10 @@ env:
 jobs:
   create-namespace:
     runs-on: ubuntu-latest
+    
+    outputs:
+      namespace: ${{ steps.get_namespace_name.outputs.namespace }}
+    
     steps:
       - name: Install Yandex cli
         run: |
