@@ -97,7 +97,7 @@ jobs:
                       \"dockerfile\":\"$p\", \
                       \"project_path\":\"$project_path\", \
                       \"build_number\":\"$build_number\", \
-                      \"image_name\":\"$image_name\" \
+                      \"image_name\":\"$image_name\", \
                       \"image_version\":\"$image_version\" }"
             done | jq -s -r -c '.')
           echo $projects
