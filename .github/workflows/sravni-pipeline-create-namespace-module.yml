@@ -26,6 +26,14 @@ jobs:
   create-namespace:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout qaenv helpers
+        uses: actions/checkout@v2
+        with:
+          repository: sravni/qa-environment-helpers
+          path: qaenv
+          token: ${{ secrets.GH_TOKEN }}
+          ref: ${{ secrets.QAENV_REF }}
+
       #Шаг проверки на валидность
       - name: Get namespace name
         id: get_namespace

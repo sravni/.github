@@ -80,14 +80,6 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v2
 
-      - name: Checkout qaenv helpers
-        uses: actions/checkout@v2
-        with:
-          repository: sravni/qa-environment-helpers
-          path: qaenv
-          token: ${{ secrets.GH_TOKEN }}
-          ref: ${{ secrets.QAENV_REF }}
-
       - name: Checkout helm repo
         uses: actions/checkout@v2
         with:
