@@ -87,10 +87,18 @@ jobs:
           path: charts
           token: ${{ secrets.GH_TOKEN }}
           ref: '${{ secrets.CHARTS_REF }}'
+      
+      - name: Define chart directory
+        run: |
+          if echo "${{ matrix.project.project_name }}" | grep -iqF "job" 
+          then chart_directory="./charts/cronjobs/"
+          else chart_directory="./charts/generic-application/"
+          fi
+          echo "CHART_DIRECTORY=$chart_directory" >> $GITHUB_ENV
 
       #Шаг деплоя в стейдж
       - name: Publish
-        working-directory: ./charts/generic-application/
+        working-directory: ${{ env.CHART_DIRECTORY }}
         run: |
           project_name="${{ matrix.project.project_name }}"
           echo "Trying to deploy $project_name..."
