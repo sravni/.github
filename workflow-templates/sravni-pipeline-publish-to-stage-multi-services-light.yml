@@ -30,3 +30,4 @@ jobs:
       YANDEX_CLOUD_ID: ${{ secrets.YANDEX_CLOUD_ID }}
       YANDEX_FOLDER_ID: ${{ secrets.YANDEX_FOLDER_ID }}
       QA_API_URL: ${{ secrets.QA_API_URL }}
+      QAENV_REF: ${{ secrets.QAENV_REF }}
