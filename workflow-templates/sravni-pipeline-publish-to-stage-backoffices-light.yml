@@ -16,7 +16,7 @@ on:
 #Описание Джобов воркфлоу
 jobs:
   publish_to_stage:
-    uses: sravni/.github/.github/workflows/sravni-pipeline-publish-to-stage-backoffices-base-module.yml@tcpa-940
+    uses: sravni/.github/.github/workflows/sravni-pipeline-publish-to-stage-backoffices-base-module.yml@master
     with: 
       target_namespace: ${{ github.event.inputs.target_namespace }}
       team: <<Тут нужно писать имя своей команды. Такое же, как в кибане!!!>>
