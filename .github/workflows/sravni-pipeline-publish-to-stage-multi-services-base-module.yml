@@ -31,6 +31,8 @@ on:
         required: true
       QA_API_URL:
         required: true
+      QAENV_REF:
+        required: true
 
 #Переменные окружения !!!!!!!!ВАЖНО!!!!!!!!! необходимо прописать свою команду
 env:
