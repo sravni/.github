@@ -1,0 +1,74 @@
+name: Rollback-to-Prod-Mono
+
+#Ручной запуск
+on:
+  workflow_dispatch:
+
+#Переменные окружения !!!!!!!!ВАЖНО!!!!!!!!! необходимо прописать свою команду
+env:
+  team: <team_name>
+
+#Описание Джобов воркфлоу
+jobs:
+#Описание джобы service-info
+  service-info:
+    #runs-on указывает какой раннер будет использоваться для запуска данной Джобы
+    #ubuntu-latest - офф раннер гитхаба на основе дистрибутива ubuntu
+    #раннеры на основе других дистрибутивов можно найти в следующей доке:
+    #https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources
+    #                           !!!!!!!!!!!!ВАЖНО!!!!!!!!!!
+    #sravni_ycloud_stage - наш раннер, необходимо указывать при наличии интегротестов
+    #                          !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    runs-on: ubuntu-latest
+
+    outputs:
+      service_name: ${{ env.service_name }}
+
+    steps:
+      #checkout - собственно чекаут репозитория
+      - name: Checkout source
+        uses: actions/checkout@v2
+
+      #Шаг получения необходимых переменных для работы пайплайна
+      #service_name - получается из имени репозитория, например osago-frontend
+      - name: Set build vars to GITHUB_ENV
+        run: |
+          service_name=$(basename `git rev-parse --show-toplevel`)
+          echo "service_name=$service_name" >> $GITHUB_ENV
+
+  rollback:
+    runs-on: ubuntu-latest
+    needs: [ service-info ]
+
+    env:
+      service_name: ${{ needs.service-info.outputs.service_name }}
+
+    steps:
+      - name: Install Helm
+        uses: azure/setup-helm@v1
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      #Шаг отката в прод Azure
+      - name: Rollback
+        working-directory: ./charts/generic-application/
+        run: |
+          echo "Deploying service ${{ env.service_name }}..."
+          az aks get-credentials --admin \
+            --resource-group sravni \
+            --name az-prod-k8s
+
+          helm rollback \
+            "${{ env.service_name }}" \
+            --namespace sravni \
+            --force \
+            --wait \
+            --timeout 10m
+          if [ $? != 0 ]; then
+            echo "Rollback failed, see logs" && exit 1
+          fi
+          echo "Done"
+
