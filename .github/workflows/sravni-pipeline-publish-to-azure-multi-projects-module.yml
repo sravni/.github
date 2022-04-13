@@ -1,0 +1,107 @@
+name: Publish to azure projects base module
+
+on:
+  workflow_call:
+    inputs:
+      projects:
+        description: "JSON объект со списком проектов для публикации"
+        required: true
+        type: string
+    secrets: 
+      GH_TOKEN:
+        required: true
+      CONTAINER_REGISTRY:
+        required: true
+      DOCKER_LOGIN:
+        required: true
+      DOCKER_PASS:
+        required: true
+      AZURE_CREDENTIALS:
+        required: true
+      CHARTS_REF:
+        required: true
+      AZURE_REDIS_URI:
+        required: true
+
+#Переменные окружения !!!!!!!!ВАЖНО!!!!!!!!! необходимо прописать свою команду
+env:
+  NAMESPACE: ${{ inputs.namespace }}
+  BRANCH: ${{ inputs.branch_name }}
+  IMAGE_PULL_SECRET_ACR: sravni-azurecr-io
+
+#Описание Джобов воркфлоу
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    #Все шаги будут примерняться на матрице, полученной в предыдущей джобе
+    strategy:
+      matrix:
+        project: ${{ fromJson(inputs.projects) }}
+
+    steps:
+
+      - name: Install werf CLI
+        uses: werf/actions/install@v1.2
+
+      - name: Install Helm
+        uses: azure/setup-helm@v1
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Login to ACR
+        uses: docker/login-action@v1
+        with:
+          registry: ${{ secrets.CONTAINER_REGISTRY }}
+          username: ${{ secrets.DOCKER_LOGIN }}
+          password: ${{ secrets.DOCKER_PASS }}
+
+      - name: Checkout source
+        uses: actions/checkout@v2
+
+      - name: Checkout helm repo
+        uses: actions/checkout@v2
+        with:
+          repository: sravni/helm-charts
+          path: charts
+          token: ${{ secrets.GH_TOKEN }}
+          ref: '${{ secrets.CHARTS_REF }}'
+
+      - name: Define chart directory
+        run: |
+          if echo "${{ matrix.project.project_name }}" | grep -iqF "job" 
+          then chart_directory="./charts/cronjobs/"
+          else chart_directory="./charts/generic-application/"
+          fi
+          echo "CHART_DIRECTORY=$chart_directory" >> $GITHUB_ENV
+
+      #Шаг деплоя в прод Azure
+      - name: Publish
+        working-directory: ${{ env.CHART_DIRECTORY }}
+        run: |
+          project_name="${{ matrix.project.project_name }}"
+          echo "Trying to deploy $project_name..."
+          az aks get-credentials --admin \
+            --resource-group sravni \
+            --name az-prod-k8s
+          helm dependencies update
+          werf helm upgrade --install \
+            "$project_name" \
+            --namespace sravni \
+            --atomic \
+            --timeout 10m \
+            --set global.image.repository="${{ secrets.CONTAINER_REGISTRY }}/${{ matrix.project.project_name }}" \
+            --set global.image.tag="${{ matrix.project.image_version }}" \
+            --set global.imagePullSecrets[0]="${{ env.IMAGE_PULL_SECRET_ACR }}" \
+            --set azureRedis.uri=${{ secrets.AZURE_REDIS_URI }} \
+            --set linkerd.enabled=false \
+            -f ../.././"${{ matrix.project.project_path }}"/.k8s/azure.yaml \
+            ./ \
+            2>&1
+          if [ $? != 0 ]; then
+            echo "Publish failed, see logs" && exit 1
+          fi
+          echo "Done"

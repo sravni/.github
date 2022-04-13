@@ -32,10 +32,10 @@ on:
         required: true
       QA_API_URL:
         required: true
+      CHARTS_REF:
+        required: true
 
-#Переменные окружения !!!!!!!!ВАЖНО!!!!!!!!! необходимо прописать свою команду
 env:
-  NAMESPACE: ${{ inputs.namespace }}
   BRANCH: ${{ inputs.branch_name }}
   IMAGE_PULL_SECRET_ACR: sravni-azurecr-io
 
