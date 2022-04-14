@@ -1,0 +1,5 @@
+{
+    "name": "Sravni pipeline publish to stage php by sha",
+    "description": "PHP repo publish to stage by sha workflow template.",
+    "iconName": "sravni-pipeline-publish-to-stage"
+}
