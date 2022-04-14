@@ -1,0 +1,142 @@
+name: Publish-to-Stage
+
+# Для работы шаблону требуется наличие следующих файлов и директорий в публикуемых проектах
+# Dockerfile для сборки docker образа
+# .k8s/ya-stage.yaml манифест для публикации в кубер
+#
+# Примеры:
+# ./Sravni.*/Dockerfile
+# ./Sravni.*/.k8s/ya-stage.yaml
+# также возможны такие варианты
+# ./{folder}/Sravni.*/...
+#
+# Для удобства и возможности публиковать отдельно проекты определенного типа с помощью ручного вызова флоу,
+# добавлены следующие маски путей для поиска проектов:
+# Sravni.*.Service
+# Sravni.*.Backoffice
+# Sravni.*.Job
+
+
+on:
+  push:
+    branches:
+      - "*"
+  workflow_dispatch:
+    inputs:
+      namespace:
+        description: "Namespace для публикации(если такого неймсапейса не сущестувует, то создается новвый)"
+        required: false #По умолчанию берется название выбранной ветки
+        type: string
+      project_type:
+        description: 'Тип проекта( путь к проекту с использованием wildcards)'
+        required: false
+        default: 'Sravni.*'
+        type: choice
+        options:
+          - 'Sravni.*' #Публикует все проекты в которых для пути 'Sravni.*' есть Dockerfile
+          - 'Sravni.*.Service'
+          - 'Sravni.*.Backoffice'
+          - 'Sravni.*.Job'
+
+#Переменные окружения !!!!!!!!ВАЖНО!!!!!!!!! необходимо прописать свою команду
+env:
+  TEAM: <<Тут нужно написать имя своей команды. Такое же, как в кибане!!!>>
+
+jobs:
+  get_branch_name:
+    uses: sravni/.github/.github/workflows/sravni-pipeline-get-branch-name-module.yml@PE-984
+  
+  validate_input_params:
+    needs: [ get_branch_name ]
+    runs-on: ubuntu-latest
+    outputs:
+      only_build_and_test: ${{ steps.validate_branch.outputs.only_build_and_test }}
+      should_push: ${{ steps.validate_branch.outputs.should_push }}
+      team: ${{ steps.env-vars.outputs.team }}
+    env:
+      BRANCH: ${{ needs.get_branch_name.outputs.branch_name }}
+    steps:
+      #Нельзя публиковать в namespace master любые другие ветки
+      - name: Validate namespace
+        run: |
+          if echo "${{ github.event.inputs.namepsace }}" | grep -qi 'master' && ! echo "${{ env.BRANCH }}" | grep -qi 'master'
+          then 
+            echo "::error::В namespace master может публиковатся только ветка master" && exit 1
+          fi
+      #Публикация и создание namespace возможно только в случае пуша в master или запуска флоу в ручном режиме,
+      #    в остальных случаях запускается только сборка с тестами
+      - id: validate_branch
+        name: Validate branch name
+        run: |
+          only_build_and_test="false"
+          should_push="true"
+          if [ "${{ github.event_name }}" != "workflow_dispatch" ] && ! echo "${{ env.BRANCH }}" | grep -qi 'master'
+          then  
+            echo "Для ветки ${{ env.BRANCH }} запускаем только сборку с тестами"
+            only_build_and_test="true"
+            should_push="false"
+          fi
+          echo "::set-output name=only_build_and_test::$only_build_and_test" 
+          echo "::set-output name=should_push::$should_push"
+      # Из-за не возможности использовать в inputs джобы таких выражений {{ env.TEAM }}, 
+      # передаем глобальные env через output джобы
+      - id: env-vars
+        name: Output environment variables
+        run: |
+          echo "::set-output name=team::${{ env.TEAM }}"
+
+  #Подготавливает список проектов для последующей сборки, тестов и передачи в output.
+  #более подробное описание можно посмотреть по пути в uses
+  build_and_test:
+    needs: [validate_input_params]
+    uses: sravni/.github/.github/workflows/sravni-pipeline-build-and-test-multi-project-module.yml@PE-984
+    with:
+      is_stage: true
+      with_push: ${{ needs.validate_input_params.outputs.should_push == 'true'}}
+      dockerfile_path_mask: ${{ github.event.inputs.project_type }}
+    secrets:
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      GITHUB_NPM_TOKEN: ${{ secrets.GITHUB_NPM_TOKEN }}
+      CONTAINER_REGISTRY: ${{ secrets.CONTAINER_REGISTRY }}
+      DOCKER_LOGIN: ${{ secrets.DOCKER_LOGIN }}
+      DOCKER_PASS: ${{ secrets.DOCKER_PASS }}
+  
+  #Cоздает namespace в yandex stage если еще не создан.
+  #Более подробное описание можно посмотреть по пути в uses
+  create_namespace:
+    if: ${{ needs.validate_input_params.outputs.only_build_and_test == 'false' }}
+    needs: [validate_input_params, get_branch_name, build_and_test]
+    uses: sravni/.github/.github/workflows/sravni-pipeline-create-namespace-module.yml@PE-984
+    with:
+      team: ${{ needs.validate_input_params.outputs.team }}
+      namespace: ${{ github.event.inputs.namespace || needs.get_branch_name.outputs.branch_name }}
+    secrets:
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      QAENV_REF: ${{ secrets.QAENV_REF }}
+      QA_API_URL: ${{ secrets.QA_API_URL }}
+      YANDEX_KEY: ${{ secrets.YANDEX_KEY }}
+      YANDEX_CLOUD_ID: ${{ secrets.YANDEX_CLOUD_ID }}
+      YANDEX_FOLDER_ID: ${{ secrets.YANDEX_FOLDER_ID }}
+  
+  #Публикует собранные проекты в кубер yandex stage, для работы требуется список найденных
+  #и собранных проектов из джобы build_and_test.
+  #Более подробное описание можно посмотреть по пути в uses
+  publish:
+    needs: [get_branch_name, create_namespace, build_and_test]
+    uses: sravni/.github/.github/workflows/sravni-pipeline-publish-to-stage-multi-projects-module.yml@PE-984
+    with:
+      branch_name: ${{ needs.get_branch_name.outputs.branch_name }}
+      namespace: ${{ needs.create_namespace.outputs.namespace }}
+      projects: ${{ needs.build_and_test.outputs.projects }}
+    secrets:
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      CONTAINER_REGISTRY: ${{ secrets.CONTAINER_REGISTRY }}
+      DOCKER_LOGIN: ${{ secrets.DOCKER_LOGIN }}
+      DOCKER_PASS: ${{ secrets.DOCKER_PASS }}
+      YANDEX_KEY: ${{ secrets.YANDEX_KEY }}
+      YANDEX_CLOUD_ID: ${{ secrets.YANDEX_CLOUD_ID }}
+      YANDEX_FOLDER_ID: ${{ secrets.YANDEX_FOLDER_ID }}
+      QA_API_URL: ${{ secrets.QA_API_URL }}
+      CHARTS_REF: ${{ secrets.CHARTS_REF }}
+  
+ 
