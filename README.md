@@ -25,7 +25,7 @@
 - Publish to Stage (Monorepo, Multirepo, Jobs)
 - Publish to Prod (Monorepo, Multirepo, Jobs)
 ####Дополнительные workflow для Multirepo:
-- [Publish to Stage](https://github.com/sravni/.github/blob/PE-984/workflow-templates/sravni-pipeline-publish-to-stage-multi-projects.yml) для всех типов проектов (Service, Backoffice, job), сборка и тесты на каждый комит (кроме мастера) проходят в нем же
+- [Publish to Stage](https://github.com/sravni/.github/blob/PE-984/workflow-templates/sravni-pipeline-publish-to-stage-multi-projects.yml) для всех типов проектов (Service, Backoffice, job), сборка и тесты на каждый push (кроме push`а в мастер) проходят в нем же. Также есть возможность запускать workflow в ручном режиме с указанием namespace и типа проекта
 - [Publish to Prod](https://github.com/sravni/.github/blob/PE-984/workflow-templates/sravni-pipeline-publish-to-prod-multi-projects.yml) для всех типов проектов (Service, Backoffice, job), с возможностью делать роллбэк
 
 ## Возможности
