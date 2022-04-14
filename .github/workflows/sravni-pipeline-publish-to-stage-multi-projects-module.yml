@@ -40,7 +40,6 @@ env:
   BRANCH: ${{ inputs.branch_name }}
   IMAGE_PULL_SECRET_ACR: sravni-azurecr-io
 
-#Описание Джобов воркфлоу
 jobs:
   publish:
     runs-on: ubuntu-latest
