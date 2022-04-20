@@ -3,7 +3,7 @@
     "description": "All type of projects publish to yandex stage workflow template.",
     "iconName": "sravni-pipeline-publish-multi-projects",
     "filePatterns": [
-        "Dockerfile$",
-        ".k8s\\ya-stage.yaml$"
+        "Sravni.*/Dockerfile$",
+        "Sravni.*/\\.k8s/ya-stage\\.yaml$"
     ]
 }

@@ -96,7 +96,7 @@ jobs:
             --set global.imagePullSecrets[0]="${{ env.IMAGE_PULL_SECRET_ACR }}" \
             --set azureRedis.uri=${{ secrets.AZURE_REDIS_URI }} \
             --set linkerd.enabled=false \
-            -f ../.././"${{ matrix.project.project_path }}"/.k8s/azure.yaml \
+            -f ../.././"${{ matrix.project.k8s_yaml_path }}" \
             ./ \
             2>&1
           if [ $? != 0 ]; then

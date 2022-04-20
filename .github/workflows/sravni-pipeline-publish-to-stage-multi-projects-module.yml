@@ -113,11 +113,11 @@ jobs:
             --set global.imagePullSecrets[0]="${{ env.IMAGE_PULL_SECRET_ACR }}" \
             --set cronjobs.defaults.resources.enabled=false \
             --set resources.enabled=false \
-            -f ../.././"${{ matrix.project.project_path }}"/.k8s/ya-stage.yaml \
+            -f ../.././"${{ matrix.project.k8s_yaml_path }}" \
             ./ \
             2>&1
           if [ $? != 0 ]; then
-            echo "Publish failed, see logs" && exit 1
+            echo "Publish failed, qsee logs" && exit 1
           fi
           echo "Done"
 

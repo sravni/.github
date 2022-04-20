@@ -30,13 +30,13 @@ on:
       project_type:
         description: 'Тип проекта( путь к проекту с использованием wildcards)'
         required: false
-        default: 'Sravni.*'
+        default: '*Sravni.*'
         type: choice
         options:
-          - 'Sravni.*' #Публикует все проекты в которых для пути 'Sravni.*' есть Dockerfile
-          - 'Sravni.*.Service'
-          - 'Sravni.*.Backoffice'
-          - 'Sravni.*.Job'
+          - '*Sravni.*' #Публикует все проекты в которых для пути 'Sravni.*' есть Dockerfile
+          - '*Sravni.*.Service'
+          - '*Sravni.*.Backoffice'
+          - '*Sravni.*.Job'
 
 #Переменные окружения !!!!!!!!ВАЖНО!!!!!!!!! необходимо прописать свою команду
 env:
@@ -93,7 +93,8 @@ jobs:
     with:
       is_stage: true
       with_push: ${{ needs.validate_input_params.outputs.should_push == 'true'}}
-      dockerfile_path_mask: ${{ github.event.inputs.project_type }}
+      project_path_mask: ${{ github.event.inputs.project_type }}
+      k8s_yaml_file_name: "ya-stage.yaml"
     secrets:
       GH_TOKEN: ${{ secrets.GH_TOKEN }}
       GITHUB_NPM_TOKEN: ${{ secrets.GITHUB_NPM_TOKEN }}

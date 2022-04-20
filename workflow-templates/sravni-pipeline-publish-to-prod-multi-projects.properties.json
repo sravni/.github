@@ -3,7 +3,7 @@
     "description": "All type of projects publish to azure workflow template.",
     "iconName": "sravni-pipeline-publish-multi-projects",
     "filePatterns": [
-        "Dockerfile$",
-        ".k8s\\azure.yaml$"
+        "Sravni.*/Dockerfile$",
+        "Sravni.*/\\.k8s/azure\\.yaml$"
     ]
 }
