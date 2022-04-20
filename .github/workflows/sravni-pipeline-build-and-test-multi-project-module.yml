@@ -106,7 +106,7 @@ jobs:
                 echo "{ \"project_name\":\"$project_name\", \
                         \"dockerfile\":\"$p\", \
                         \"project_path\":\"$project_path\", \
-                        \"k8s_yaml_path\":\"$project_path/k8s/${{ inputs.k8s_yaml_file_name }}\", \
+                        \"k8s_yaml_path\":\"$project_path/.k8s/${{ inputs.k8s_yaml_file_name }}\", \
                         \"build_number\":\"${{ env.BUILD_NUMBER }}\", \
                         \"image_name\":\"$image_name\", \
                         \"image_version\":\"${{ env.IMAGE_VERSION }}\" }"

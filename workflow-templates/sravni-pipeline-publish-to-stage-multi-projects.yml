@@ -93,7 +93,7 @@ jobs:
     with:
       is_stage: true
       with_push: ${{ needs.validate_input_params.outputs.should_push == 'true'}}
-      project_path_mask: ${{ github.event.inputs.project_type }}
+      project_path_mask: ${{ github.event.inputs.project_type || '*Sravni.*' }}
       k8s_yaml_file_name: "ya-stage.yaml"
     secrets:
       GH_TOKEN: ${{ secrets.GH_TOKEN }}

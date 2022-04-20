@@ -63,7 +63,7 @@ jobs:
       is_stage: false
       with_push: true
       image_version: ${{  needs.validate_branch.outputs.tag }}
-      project_path_mask: ${{ github.event.inputs.project_type }}
+      project_path_mask: ${{ github.event.inputs.project_type || '*Sravni.*' }}
       k8s_yaml_file_name: "azure.yaml"
     secrets:
       GH_TOKEN: ${{ secrets.GH_TOKEN }}
