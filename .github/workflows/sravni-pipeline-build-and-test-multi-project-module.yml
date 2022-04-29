@@ -59,7 +59,7 @@ jobs:
   #списка проектов для сборки.
   #| project_name | dockerfile | project_path | k8s_yaml_path | build_number | image_name | image_version |
   get_projects:
-    runs-on: ubuntu-20.04
+    runs-on: ${{ inputs.runner }}
 
     outputs:
       projects: ${{ steps.get_projects_to_build.outputs.projects }}
