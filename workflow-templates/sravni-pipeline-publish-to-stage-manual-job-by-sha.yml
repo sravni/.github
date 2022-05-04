@@ -145,7 +145,7 @@ jobs:
           helm dependencies update
           werf helm upgrade --install \
             "${{ env.job_name }}" \
-            --namespace "${{ env.namespace }}" \
+            --namespace master \
             --timeout 10m \
             --wait \
             --set global.image.repository="${{ secrets.CONTAINER_REGISTRY }}/${{ env.job_name }}" \
