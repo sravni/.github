@@ -1,0 +1,5 @@
+{
+    "name": "Sravni pipeline publish to yandex prod mono repo",
+    "description": "Mono repo publish to yandex prod workflow template.",
+    "iconName": "sravni-pipeline-publish-to-prod"
+}
