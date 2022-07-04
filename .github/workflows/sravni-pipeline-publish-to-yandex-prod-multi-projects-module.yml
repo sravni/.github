@@ -9,7 +9,7 @@ on:
         type: string
       runner:
         description: "Указывает какой раннер будет использоваться для запуска флоу"
-        default: sravni_prod
+        default: "sravni_prod"
         required: false
         type: string
       namespace:

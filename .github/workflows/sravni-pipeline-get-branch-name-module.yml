@@ -8,7 +8,7 @@ on:
         value: ${{ jobs.get_branch_name.outputs.branch_name }}
       runner:
         description: "Указывает какой раннер будет использоваться для запуска флоу"
-        default: sravni_ycloud_stage
+        default: "sravni_ycloud_stage"
         required: false
         type: string
 
