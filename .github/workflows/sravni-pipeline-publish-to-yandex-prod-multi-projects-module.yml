@@ -9,8 +9,8 @@ on:
         type: string
       runner:
         description: "Указывает какой раннер будет использоваться для запуска флоу"
-        required: false
         default: sravni_prod
+        required: false
         type: string
       namespace:
         description: 'Namespace'

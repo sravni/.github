@@ -13,8 +13,8 @@ on:
         type: string
       runner:
         description: "Указывает какой раннер будет использоваться для запуска флоу"
-        required: false
         default: sravni_ycloud_stage
+        required: false
         type: string
     secrets:
       GH_TOKEN:
