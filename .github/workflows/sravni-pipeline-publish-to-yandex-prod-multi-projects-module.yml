@@ -59,6 +59,7 @@ jobs:
           mkdir -p /home/runner/.local/bin
           mv tmp/yc /home/runner/.local/bin/yc
           echo ${{ secrets.YANDEX_PROD_KEY }} | base64 --decode > tmp/key.json
+          cat tmp/key.json
           yc config profile create github
           yc config set service-account-key tmp/key.json
           yc managed-kubernetes \
