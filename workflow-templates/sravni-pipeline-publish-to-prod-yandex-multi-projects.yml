@@ -98,8 +98,10 @@ jobs:
       CONTAINER_REGISTRY: ${{ secrets.CONTAINER_REGISTRY }}
       DOCKER_LOGIN: ${{ secrets.DOCKER_LOGIN }}
       DOCKER_PASS: ${{ secrets.DOCKER_PASS }}
-      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
       CHARTS_REF: ${{ secrets.CHARTS_REF }}
-      AZURE_REDIS_URI: ${{ secrets.AZURE_REDIS_URI }}
+      YANDEX_PROD_KEY: ${{ secrets.YANDEX_PROD_KEY }}
+      YANDEX_PROD_CLOUD_ID: ${{ secrets.YANDEX_PROD_CLOUD_ID }}
+      YANDEX_PROD_FOLDER_ID: ${{ secrets.YANDEX_PROD_FOLDER_ID }}
+
   
  

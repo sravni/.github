@@ -25,12 +25,17 @@ on:
         required: true
       DOCKER_PASS:
         required: true
-      AZURE_CREDENTIALS:
-        required: true
       CHARTS_REF:
         required: true
-      AZURE_REDIS_URI:
+      YANDEX_PROD_KEY:
         required: true
+      YANDEX_PROD_CLOUD_ID:
+        required: true
+      YANDEX_PROD_FOLDER_ID:
+        required: true
+
+
+
 
 env:
   NAMESPACE: ${{ inputs.namespace }}
@@ -59,7 +64,6 @@ jobs:
           mkdir -p /home/runner/.local/bin
           mv tmp/yc /home/runner/.local/bin/yc
           echo ${{ secrets.YANDEX_PROD_KEY }} | base64 --decode > tmp/key.json
-          cat tmp/key.json
           yc config profile create github
           yc config set service-account-key tmp/key.json
           yc managed-kubernetes \
