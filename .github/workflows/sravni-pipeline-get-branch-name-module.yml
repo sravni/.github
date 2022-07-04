@@ -2,15 +2,16 @@ name: Get branch name
 
 on:
   workflow_call:
-    outputs:
-      branch_name:
-        description: "Назавние ветки в рамках которой выполняется workflow"
-        value: ${{ jobs.get_branch_name.outputs.branch_name }}
+    inputs:
       runner:
         description: "Указывает какой раннер будет использоваться для запуска флоу"
         default: "sravni_ycloud_stage"
         required: false
         type: string
+    outputs:
+      branch_name:
+        description: "Назавние ветки в рамках которой выполняется workflow"
+        value: ${{ jobs.get_branch_name.outputs.branch_name }}
 
 jobs:
   get_branch_name:
