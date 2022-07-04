@@ -23,7 +23,7 @@ on:
       #sravni_ycloud_stage - наш раннер, необходимо указывать при наличии интегротестов
       #                          !!!!!!!!!!!!!!!!!!!!!!!!!!!!
       runner:
-        description: "Указывает какой раннер будет использоваться для запуска джобы build_and_test"
+        description: "Указывает какой раннер будет использоваться для запуска флоу"
         required: false
         default: sravni_ycloud_stage
         type: string

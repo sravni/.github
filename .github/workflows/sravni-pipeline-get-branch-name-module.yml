@@ -6,10 +6,15 @@ on:
       branch_name:
         description: "Назавние ветки в рамках которой выполняется workflow"
         value: ${{ jobs.get_branch_name.outputs.branch_name }}
+      runner:
+        description: "Указывает какой раннер будет использоваться для запуска флоу"
+        required: false
+        default: sravni_ycloud_stage
+        type: string
 
 jobs:
   get_branch_name:
-    runs-on: ubuntu-20.04
+    runs-on: ${{ inputs.runner }}
 
     outputs:
       branch_name: ${{ steps.out_branch_name.outputs.branch_name }}

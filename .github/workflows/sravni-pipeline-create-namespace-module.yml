@@ -11,6 +11,11 @@ on:
         description: 'Имя команды'
         required: true
         type: string
+      runner:
+        description: "Указывает какой раннер будет использоваться для запуска флоу"
+        required: false
+        default: sravni_ycloud_stage
+        type: string
     secrets:
       GH_TOKEN:
         required: true
@@ -34,7 +39,7 @@ env:
   
 jobs:
   create-namespace:
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner }}
     
     outputs:
       namespace: ${{ steps.get_namespace_name.outputs.namespace }}

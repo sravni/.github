@@ -7,6 +7,11 @@ on:
         description: "JSON объект со списком проектов для публикации"
         required: true
         type: string
+      runner:
+        description: "Указывает какой раннер будет использоваться для запуска флоу"
+        required: false
+        default: sravni_ycloud_stage
+        type: string
     secrets: 
       GH_TOKEN:
         required: true
@@ -24,13 +29,11 @@ on:
         required: true
 
 env:
-  NAMESPACE: ${{ inputs.namespace }}
-  BRANCH: ${{ inputs.branch_name }}
   IMAGE_PULL_SECRET_ACR: sravni-azurecr-io
 
 jobs:
   publish:
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner }}
 
     #Все шаги будут примерняться на матрице, полученной в предыдущей джобе
     strategy:

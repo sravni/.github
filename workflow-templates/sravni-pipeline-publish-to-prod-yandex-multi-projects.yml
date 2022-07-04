@@ -1,12 +1,12 @@
-name: Publish-to-Prod
+name: Publish-to-Prod-Yandex
 
 # Для работы шаблону требуется наличие следующих файлов и директорий в публикуемых проектах
 # Dockerfile для сборки docker образа
-# .k8s/azure.yaml манифест для публикации в кубер
+# .k8s/ya-prod.yaml манифест для публикации в кубер
 #
 # Примеры:
 # ./Sravni.*/Dockerfile
-# ./Sravni.*/.k8s/azure.yaml
+# ./Sravni.*/.k8s/ya-prod.yaml
 # также возможны такие варианты
 # ./{folder}/Sravni.*/...
 #
@@ -36,10 +36,13 @@ on:
           - '*Sravni.*.Backoffice'
           - '*Sravni.*.Job'
 
+#Переменные окружения !!!!!!!!ВАЖНО!!!!!!!!! необходимо прописать свою команду
+env:
+  TEAM: <<Тут нужно написать имя своей команды. Такое же, как в кибане!!!>>
 
 jobs:
   #Проверяет что выбран tag
-  validate_branch:
+  validate_input_params:
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.out-tag.outputs.tag }}
@@ -53,18 +56,25 @@ jobs:
           fi
       - id: out-tag
         run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+      # Из-за не возможности использовать в inputs джобы таких выражений {{ env.TEAM }}, 
+      # передаем глобальные env через output джобы
+      - id: out-team
+      name: Output environment variables
+      run: |
+        echo "::set-output name=team::${{ env.TEAM }}"
   
   #Подготавливает список проектов для последующей сборки, тестов и передачи в output.
   #более подробное описание можно посмотреть по пути в uses
   build_and_test:
-    needs: [validate_branch]
+    needs: [validate_input_params]
     uses: sravni/.github/.github/workflows/sravni-pipeline-build-and-test-multi-project-module.yml@PE-984
     with:
+      runner: sravni_ycloud_stage
       is_stage: false
       with_push: true
       image_version: ${{  needs.validate_branch.outputs.tag }}
       project_path_mask: ${{ github.event.inputs.project_type || '*Sravni.*' }}
-      k8s_yaml_file_name: "azure.yaml"
+      k8s_yaml_file_name: "ya-stage.yaml"
     secrets:
       GH_TOKEN: ${{ secrets.GH_TOKEN }}
       GITHUB_NPM_TOKEN: ${{ secrets.GITHUB_NPM_TOKEN }}
@@ -76,9 +86,11 @@ jobs:
   #и собранных проектов из джобы build_and_test. 
   #Более подробное описание можно посмотреть по пути в uses 
   publish:
-    needs: [build_and_test]
-    uses: sravni/.github/.github/workflows/sravni-pipeline-publish-to-azure-multi-projects-module.yml@PE-984
+    needs: [build_and_test, validate_input_params]
+    uses: sravni/.github/.github/workflows/sravni-pipeline-publish-to-prod-yandex-multi-projects-module.yml@PE-984
     with:
+      runner: sravni_prod
+      namespace: ${{ needs.validate_branch.outputs.team }}
       projects: ${{ needs.build_and_test.outputs.projects }}
     secrets:
       GH_TOKEN: ${{ secrets.GH_TOKEN }}
