@@ -88,7 +88,7 @@ jobs:
   #Более подробное описание можно посмотреть по пути в uses 
   publish:
     needs: [build_and_test, validate_input_params]
-    uses: sravni/.github/.github/workflows/sravni-pipeline-publish-to-prod-yandex-multi-projects-module.yml@PE-984
+    uses: sravni/.github/.github/workflows/sravni-pipeline-publish-to-yandex-prod-multi-projects-module.yml@PE-984
     with:
       runner: sravni_prod
       namespace: ${{ needs.validate_branch.outputs.team }}
