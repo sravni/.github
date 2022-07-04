@@ -58,7 +58,7 @@ jobs:
             cluster get-credentials \
             --cloud-id ${{ secrets.YANDEX_CLOUD_ID }} \
             --folder-id ${{ secrets.YANDEX_FOLDER_ID }} \
-            sravni-prod-k8s-workloads --internal
+            yc-stage-k8s --external
       
       - name: Checkout qaenv helpers
         uses: actions/checkout@v2
