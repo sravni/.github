@@ -65,7 +65,8 @@ jobs:
         run:  |
           wget -P tmp/ https://storage.yandexcloud.net/yandexcloud-yc/release/0.85.0/linux/amd64/yc
           chmod +x tmp/yc
-          mv tmp/yc /usr/local/bin/yc
+          mkdir -p /home/runner/.local/bin
+          mv tmp/yc /home/runner/.local/bin/yc
           echo ${{ secrets.YANDEX_KEY }} | base64 --decode > tmp/key.json
           yc config profile create github
           yc config set service-account-key tmp/key.json
