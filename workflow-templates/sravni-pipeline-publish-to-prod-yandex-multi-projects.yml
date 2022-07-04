@@ -75,7 +75,7 @@ jobs:
       with_push: true
       image_version: ${{  needs.validate_branch.outputs.tag }}
       project_path_mask: ${{ github.event.inputs.project_type || '*Sravni.*' }}
-      k8s_yaml_file_name: "ya-stage.yaml"
+      k8s_yaml_file_name: "ya-prod.yaml"
     secrets:
       GH_TOKEN: ${{ secrets.GH_TOKEN }}
       GITHUB_NPM_TOKEN: ${{ secrets.GITHUB_NPM_TOKEN }}
