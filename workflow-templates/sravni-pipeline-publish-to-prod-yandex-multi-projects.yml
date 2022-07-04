@@ -41,11 +41,12 @@ env:
   TEAM: <<Тут нужно написать имя своей команды. Такое же, как в кибане!!!>>
 
 jobs:
-  #Проверяет что выбран tag
+  #Проверяет переданные параметры
   validate_input_params:
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.out-tag.outputs.tag }}
+      team: ${{ steps.out-variables.outputs.team }}
     steps:
       - id: validate-tag
         run: |
@@ -58,7 +59,7 @@ jobs:
         run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
       # Из-за не возможности использовать в inputs джобы таких выражений {{ env.TEAM }}, 
       # передаем глобальные env через output джобы
-      - id: out-team
+      - id: out-variables
         name: Output environment variables
         run: |
           echo "::set-output name=team::${{ env.TEAM }}"
