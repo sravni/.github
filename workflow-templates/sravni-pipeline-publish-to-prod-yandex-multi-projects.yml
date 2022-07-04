@@ -59,9 +59,9 @@ jobs:
       # Из-за не возможности использовать в inputs джобы таких выражений {{ env.TEAM }}, 
       # передаем глобальные env через output джобы
       - id: out-team
-      name: Output environment variables
-      run: |
-        echo "::set-output name=team::${{ env.TEAM }}"
+        name: Output environment variables
+        run: |
+          echo "::set-output name=team::${{ env.TEAM }}"
   
   #Подготавливает список проектов для последующей сборки, тестов и передачи в output.
   #более подробное описание можно посмотреть по пути в uses
