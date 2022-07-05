@@ -91,7 +91,7 @@ jobs:
     uses: sravni/.github/.github/workflows/sravni-pipeline-publish-to-yandex-prod-multi-projects-module.yml@PE-984
     with:
       runner: sravni_prod
-      namespace: ${{ needs.validate_branch.outputs.team }}
+      namespace: ${{ needs.validate_input_params.outputs.team }}
       projects: ${{ needs.build_and_test.outputs.projects }}
     secrets:
       GH_TOKEN: ${{ secrets.GH_TOKEN }}
