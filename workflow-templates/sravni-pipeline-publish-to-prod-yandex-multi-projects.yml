@@ -68,7 +68,7 @@ jobs:
   #более подробное описание можно посмотреть по пути в uses
   build_and_test:
     needs: [validate_input_params]
-    uses: sravni/.github/.github/workflows/sravni-pipeline-build-and-test-multi-project-module.yml@PE-984
+    uses: sravni/.github/.github/workflows/sravni-pipeline-build-and-test-multi-project-module.yml
     with:
       runner: sravni_ycloud_stage
       is_stage: false
@@ -88,7 +88,7 @@ jobs:
   #Более подробное описание можно посмотреть по пути в uses 
   publish:
     needs: [build_and_test, validate_input_params]
-    uses: sravni/.github/.github/workflows/sravni-pipeline-publish-to-yandex-prod-multi-projects-module.yml@PE-984
+    uses: sravni/.github/.github/workflows/sravni-pipeline-publish-to-yandex-prod-multi-projects-module.yml
     with:
       runner: sravni_prod
       namespace: ${{ needs.validate_input_params.outputs.team }}
