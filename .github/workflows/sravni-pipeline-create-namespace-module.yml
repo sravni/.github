@@ -1,0 +1,132 @@
+name: Create namespace if not exist
+
+on:
+  workflow_call:
+    inputs:
+      namespace:
+        description: 'Имя оркружения'
+        required: false 
+        type: string
+      team:
+        description: 'Имя команды'
+        required: true
+        type: string
+      runner:
+        description: "Указывает какой раннер будет использоваться для запуска флоу"
+        default: "ubuntu-latest"
+        required: false
+        type: string
+    secrets:
+      GH_TOKEN:
+        required: true
+      QAENV_REF:
+        required: true
+      QA_API_URL:
+        required: true
+      YANDEX_KEY:
+        required: true
+      YANDEX_CLOUD_ID:
+        required: true
+      YANDEX_FOLDER_ID:
+        required: true  
+    outputs:
+      namespace:
+        description: "Собранные проекты"
+        value: ${{ jobs.create-namespace.outputs.namespace }}
+      
+env:
+  TEAM: ${{ inputs.team }}
+  
+jobs:
+  create-namespace:
+    runs-on: ${{ inputs.runner }}
+    
+    outputs:
+      namespace: ${{ steps.get_namespace_name.outputs.namespace }}
+    
+    steps:
+      - name: Install Yandex cli
+        run: |
+          wget -P tmp/ https://storage.yandexcloud.net/yandexcloud-yc/release/0.85.0/linux/amd64/yc
+          chmod +x tmp/yc
+          mkdir -p /home/runner/.local/bin
+          mv tmp/yc /home/runner/.local/bin/yc
+          echo ${{ secrets.YANDEX_KEY }} | base64 --decode > tmp/key.json
+          yc config profile create github
+          yc config set service-account-key tmp/key.json
+          yc managed-kubernetes \
+            cluster get-credentials \
+            --cloud-id ${{ secrets.YANDEX_CLOUD_ID }} \
+            --folder-id ${{ secrets.YANDEX_FOLDER_ID }} \
+            yc-stage-k8s --external
+      
+      - name: Checkout qaenv helpers
+        uses: actions/checkout@v2
+        with:
+          repository: sravni/qa-environment-helpers
+          path: qaenv
+          token: ${{ secrets.GH_TOKEN }}
+          ref: ${{ secrets.QAENV_REF }}
+
+      #Шаг проверки на валидность
+      - name: Get namespace name
+        id: get_namespace_name
+        run: |
+          echo "Namespace is ${{ inputs.namespace }}"
+          namespace=$(echo ${{ inputs.namespace }} | awk -F '/' '{print $NF}')
+          namespace=${namespace,,}
+          regexp='^|[a-z|]|[-a-z0-9|]{1,12}|[a-z0-9|]$'
+          if echo $namespace | grep -Eq $regexp; then
+              echo "${namespace} is valid name"
+          else
+            echo "Only: letters, numbers, no more than 14 characters";
+            exit 1;
+          fi
+          echo "NAMESPACE=$namespace" >> $GITHUB_ENV
+          echo "::set-output name=namespace::$namespace"
+      #Шаг проверки наличия уже созданного неймспейса
+      - name: Check if namespace already exists
+        run: |
+          RESPONSE_FILE=/tmp/response.txt
+          qa_envs_route="${{ secrets.QA_API_URL }}/environments"
+          get_response=$(curl -X GET -so "${RESPONSE_FILE}" -w "%{http_code}" ${qa_envs_route}/${{ env.NAMESPACE }} \
+          --cookie "${{ secrets.YA_AUTH_COOKIE_NAME_VALUE }}" \
+          -H "accept: application/json")
+          namespace_exists=0
+          if [ $get_response == "200" ]; then
+              echo "Environment ${{ env.NAMESPACE }} already exists"
+              namespace_exists=1
+          elif [ $get_response != "404" ]; then
+              echo "Server returned:"
+              cat "${RESPONSE_FILE}" && exit 1
+          fi
+          echo "NAMESPACE_EXISTS=${namespace_exists}" >> $GITHUB_ENV
+
+      #Шаг создания неймспейса в qa-dashboard, необходимых ресурсов и ключей identity
+      - name: Create namespace
+        if: ${{ env.NAMESPACE_EXISTS == 0 }}
+        run: |
+          RESPONSE_FILE=/tmp/response.txt
+          qa_envs_route="${{ secrets.QA_API_URL }}/environments"
+          env_name=${{ env.NAMESPACE }}
+          put_response=$(curl -X PUT \
+            -so "${RESPONSE_FILE}" \
+            -w "%{http_code}" $qa_envs_route \
+            -H "accept: application/json" \
+            -H "Content-Type: application/json" \
+            --cookie "${{ secrets.YA_AUTH_COOKIE_NAME_VALUE }}" \
+            -d "{ \"createdBy\": \"${{ github.actor }}\", \"kind\": \"QA\", \"name\": \"${{ env.NAMESPACE }}\", \"team\": \"${{ env.TEAM }}\"}")
+          if [ "${put_response}" != "200" ]; then
+            echo "Cannot create environment ${{ env.NAMESPACE }}"
+            cat "${RESPONSE_FILE}" && exit 1
+          fi
+          echo "Environment ${{ env.NAMESPACE }} has been created"
+          export EnvironmentName=${{ env.NAMESPACE }}
+          cat ./qaenv/k8s-manifests/new-namespace-yandex.yml | envsubst | kubectl apply -f -
+          echo "Manifest has been applied"
+          /bin/bash ./qaenv/scripts/identity-key/new-identity-key.sh
+          echo "Identity key has been generated"
+          kubectl -n ${{ env.NAMESPACE }} create secret generic identity-key --from-file ./identity.pfx
+          echo "Identity key secret has been created"
+          kubectl -n ${{ env.NAMESPACE }} create secret generic labs-identity-key --from-file ./identity.pfx
+          echo "Labs identity key secret has been created"

@@ -1,0 +1,94 @@
+name: Publish-to-Prod-Azure
+
+# Для работы шаблону требуется наличие следующих файлов и директорий в публикуемых проектах
+# Dockerfile для сборки docker образа
+# .k8s/azure.yaml манифест для публикации в кубер
+#
+# Примеры:
+# ./Sravni.*/Dockerfile
+# ./Sravni.*/.k8s/azure.yaml
+# также возможны такие варианты
+# ./{folder}/Sravni.*/...
+#
+# Для удобства и возможности публиковать отдельно проекты определенного типа с помощью ручного вызова флоу,
+# добавлены следующие маски путей для поиска проектов:
+# Sravni.*.Service
+# Sravni.*.Backoffice
+# Sravni.*.Job
+
+on:
+  push:
+    tags:
+      - v[0-9]+.[0-9]+
+  release:
+    types:
+      - published
+  workflow_dispatch:
+    inputs:
+      project_type:
+        description: 'Тип проекта( путь к проекту с использованием wildcards)'
+        required: false
+        default: '*Sravni.*'
+        type: choice
+        options:
+          - '*Sravni.*' #Публикует все проекты в которых для пути 'Sravni.*' есть Dockerfile
+          - '*Sravni.*.Service'
+          - '*Sravni.*.Backoffice'
+          - '*Sravni.*.Job'
+
+
+jobs:
+  #Проверяет что выбран tag
+  validate_branch:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.out-tag.outputs.tag }}
+    steps:
+      - id: validate-tag
+        run: |
+          echo "Валидируем ${GITHUB_REF}"
+          if ! [[ "${GITHUB_REF}" =~ v[0-9]+.[0-9]+ ]]
+          then 
+            echo "::error::Публикация в азур возможна только для тегов" && exit 1
+          fi
+      - id: out-tag
+        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+  
+  #Подготавливает список проектов для последующей сборки, тестов и передачи в output.
+  #более подробное описание можно посмотреть по пути в uses
+  build_and_test:
+    needs: [validate_branch]
+    uses: sravni/.github/.github/workflows/sravni-pipeline-build-and-test-multi-project-module.yml@PE-984
+    with:
+      runner: sravni_ycloud_stage
+      is_stage: false
+      with_push: true
+      image_version: ${{  needs.validate_branch.outputs.tag }}
+      project_path_mask: ${{ github.event.inputs.project_type || '*Sravni.*' }}
+      k8s_yaml_file_name: "azure.yaml"
+    secrets:
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      GITHUB_NPM_TOKEN: ${{ secrets.GITHUB_NPM_TOKEN }}
+      CONTAINER_REGISTRY: ${{ secrets.CONTAINER_REGISTRY }}
+      DOCKER_LOGIN: ${{ secrets.DOCKER_LOGIN }}
+      DOCKER_PASS: ${{ secrets.DOCKER_PASS }}
+  
+  #Публикует собранные проекты в кубер azure, для работы требуется список найденных 
+  #и собранных проектов из джобы build_and_test. 
+  #Более подробное описание можно посмотреть по пути в uses 
+  publish:
+    needs: [build_and_test]
+    uses: sravni/.github/.github/workflows/sravni-pipeline-publish-to-azure-multi-projects-module.yml@PE-984
+    with:
+      runner: sravni_ycloud_stage
+      projects: ${{ needs.build_and_test.outputs.projects }}
+    secrets:
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      CONTAINER_REGISTRY: ${{ secrets.CONTAINER_REGISTRY }}
+      DOCKER_LOGIN: ${{ secrets.DOCKER_LOGIN }}
+      DOCKER_PASS: ${{ secrets.DOCKER_PASS }}
+      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+      CHARTS_REF: ${{ secrets.CHARTS_REF }}
+      AZURE_REDIS_URI: ${{ secrets.AZURE_REDIS_URI }}
+  
+ 

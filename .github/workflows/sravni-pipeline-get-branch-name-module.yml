@@ -1,0 +1,43 @@
+name: Get branch name
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        description: "Указывает какой раннер будет использоваться для запуска флоу"
+        default: "sravni_ycloud_stage"
+        required: false
+        type: string
+    outputs:
+      branch_name:
+        description: "Назавние ветки в рамках которой выполняется workflow"
+        value: ${{ jobs.get_branch_name.outputs.branch_name }}
+
+jobs:
+  get_branch_name:
+    runs-on: ${{ inputs.runner }}
+
+    outputs:
+      branch_name: ${{ steps.out_branch_name.outputs.branch_name }}
+
+    steps:
+      #Шаги проверки ивента и выставления имени бранчи в зависимости от него
+      - name: Get branch name (merge)
+        if: github.event_name != 'pull_request'
+        run: |
+          branch=$(echo ${GITHUB_REF#refs/heads/} | tr / -)
+          if [ $branch == "yandex" ]; then branch="master";fi
+          echo "BRANCH=$branch" >> $GITHUB_ENV
+
+      - name: Get branch name (pull request)
+        if: github.event_name == 'pull_request'
+        run: |
+          branch=$(echo ${GITHUB_HEAD_REF} | tr / -)
+          if [ $branch == "yandex" ]; then branch="master";fi
+          echo "BRANCH=$branch" >> $GITHUB_ENV
+          
+      - id: out_branch_name
+        run: |
+          echo "::set-output name=branch_name::${{ env.BRANCH }}"
+
+   
