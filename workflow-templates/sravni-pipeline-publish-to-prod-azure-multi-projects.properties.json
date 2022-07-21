@@ -5,5 +5,8 @@
     "filePatterns": [
         "Sravni.*/Dockerfile$",
         "Sravni.*/\\.k8s/azure\\.yaml$"
+    ],
+    "categories": [
+        "C#"
     ]
 }

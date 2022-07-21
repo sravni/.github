@@ -44,7 +44,7 @@ env:
 
 jobs:
   get_branch_name:
-    uses: sravni/.github/.github/workflows/sravni-pipeline-get-branch-name-module.yml
+    uses: sravni/.github/.github/workflows/sravni-pipeline-get-branch-name-module.yml@master
   
   validate_input_params:
     needs: [ get_branch_name ]
@@ -89,7 +89,7 @@ jobs:
   #более подробное описание можно посмотреть по пути в uses
   build_and_test:
     needs: [validate_input_params]
-    uses: sravni/.github/.github/workflows/sravni-pipeline-build-and-test-multi-project-module.yml
+    uses: sravni/.github/.github/workflows/sravni-pipeline-build-and-test-multi-project-module.yml@master
     with:
       is_stage: true
       with_push: ${{ needs.validate_input_params.outputs.should_push == 'true'}}
@@ -124,7 +124,7 @@ jobs:
   #Более подробное описание можно посмотреть по пути в uses
   publish:
     needs: [get_branch_name, create_namespace, build_and_test]
-    uses: sravni/.github/.github/workflows/sravni-pipeline-publish-to-stage-multi-projects-module.yml
+    uses: sravni/.github/.github/workflows/sravni-pipeline-publish-to-stage-multi-projects-module.yml@master
     with:
       branch_name: ${{ needs.get_branch_name.outputs.branch_name }}
       namespace: ${{ needs.create_namespace.outputs.namespace }}
