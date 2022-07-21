@@ -107,7 +107,7 @@ jobs:
   create_namespace:
     if: ${{ needs.validate_input_params.outputs.only_build_and_test == 'false' }}
     needs: [validate_input_params, get_branch_name, build_and_test]
-    uses: sravni/.github/.github/workflows/sravni-pipeline-create-namespace-module.yml
+    uses: sravni/.github/.github/workflows/sravni-pipeline-create-namespace-module.yml@master
     with:
       team: ${{ needs.validate_input_params.outputs.team }}
       namespace: ${{ github.event.inputs.namespace || needs.get_branch_name.outputs.branch_name }}
