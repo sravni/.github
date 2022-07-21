@@ -58,7 +58,7 @@ jobs:
   #более подробное описание можно посмотреть по пути в uses
   build_and_test:
     needs: [validate_branch]
-    uses: sravni/.github/.github/workflows/sravni-pipeline-build-and-test-multi-project-module.yml
+    uses: sravni/.github/.github/workflows/sravni-pipeline-build-and-test-multi-project-module.yml@master
     with:
       runner: sravni_ycloud_stage
       is_stage: false
@@ -78,7 +78,7 @@ jobs:
   #Более подробное описание можно посмотреть по пути в uses 
   publish:
     needs: [build_and_test]
-    uses: sravni/.github/.github/workflows/sravni-pipeline-publish-to-azure-multi-projects-module.yml
+    uses: sravni/.github/.github/workflows/sravni-pipeline-publish-to-azure-multi-projects-module.yml@master
     with:
       runner: sravni_ycloud_stage
       projects: ${{ needs.build_and_test.outputs.projects }}
