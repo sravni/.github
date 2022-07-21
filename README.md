@@ -25,8 +25,8 @@
 - Publish to Stage (Monorepo, Multirepo, Jobs)
 - Publish to Prod (Monorepo, Multirepo, Jobs)
 ####Дополнительные workflow для Multirepo:
-- [Publish to Stage](https://github.com/sravni/.github/blob/PE-984/workflow-templates/sravni-pipeline-publish-to-stage-multi-projects.yml) для всех типов проектов (Service, Backoffice, job), сборка и тесты на каждый push (кроме push`а в мастер) проходят в нем же. Также есть возможность запускать workflow в ручном режиме с указанием namespace и типа проекта
-- [Publish to Prod](https://github.com/sravni/.github/blob/PE-984/workflow-templates/sravni-pipeline-publish-to-prod-multi-projects.yml) для всех типов проектов (Service, Backoffice, job), с возможностью делать роллбэк
+- [Publish to Stage](https://github.com/sravni/.github/blob/master/workflow-templates/sravni-pipeline-publish-to-stage-multi-projects.yml) для всех типов проектов (Service, Backoffice, job), сборка и тесты на каждый push (кроме push`а в мастер) проходят в нем же. Также есть возможность запускать workflow в ручном режиме с указанием namespace и типа проекта
+- [Publish to Prod](https://github.com/sravni/.github/blob/master/workflow-templates/sravni-pipeline-publish-to-prod-multi-projects.yml) для всех типов проектов (Service, Backoffice, job), с возможностью делать роллбэк
 
 ## Возможности
 
@@ -50,11 +50,11 @@
    stage.yandex.sravni-team.ru вместо qa.sravni-team.ru)
 
 ## Базовые модули
- - [Модуль](https://github.com/sravni/.github/blob/PE-984/.github/workflows/sravni-pipeline-build-and-test-multi-project-module.yml) сборки и тестов (Multirepo)
- - [Модуль](https://github.com/sravni/.github/blob/PE-984/.github/workflows/sravni-pipeline-publish-to-stage-multi-projects-module.yml) публикации в yandex stage (Multirepo)
- - [Модуль](https://github.com/sravni/.github/blob/PE-984/.github/workflows/sravni-pipeline-publish-to-azure-multi-projects-module.yml) публикации в azure (Mutlirepo)
- - [Модуль](https://github.com/sravni/.github/blob/PE-984/.github/workflows/sravni-pipeline-create-namespace-module.yml) созадния namespace
- - [Модуль](https://github.com/sravni/.github/blob/PE-984/.github/workflows/sravni-pipeline-get-branch-name-module.yml) получения название ветки (ref)
+ - [Модуль](https://github.com/sravni/.github/blob/master/.github/workflows/sravni-pipeline-build-and-test-multi-project-module.yml) сборки и тестов (Multirepo)
+ - [Модуль](https://github.com/sravni/.github/blob/master/.github/workflows/sravni-pipeline-publish-to-stage-multi-projects-module.yml) публикации в yandex stage (Multirepo)
+ - [Модуль](https://github.com/sravni/.github/blob/master/.github/workflows/sravni-pipeline-publish-to-azure-multi-projects-module.yml) публикации в azure (Mutlirepo)
+ - [Модуль](https://github.com/sravni/.github/blob/master/.github/workflows/sravni-pipeline-create-namespace-module.yml) созадния namespace
+ - [Модуль](https://github.com/sravni/.github/blob/master/.github/workflows/sravni-pipeline-get-branch-name-module.yml) получения название ветки (ref)
 
   Данные модули можно подключать в ваши workflow если нужного готового шаблоны вы не нашли 
 ## Tips and Tricks
