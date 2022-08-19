@@ -9,7 +9,7 @@ on:
         type: string
       runner:
         description: "Указывает какой раннер будет использоваться для запуска флоу"
-        default: "sravni_ycloud_stage"
+        default: "ubuntu-20.04"
         required: false
         type: string
     secrets: 

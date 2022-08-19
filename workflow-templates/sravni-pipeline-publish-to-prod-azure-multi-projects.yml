@@ -80,7 +80,7 @@ jobs:
     needs: [build_and_test]
     uses: sravni/.github/.github/workflows/sravni-pipeline-publish-to-azure-multi-projects-module.yml@master
     with:
-      runner: sravni_ycloud_stage
+      runner: ubuntu-20.04
       projects: ${{ needs.build_and_test.outputs.projects }}
     secrets:
       GH_TOKEN: ${{ secrets.GH_TOKEN }}
