@@ -142,7 +142,7 @@ jobs:
             --set global.image.repository="${{ secrets.CONTAINER_REGISTRY }}/${{ env.service_name }}" \
             --set global.image.tag="${{ env.build_number }}" \
             --set global.imagePullSecrets[0]="${{ env.image_pull_secret_acr }}" \
-            -f ../../.k8s/yandex_dev.yaml \
+            -f ../../.k8s/yandex-dev.yaml \
             ./ \
             2>&1
           if [ $? != 0 ]; then
