@@ -3,11 +3,13 @@ name: Publish-to-Yandex-Dev-Mono
 #Запуск на проставление тега или выпуск релиза
 on:
   push:
-    tags:
-      - v[0-9]+.[0-9]+
-  release:
-    types:
-      - published
+    branches:
+      - master
+      - yandex
+  pull_request:
+    branches:
+      - master
+      - yandex
 
 #Переменные окружения !!!!!!!!ВАЖНО!!!!!!!!! необходимо прописать свою команду
 env:
@@ -140,7 +142,7 @@ jobs:
             --set global.image.repository="${{ secrets.CONTAINER_REGISTRY }}/${{ env.service_name }}" \
             --set global.image.tag="${{ env.build_number }}" \
             --set global.imagePullSecrets[0]="${{ env.image_pull_secret_acr }}" \
-            -f ../../.k8s/yandex.yaml \
+            -f ../../.k8s/yandex_dev.yaml \
             ./ \
             2>&1
           if [ $? != 0 ]; then
