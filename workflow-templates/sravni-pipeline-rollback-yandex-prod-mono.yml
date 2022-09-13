@@ -1,8 +1,13 @@
-name: Rollback-to-Prod-Mono
+name: Prod-Rollback
 
 #Ручной запуск
 on:
   workflow_dispatch:
+    inputs:
+      namespace:
+        description: Namespace name
+        default: default
+        required: true
 
 #Переменные окружения !!!!!!!!ВАЖНО!!!!!!!!! необходимо прописать свою команду
 env:
@@ -16,9 +21,6 @@ jobs:
     #ubuntu-latest - офф раннер гитхаба на основе дистрибутива ubuntu
     #раннеры на основе других дистрибутивов можно найти в следующей доке:
     #https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources
-    #                           !!!!!!!!!!!!ВАЖНО!!!!!!!!!!
-    #sravni_ycloud_stage - наш раннер, необходимо указывать при наличии интегротестов
-    #                          !!!!!!!!!!!!!!!!!!!!!!!!!!!!
     runs-on: ubuntu-latest
 
     outputs:
@@ -37,7 +39,7 @@ jobs:
           echo "service_name=$service_name" >> $GITHUB_ENV
 
   rollback:
-    runs-on: ubuntu-latest
+    runs-on: sravni_prod
     needs: [ service-info ]
 
     env:
@@ -47,23 +49,28 @@ jobs:
       - name: Install Helm
         uses: azure/setup-helm@v1
 
-      - name: Azure Login
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Install Yandex cli
+        run:  |
+          wget -P tmp/ https://storage.yandexcloud.net/yandexcloud-yc/release/0.85.0/linux/amd64/yc
+          chmod +x tmp/yc
+          mkdir -p /home/runner/.local/bin
+          mv tmp/yc /home/runner/.local/bin/yc
+          echo ${{ secrets.YANDEX_PROD_KEY }} | base64 --decode > tmp/key.json
+          yc config profile create github
+          yc config set service-account-key tmp/key.json
+          yc managed-kubernetes \
+            cluster get-credentials \
+            --cloud-id ${{ secrets.YANDEX_PROD_CLOUD_ID }} \
+            --folder-id ${{ secrets.YANDEX_PROD_FOLDER_ID }} \
+            sravni-prod-k8s-workloads --internal
 
-      #Шаг отката в прод Azure
+      #Шаг отката
       - name: Rollback
-        working-directory: ./charts/generic-application/
         run: |
-          echo "Deploying service ${{ env.service_name }}..."
-          az aks get-credentials --admin \
-            --resource-group sravni \
-            --name az-prod-k8s
-
+          echo "Rollback service ${{ env.service_name }}..."
           helm rollback \
             "${{ env.service_name }}" \
-            --namespace sravni \
+            --namespace "${{ inputs.namespace }}" \
             --force \
             --wait \
             --timeout 10m
@@ -71,4 +78,3 @@ jobs:
             echo "Rollback failed, see logs" && exit 1
           fi
           echo "Done"
-
