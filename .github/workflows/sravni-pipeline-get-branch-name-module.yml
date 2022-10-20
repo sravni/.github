@@ -10,7 +10,7 @@ on:
         type: string
     outputs:
       branch_name:
-        description: "Назавние ветки в рамках которой выполняется workflow"
+        description: "Название ветки в рамках которой выполняется workflow"
         value: ${{ jobs.get_branch_name.outputs.branch_name }}
 
 jobs:

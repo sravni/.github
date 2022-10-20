@@ -5,17 +5,9 @@ name: Publish-to-Stage
 # .k8s/ya-stage.yaml манифест для публикации в кубер
 #
 # Примеры:
-# ./Sravni.*/Dockerfile
-# ./Sravni.*/.k8s/ya-stage.yaml
-# также возможны такие варианты
-# ./{folder}/Sravni.*/...
-#
-# Для удобства и возможности публиковать отдельно проекты определенного типа с помощью ручного вызова флоу,
-# добавлены следующие маски путей для поиска проектов:
-# Sravni.*.Service
-# Sravni.*.Backoffice
-# Sravni.*.Job
-
+# ./Dockerfile
+# ./.k8s/ya-stage.yaml
+# 
 
 on:
   push:
@@ -27,16 +19,6 @@ on:
         description: "Namespace для публикации(если такого неймспейса не сущестувует, то создается новый)"
         required: false #По умолчанию берется название выбранной ветки
         type: string
-      project_type:
-        description: 'Тип проекта( путь к проекту с использованием wildcards)'
-        required: false
-        default: '*Sravni.*'
-        type: choice
-        options:
-          - '*Sravni.*' #Публикует все проекты в которых для пути 'Sravni.*' есть Dockerfile
-          - '*Sravni.*.Service'
-          - '*Sravni.*.Backoffice'
-          - '*Sravni.*.Job'
 
 #Переменные окружения !!!!!!!!ВАЖНО!!!!!!!!! необходимо прописать свою команду
 env:
@@ -46,15 +28,20 @@ jobs:
   get_branch_name:
     uses: sravni/.github/.github/workflows/sravni-pipeline-get-branch-name-module.yml@master
   
+  get_service_name:
+    uses: sravni/.github/.github/workflows/sravni-pipeline-get-service-name-by-git-module.yml@pe-1500
+
   validate_input_params:
-    needs: [ get_branch_name ]
+    needs: [ get_branch_name, get_service_name ]
     runs-on: ubuntu-latest
     outputs:
       only_build_and_test: ${{ steps.validate_branch.outputs.only_build_and_test }}
       should_push: ${{ steps.validate_branch.outputs.should_push }}
       team: ${{ steps.env-vars.outputs.team }}
+      service_name: ${{ steps.validate_service_name.outputs.service_name }}
     env:
       BRANCH: ${{ needs.get_branch_name.outputs.branch_name }}
+      SERVICE_NAME: ${{ needs.get_service_name.outputs.service_name }}
     steps:
       #Нельзя публиковать в namespace master любые другие ветки
       - name: Validate namespace
@@ -78,6 +65,13 @@ jobs:
           fi
           echo "::set-output name=only_build_and_test::$only_build_and_test" 
           echo "::set-output name=should_push::$should_push"
+
+      # TODO: Добавить проверку на пустоту SERVICE_NAME
+      - id: validate_service_name
+        name: Validate service name
+         run: |
+          echo "::set-output name=service_name::${{ env.SERVICE_NAME }}"
+
       # Из-за не возможности использовать в inputs джобы таких выражений {{ env.TEAM }}, 
       # передаем глобальные env через output джобы
       - id: env-vars
@@ -89,13 +83,13 @@ jobs:
   #более подробное описание можно посмотреть по пути в uses
   build_and_test:
     needs: [validate_input_params]
-    uses: sravni/.github/.github/workflows/sravni-pipeline-build-and-test-multi-project-module.yml@master
+    uses: sravni/.github/.github/workflows/sravni-pipeline-build-and-test-mono-project-module.yml@pe-1500
     with:
       is_stage: true
       with_push: ${{ needs.validate_input_params.outputs.should_push == 'true'}}
-      project_path_mask: ${{ github.event.inputs.project_type || '*Sravni.*' }}
+      service_name: ${{ needs.validate_input_params.outputs.service_name }}
       k8s_yaml_file_name: "ya-stage.yaml"
-    secrets:
+    secrets:       
       GH_TOKEN: ${{ secrets.GH_TOKEN }}
       GITHUB_NPM_TOKEN: ${{ secrets.GITHUB_NPM_TOKEN }}
       CONTAINER_REGISTRY: ${{ secrets.CONTAINER_REGISTRY }}
@@ -123,12 +117,12 @@ jobs:
   #и собранных проектов из джобы build_and_test.
   #Более подробное описание можно посмотреть по пути в uses
   publish:
-    needs: [get_branch_name, create_namespace, build_and_test]
-    uses: sravni/.github/.github/workflows/sravni-pipeline-publish-to-stage-multi-projects-module.yml@master
+    needs: [get_branch_name, get_service_name, create_namespace]
+    uses: sravni/.github/.github/workflows/sravni-pipeline-publish-to-stage-mono-project-module.yml@pe-1500
     with:
       branch_name: ${{ needs.get_branch_name.outputs.branch_name }}
       namespace: ${{ needs.create_namespace.outputs.namespace }}
-      projects: ${{ needs.build_and_test.outputs.projects }}
+      project: ${{ needs.get_service_name.outputs.service_name }}
     secrets:
       GH_TOKEN: ${{ secrets.GH_TOKEN }}
       CONTAINER_REGISTRY: ${{ secrets.CONTAINER_REGISTRY }}
