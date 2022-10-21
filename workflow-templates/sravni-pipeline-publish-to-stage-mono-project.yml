@@ -71,7 +71,7 @@ jobs:
   #более подробное описание можно посмотреть по пути в uses
   build_and_test:
     needs: [validate_input_params]
-    uses: sravni/.github/.github/workflows/sravni-pipeline-build-and-test-mono-project-module.yml@PE-1500
+    uses: sravni/.github/.github/workflows/sravni-pipeline-build-and-test-mono-project-module.yml@master
     with:
       is_stage: true
       with_push: ${{ needs.validate_input_params.outputs.should_push == 'true'}}      
