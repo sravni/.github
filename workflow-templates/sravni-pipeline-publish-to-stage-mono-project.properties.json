@@ -1,0 +1,10 @@
+{
+    "name": "Sravni pipeline publish to stage mono repo",
+    "description": "Mono repo publish to stage workflow template.",
+    "iconName": "sravni-pipeline-publish-mono-project",
+    "filePatterns": [
+        "./Dockerfile$",
+        "./\\.k8s/ya-stage\\.yaml$"
+    ]   
+}
+
