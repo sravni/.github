@@ -98,17 +98,17 @@ jobs:
           project_path='.'
           if ! test -f "$project_path/.k8s/${{ inputs.k8s_yaml_file_name }}"
           then 
-            echo "" 
+            projects=()
           else
             project_name=${{ env.PROJECT_NAME }}
             image_name="${project_name}:${{ env.IMAGE_VERSION }}"
-            echo "{ \"project_name\":\"$project_name\", \
+            projects=("{ \"project_name\":\"$project_name\", \
                     \"dockerfile\":\"$p\", \
                     \"project_path\":\"$project_path\", \
                     \"k8s_yaml_path\":\"$project_path/.k8s/${{ inputs.k8s_yaml_file_name }}\", \
                     \"build_number\":\"${{ env.BUILD_NUMBER }}\", \
                     \"image_name\":\"$image_name\", \
-                    \"image_version\":\"${{ env.IMAGE_VERSION }}\" }"
+                    \"image_version\":\"${{ env.IMAGE_VERSION }}\" }")           
           fi
          
           echo $projects
