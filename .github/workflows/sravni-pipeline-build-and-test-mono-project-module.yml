@@ -113,7 +113,7 @@ jobs:
          
           echo $projects
           echo Собираем следующие проекты:
-          echo $projects | jq -r '.[] | .project_name'
+          echo $projects | jq -s -r -c ‘.’
           echo "name=project::${projects}"
           echo "::set-output name=projects::${projects}"
 
