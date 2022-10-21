@@ -16,7 +16,7 @@ on:
   workflow_dispatch:
     inputs:
       namespace:
-        description: "Namespace для публикации(если такого неймспейса не сущестувует, то создается новый)"
+        description: "Namespace для публикации(если такого неймспейса не существует, то создается новый)"
         required: false #По умолчанию берется название выбранной ветки
         type: string      
 
