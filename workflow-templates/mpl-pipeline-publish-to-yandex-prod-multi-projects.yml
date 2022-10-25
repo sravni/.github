@@ -90,7 +90,7 @@ jobs:
     needs: [build_and_test, validate_input_params]
     uses: sravni/.github/.github/workflows/mpl-pipeline-publish-to-yandex-prod-multi-projects-module.yml@WAL-97
     with:
-      runner: sravni_prod
+      runner: marketplace_prod_workloads
       namespace: ${{ needs.validate_input_params.outputs.team }}
       projects: ${{ needs.build_and_test.outputs.projects }}
     secrets:
