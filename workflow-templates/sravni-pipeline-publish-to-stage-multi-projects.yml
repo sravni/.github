@@ -24,7 +24,7 @@ on:
   workflow_dispatch:
     inputs:
       namespace:
-        description: "Namespace для публикации(если такого неймсапейса не сущестувует, то создается новвый)"
+        description: "Namespace для публикации(если такого неймспейса не сущестувует, то создается новый)"
         required: false #По умолчанию берется название выбранной ветки
         type: string
       project_type:
@@ -59,7 +59,7 @@ jobs:
       #Нельзя публиковать в namespace master любые другие ветки
       - name: Validate namespace
         run: |
-          if echo "${{ github.event.inputs.namepsace }}" | grep -qi 'master' && ! echo "${{ env.BRANCH }}" | grep -qi 'master'
+          if echo "${{ github.event.inputs.namespace }}" | grep -qi 'master' && ! echo "${{ env.BRANCH }}" | grep -qi 'master'
           then 
             echo "::error::В namespace master может публиковатся только ветка master" && exit 1
           fi
