@@ -1,0 +1,12 @@
+{
+    "name": "Sravni pipeline publish to yandex multi projects",
+    "description": "All type of projects publish to yandex workflow template.",
+    "iconName": "mpl-pipeline-publish-multi-projects",
+    "filePatterns": [
+        "Sravni.*/Dockerfile$",
+        "Sravni.*/\\.k8s/ya-prod-mpl\\.yaml$"
+    ],
+    "categories": [
+        "C#"
+    ]
+}
