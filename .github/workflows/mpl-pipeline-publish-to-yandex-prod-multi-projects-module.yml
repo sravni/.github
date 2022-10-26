@@ -16,7 +16,6 @@ on:
         description: 'Namespace'
         required: true
         type: string
-        default: 'wallet'
     secrets: 
       GH_TOKEN:
         required: true
