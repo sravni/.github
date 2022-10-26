@@ -85,7 +85,11 @@ jobs:
         working-directory: ${{ env.CHART_DIRECTORY }}
         run: |       
           mkdir ~/.kube && echo "${{ secrets.MPL_PROD_WORKLOADS_KUBE_CONFIG }}" > ~/.kube/config
+          head ~/.kube/config
           project_name="${{ matrix.project.project_name }}"
+          echo "Trying to deploy $project_name..."
+          ns = "${{ env.NAMESPACE }}"
+          echo "Into namespace $ns..."
           helm dependencies update
           werf helm upgrade --install --history-max 2 \
             "$project_name" \
