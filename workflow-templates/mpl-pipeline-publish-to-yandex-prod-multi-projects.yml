@@ -1,0 +1,105 @@
+name: Publish-to-Prod-Yandex-MPL
+
+# Для работы шаблону требуется наличие следующих файлов и директорий в публикуемых проектах
+# Dockerfile для сборки docker образа
+# .k8s/ya-prod-mpl.yaml манифест для публикации в кубер
+#
+# Примеры:
+# ./Sravni.*/Dockerfile
+# ./Sravni.*/.k8s/ya-prod-mpl.yaml
+# также возможны такие варианты
+# ./{folder}/Sravni.*/...
+#
+# Для удобства и возможности публиковать отдельно проекты определенного типа с помощью ручного вызова флоу,
+# добавлены следующие маски путей для поиска проектов:
+# Sravni.*.Service
+# Sravni.*.Backoffice
+# Sravni.*.Job
+
+on:
+  push:
+    tags:
+      - v[0-9]+.[0-9]+
+  release:
+    types:
+      - published
+  workflow_dispatch:
+    inputs:
+      project_type:
+        description: 'Тип проекта( путь к проекту с использованием wildcards)'
+        required: false
+        default: '*Sravni.*'
+        type: choice
+        options:
+          - '*Sravni.*' #Публикует все проекты в которых для пути 'Sravni.*' есть Dockerfile
+          - '*Sravni.*.Service'
+          - '*Sravni.*.Backoffice'
+          - '*Sravni.*.Job'
+
+#Переменные окружения !!!!!!!!ВАЖНО!!!!!!!!! необходимо прописать свою команду
+env:
+  TEAM: <<Тут нужно написать имя своей команды. Такое же, как в кибане!!!>>
+
+jobs:
+  #Проверяет переданные параметры
+  validate_input_params:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.out-tag.outputs.tag }}
+      team: ${{ steps.out-variables.outputs.team }}
+    steps:
+      - id: validate-tag
+        run: |
+          echo "Валидируем ${GITHUB_REF}"
+          if ! [[ "${GITHUB_REF}" =~ v[0-9]+.[0-9]+ ]]
+          then 
+            echo "::error::Публикация в prod-mpl возможна только для тегов" && exit 1
+          fi
+      - id: out-tag
+        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+      # Из-за не возможности использовать в inputs джобы таких выражений {{ env.TEAM }}, 
+      # передаем глобальные env через output джобы
+      - id: out-variables
+        name: Output environment variables
+        run: |
+          echo "::set-output name=team::${{ env.TEAM }}"
+  
+  #Подготавливает список проектов для последующей сборки, тестов и передачи в output.
+  #более подробное описание можно посмотреть по пути в uses
+  build_and_test:
+    needs: [validate_input_params]
+    uses: sravni/.github/.github/workflows/sravni-pipeline-build-and-test-multi-project-module.yml@master
+    with:
+      runner: sravni_ycloud_stage
+      is_stage: false
+      with_push: true
+      image_version: ${{  needs.validate_branch.outputs.tag }}
+      project_path_mask: ${{ github.event.inputs.project_type || '*Sravni.*' }}
+      k8s_yaml_file_name: "ya-prod-mpl.yaml"
+    secrets:
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      GITHUB_NPM_TOKEN: ${{ secrets.GITHUB_NPM_TOKEN }}
+      CONTAINER_REGISTRY: ${{ secrets.CONTAINER_REGISTRY }}
+      DOCKER_LOGIN: ${{ secrets.DOCKER_LOGIN }}
+      DOCKER_PASS: ${{ secrets.DOCKER_PASS }}
+  
+  #Публикует собранные проекты в кубер yandex, для работы требуется список найденных 
+  #и собранных проектов из джобы build_and_test. 
+  #Более подробное описание можно посмотреть по пути в uses 
+  publish:
+    needs: [build_and_test, validate_input_params]
+    uses: sravni/.github/.github/workflows/mpl-pipeline-publish-to-yandex-prod-multi-projects-module.yml@master
+    with:
+      runner: marketplace_prod_workloads
+      namespace: ${{ needs.validate_input_params.outputs.team }}
+      projects: ${{ needs.build_and_test.outputs.projects }}
+    secrets:
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      CONTAINER_REGISTRY: ${{ secrets.CONTAINER_REGISTRY }}
+      DOCKER_LOGIN: ${{ secrets.DOCKER_LOGIN }}
+      DOCKER_PASS: ${{ secrets.DOCKER_PASS }}
+      CHARTS_REF: ${{ secrets.CHARTS_REF }}
+      MPL_PROD_WORKLOADS_KUBE_CONFIG: ${{ secrets.MPL_PROD_WORKLOADS_KUBE_CONFIG }}
+
+  
+ 
