@@ -27,6 +27,8 @@ on:
         required: true
       CHARTS_REF:
         required: true
+      MPL_PROD_WORKLOADS_KUBE_CONFIG:
+        required: true
 
 
 

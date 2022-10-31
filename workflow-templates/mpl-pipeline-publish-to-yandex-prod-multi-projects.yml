@@ -99,6 +99,7 @@ jobs:
       DOCKER_LOGIN: ${{ secrets.DOCKER_LOGIN }}
       DOCKER_PASS: ${{ secrets.DOCKER_PASS }}
       CHARTS_REF: ${{ secrets.CHARTS_REF }}
+      MPL_PROD_WORKLOADS_KUBE_CONFIG: ${{ secrets.MPL_PROD_WORKLOADS_KUBE_CONFIG }}
 
   
  

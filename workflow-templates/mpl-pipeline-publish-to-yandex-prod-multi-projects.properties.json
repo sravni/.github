@@ -1,6 +1,6 @@
 {
-    "name": "Sravni pipeline publish to yandex multi projects",
-    "description": "All type of projects publish to yandex workflow template.",
+    "name": "Sravni MPL pipeline publish to yandex multi projects",
+    "description": "All type of projects publish to MPL yandex workflow template.",
     "iconName": "mpl-pipeline-publish-multi-projects",
     "filePatterns": [
         "Sravni.*/Dockerfile$",
