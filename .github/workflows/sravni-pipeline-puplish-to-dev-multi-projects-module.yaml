@@ -21,24 +21,6 @@ on:
         default: sravni_dev
         type: string
     secrets: 
-      GH_TOKEN:
-        required: true
-      CONTAINER_REGISTRY:
-        required: true
-      DOCKER_LOGIN:
-        required: true
-      DOCKER_PASS:
-        required: true
-      YANDEX_KEY:
-        required: true
-      YANDEX_CLOUD_ID:
-        required: true
-      YANDEX_FOLDER_ID:
-        required: true
-      QA_API_URL:
-        required: true
-      CHARTS_REF:
-        required: true
       TEST_CI_PAT_FOR_ACTIONS:
         required: true
 
