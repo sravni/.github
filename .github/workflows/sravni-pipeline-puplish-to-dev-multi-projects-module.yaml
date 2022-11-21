@@ -7,10 +7,6 @@ on:
         description: 'Namespace'
         required: true 
         type: string
-      branch_name: 
-        description: "Название ветки"
-        required: true
-        type: string
       projects:
         description: "JSON объект со списком проектов для публикации"
         required: true
@@ -25,9 +21,7 @@ on:
         required: true
 
 env:
-  NAMESPACE: ${{ inputs.namespace }}
-  BRANCH: ${{ inputs.branch_name }}
-  IMAGE_PULL_SECRET_ACR: sravni-azurecr-io
+  TEAM: ${{ inputs.team }}
 
 jobs:
   publish:
@@ -40,9 +34,7 @@ jobs:
     steps:
       - name: Set env
         run: |
-          echo "GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
-          echo "GITHUB_SERVICE_NAME=$(basename `git rev-parse --show-toplevel`)" >> $GITHUB_ENV
-          echo "GITHUB_BRANCH=$(echo $GITHUB_REF | cut -d'/' -f4)" >> $GITHUB_ENV
+          echo "SERVICE_NAME=$(basename `git rev-parse --show-toplevel`)" >> $GITHUB_ENV
           echo "REPO_PATH=./deploy" >> $GITHUB_ENV
           echo "YQ_VERSION=4.30.3" >> $GITHUB_ENV
 
@@ -61,7 +53,7 @@ jobs:
 
       - name: Modify values
         run: |
-          yq -i '.global.image.tag = ".global.image.tag = ${{ matrix.project.image_version }}"' ${{ env.REPO_PATH }}/${{ env.NAMESPACE }}/${{ env.SERVICE_NAME }}/values_dev.yaml
+          yq -i '.global.image.tag = "${{ matrix.project.image_version }}"' ${{ env.REPO_PATH }}/${{ env.TEAM }}/${{ env.SERVICE_NAME }}/values_dev.yaml
       
       - name: Commit and push
         uses: stefanzweifel/git-auto-commit-action@v4
