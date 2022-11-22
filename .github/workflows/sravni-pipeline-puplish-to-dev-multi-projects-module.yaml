@@ -3,8 +3,8 @@ name: Publish to dev  projects base module
 on:
   workflow_call:
     inputs:
-      namespace:
-        description: 'Namespace'
+      team:
+        description: 'team'
         required: true 
         type: string
       projects:
