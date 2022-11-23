@@ -37,6 +37,7 @@ jobs:
           echo "SERVICE_NAME=$(basename `git rev-parse --show-toplevel`)" >> $GITHUB_ENV
           echo "REPO_PATH=./deploy" >> $GITHUB_ENV
           echo "YQ_VERSION=4.30.3" >> $GITHUB_ENV
+          echo "service_name is " $SERVICE_NAME
 
       - name: Checkout deploy repo
         uses: actions/checkout@v3
