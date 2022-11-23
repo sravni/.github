@@ -32,6 +32,9 @@ jobs:
         project: ${{ fromJson(inputs.projects) }}
 
     steps:
+      - name: Checkout source
+        uses: actions/checkout@v3
+
       - name: Set env
         run: |
           echo "SERVICE_NAME=$(basename `git rev-parse --show-toplevel`)" >> $GITHUB_ENV
@@ -57,6 +60,7 @@ jobs:
           yq -i '.global.image.tag = "${{ matrix.project.image_version }}"' ${{ env.REPO_PATH }}/${{ env.TEAM }}/${{ env.SERVICE_NAME }}/values_dev.yaml
       
       - name: Commit and push
+        working-directory: ./deploy
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
           repository: deploy
