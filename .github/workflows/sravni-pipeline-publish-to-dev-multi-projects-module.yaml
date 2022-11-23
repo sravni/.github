@@ -58,12 +58,11 @@ jobs:
       - name: Modify values
         run: |
           yq -i '.global.image.tag = "${{ matrix.project.image_version }}"' ${{ env.REPO_PATH }}/${{ env.TEAM }}/${{ env.SERVICE_NAME }}/values_dev.yaml
-      
+          
       - name: Commit and push
-        working-directory: ./deploy
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
-          repository: deploy
+          repository: ./deploy
           branch: main
           commit_user_name: sravnidevops
           commit_user_email: company-service@sravni.ru
