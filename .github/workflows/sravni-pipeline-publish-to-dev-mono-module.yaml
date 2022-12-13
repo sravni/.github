@@ -53,7 +53,7 @@ jobs:
 
       - name: Modify values
         run: |
-          yq -i '.global.image.tag = "${{ env.build_number }}"' ${{ env.REPO_PATH }}/${{ env.TEAM }}/${{ env.SERVICE_NAME }}/values_dev.yaml
+          yq -i '.global.image.tag = "${{ env.IMAGE_ID }}"' ${{ env.REPO_PATH }}/${{ env.TEAM }}/${{ env.SERVICE_NAME }}/values_dev.yaml
 
       - name: Commit and push
         uses: stefanzweifel/git-auto-commit-action@v4
@@ -62,4 +62,4 @@ jobs:
           branch: main
           commit_user_name: sravnidevops
           commit_user_email: company-service@sravni.ru
-          commit_message: '${{ env.SERVICE_NAME }} new version: ${{ env.build_number }}'
+          commit_message: '${{ env.SERVICE_NAME }} new version: ${{ env.IMAGE_ID }}'

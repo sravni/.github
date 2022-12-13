@@ -58,11 +58,11 @@ jobs:
       
       - name: Create values 
         run: |
-          if [ ! -f "./deploy/${{ env.TEAM }}/${{ env.SERVICE }}/values_${{ env.GITHUB_BRANCH }}.yaml" ]; then yq e '.global.image.tag = "${{ env.build_number }}" | .ingresses[0].host |= sub ("(^)", "${{ env.GITHUB_BRANCH }}.${1}")  ' ${{ env.REPO_PATH }}/${{ env.TEAM }}/${{ env.SERVICE }}/values_dev.yaml > ${{ env.REPO_PATH }}/${{ env.TEAM }}/${{ env.SERVICE }}/values_${{ env.GITHUB_BRANCH }}.yaml ; fi
+          if [ ! -f "./deploy/${{ env.TEAM }}/${{ env.SERVICE }}/values_${{ env.GITHUB_BRANCH }}.yaml" ]; then yq e '.global.image.tag = "${{ env.IMAGE_ID }}" | .ingresses[0].host |= sub ("(^)", "${{ env.GITHUB_BRANCH }}.${1}")  ' ${{ env.REPO_PATH }}/${{ env.TEAM }}/${{ env.SERVICE }}/values_dev.yaml > ${{ env.REPO_PATH }}/${{ env.TEAM }}/${{ env.SERVICE }}/values_${{ env.GITHUB_BRANCH }}.yaml ; fi
 
       - name: Modify values
         run: |
-          yq -i '.global.image.tag = "${{ env.build_number }}"' ${{ env.REPO_PATH }}/${{ env.TEAM }}/${{ env.SERVICE }}/values_${{ env.GITHUB_BRANCH }}.yaml
+          yq -i '.global.image.tag = "${{ env.IMAGE_ID }}"' ${{ env.REPO_PATH }}/${{ env.TEAM }}/${{ env.SERVICE }}/values_${{ env.GITHUB_BRANCH }}.yaml
 
       - name: Commit and push
         uses: stefanzweifel/git-auto-commit-action@v4
@@ -71,4 +71,4 @@ jobs:
           branch: main
           commit_user_name: sravnidevops
           commit_user_email: company-service@sravni.ru
-          commit_message: '${{ env.SERVICE }}-branch-${{ env.GITHUB_BRANCH }} new version: ${{ env.build_number }}'
+          commit_message: '${{ env.SERVICE }}-branch-${{ env.GITHUB_BRANCH }} new version: ${{ env.IMAGE_ID }}'
