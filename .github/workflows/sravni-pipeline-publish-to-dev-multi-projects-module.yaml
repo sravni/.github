@@ -54,6 +54,10 @@ jobs:
         run: |
           sudo wget -O /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/v${{ env.YQ_VERSION }}/yq_linux_amd64
           sudo chmod +x /usr/local/bin/yq
+      
+      - name: Clone values from origin repo
+        run: |
+          cat .k8s/values_dev.yaml > ${{ env.REPO_PATH }}/${{ env.TEAM }}/${{ env.SERVICE_NAME }}/values_dev_test_ci.yaml
 
       - name: Modify values
         run: |
