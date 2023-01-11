@@ -55,9 +55,6 @@ jobs:
         project: ${{ fromJson(inputs.projects) }}
 
     steps:
-      - name: Install werf CLI
-        uses: werf/actions/install@v1.2
-
       - name: Install Helm
         uses: azure/setup-helm@v3
         with:
@@ -95,6 +92,9 @@ jobs:
           path: charts
           token: ${{ secrets.GH_TOKEN }}
           ref: '${{ secrets.CHARTS_REF }}'
+
+      - name: Install werf CLI
+        uses: werf/actions/install@v1.2
       
       - name: Define chart directory
         run: |
