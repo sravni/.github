@@ -57,7 +57,7 @@ jobs:
       
       - name: Clone values from origin repo
         run: |
-          cat ${{ matrix.service }}/.k8s/values_dev.yaml > ${{ env.REPO_PATH }}/${{ env.TEAM }}/${{ env.SERVICE_NAME }}/values_dev_test_ci.yaml
+          cat ${{ matrix.project.project_path }}/.k8s/values_dev.yaml > ${{ env.REPO_PATH }}/${{ env.TEAM }}/${{ env.SERVICE_NAME }}/values_dev_test_ci.yaml
 
       - name: Modify values
         run: |
