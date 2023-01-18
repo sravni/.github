@@ -154,7 +154,8 @@ jobs:
         if: ${{ env.IMAGE_EXIST == 'false' }}
         uses: docker/setup-buildx-action@v1
         with:
-          driver: docker
+          endpoint: builders
+          driver: kubernetes
 
       #Шаг сборки образа (с пушем)
       - name: Docker build
