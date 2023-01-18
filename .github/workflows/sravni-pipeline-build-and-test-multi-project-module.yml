@@ -172,3 +172,5 @@ jobs:
             GITHUB_NPM_TOKEN=${{ secrets.GH_TOKEN }}
           push: ${{ inputs.with_push }}
           tags: "${{ secrets.CONTAINER_REGISTRY }}/${{ matrix.project.image_name }}"
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
