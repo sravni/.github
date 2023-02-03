@@ -52,7 +52,7 @@ jobs:
             echo "::error::Публикация в азур возможна только для тегов" && exit 1
           fi
       - id: out-tag
-        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+        run: echo "tag=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
   
   #Подготавливает список проектов для последующей сборки, тестов и передачи в output.
   #более подробное описание можно посмотреть по пути в uses

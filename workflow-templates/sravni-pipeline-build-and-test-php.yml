@@ -22,13 +22,13 @@ jobs:
       services: ${{ steps.get-services.outputs.services }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Get services
         id: get-services
         run: |
           services=$(ls -d .k8s/services/*.Service | sed 's|.*/\([^/]*\)$|\1|' | jq -R '[.]' | jq -s -c 'add')
           echo "services list: ${services}"
-          echo "::set-output name=services::${services}"
+          echo "services=${services}" >> $GITHUB_OUTPUT
 
 #Описание Джобы build_and_test и ее шагов:
   build_and_test:
@@ -48,7 +48,7 @@ jobs:
 
     steps:
       - name: Checkout source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Set build vars to GITHUB_ENV
         run: |
@@ -73,7 +73,7 @@ jobs:
 
       #Шаг установки buildx
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
         with:
           driver: docker
 

@@ -61,7 +61,7 @@ jobs:
             yc-stage-k8s --external
       
       - name: Checkout qaenv helpers
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: sravni/qa-environment-helpers
           path: qaenv
@@ -83,7 +83,7 @@ jobs:
             exit 1;
           fi
           echo "NAMESPACE=$namespace" >> $GITHUB_ENV
-          echo "::set-output name=namespace::$namespace"
+          echo "namespace=$namespace" >> $GITHUB_OUTPUT
       #Шаг проверки наличия уже созданного неймспейса
       - name: Check if namespace already exists
         run: |

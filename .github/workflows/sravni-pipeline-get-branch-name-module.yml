@@ -38,6 +38,6 @@ jobs:
           
       - id: out_branch_name
         run: |
-          echo "::set-output name=branch_name::${{ env.BRANCH }}"
+          echo "branch_name=${{ env.BRANCH }}" >> $GITHUB_OUTPUT
 
    

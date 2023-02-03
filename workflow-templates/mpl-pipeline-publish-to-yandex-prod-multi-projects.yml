@@ -56,13 +56,13 @@ jobs:
             echo "::error::Публикация в prod-mpl возможна только для тегов" && exit 1
           fi
       - id: out-tag
-        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+        run: echo "tag=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
       # Из-за не возможности использовать в inputs джобы таких выражений {{ env.TEAM }}, 
       # передаем глобальные env через output джобы
       - id: out-variables
         name: Output environment variables
         run: |
-          echo "::set-output name=team::${{ env.TEAM }}"
+          echo "team=${{ env.TEAM }}" >> $GITHUB_OUTPUT
   
   #Подготавливает список проектов для последующей сборки, тестов и передачи в output.
   #более подробное описание можно посмотреть по пути в uses

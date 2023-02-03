@@ -86,10 +86,10 @@ jobs:
           password: ${{ secrets.DOCKER_PASS }}
 
       - name: Checkout source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Checkout helm repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: sravni/helm-charts
           path: charts

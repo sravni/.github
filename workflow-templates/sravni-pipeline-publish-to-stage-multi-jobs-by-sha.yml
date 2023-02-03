@@ -25,7 +25,7 @@ jobs:
 
     steps:
       - name: Checkout source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           ref: ${{ inputs.commit-SHA }}
 
@@ -34,7 +34,7 @@ jobs:
         run: |
           jobs=$(ls -d *.Job | jq -R '[.]' | jq -s -c 'add')
           echo "Jobs list: ${jobs}"
-          echo "::set-output name=jobs::${jobs}"
+          echo "jobs=${jobs}" >> $GITHUB_OUTPUT
 
 #Описание джобы prepublish
   prepublish:
@@ -59,7 +59,7 @@ jobs:
     steps:
       #checkout - собственно чекаут репозитория
       - name: Checkout source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       #Шаг получения необходимых переменных для работы пайплайна
       #job_name - получается из имени репозитория, например osago-frontend
@@ -146,10 +146,10 @@ jobs:
           password: ${{ secrets.DOCKER_PASS }}
 
       - name: Checkout source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Checkout qaenv helpers
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: sravni/qa-environment-helpers
           path: qaenv
@@ -157,7 +157,7 @@ jobs:
           ref: ${{ secrets.QAENV_REF }}
 
       - name: Checkout helm repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: sravni/helm-charts
           path: charts

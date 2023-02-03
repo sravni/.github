@@ -62,7 +62,7 @@ jobs:
 
     steps:
       - name: Checkout source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Get project name
         run: | 
@@ -114,7 +114,7 @@ jobs:
           echo Собираем следующие проекты:
           echo $projects | jq -r '.[] | .project_name'
           echo "name=project::${projects}"
-          echo "::set-output name=projects::${projects}"
+          echo "projects=${projects}" >> $GITHUB_OUTPUT
 
 #Описание джобы build_and_test
   build_and_test:
@@ -128,7 +128,7 @@ jobs:
     steps:
       #checkout - собственно чекаут репозитория
       - name: Checkout source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       #Шаг логина в наш реджестри в Azure
       - name: Login to ACR
@@ -152,7 +152,7 @@ jobs:
       #Шаг установки buildx
       - name: Set up Docker Buildx
         if: ${{ env.IMAGE_EXIST == 'false' }}
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
         with:
           driver: docker
 

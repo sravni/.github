@@ -22,13 +22,13 @@ jobs:
       jobs: ${{ steps.get-jobs.outputs.jobs }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Get jobs
         id: get-jobs
         run: |
           jobs=$(ls -d *.Job | jq -R '[.]' | jq -s -c 'add')
           echo "Jobs list: ${jobs}"
-          echo "::set-output name=jobs::${jobs}"
+          echo "jobs=${jobs}" >> $GITHUB_OUTPUT
 
 #Описание Джобы build_and_test и ее шагов:
   build_and_test:
@@ -50,7 +50,7 @@ jobs:
     #checkout - собственно чекаут репозитория
     steps:
       - name: Checkout source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       #Шаг получения необходимых переменных для работы пайплайна
       #job_name - получается из имени репозитория, например osago-frontend
@@ -76,7 +76,7 @@ jobs:
 
       #Шаг установки buildx
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
         with:
           driver: docker
 
