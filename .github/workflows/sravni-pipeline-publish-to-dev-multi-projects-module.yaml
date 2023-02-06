@@ -62,9 +62,9 @@ jobs:
       - name: Modify values
         run: >
           yq -i '.global.image.tag = "${{ matrix.project.image_version }}" |
-                .global.image.repository = "sravni.azurecr.io/sravni-dadata-service" |
-                .global.imagePullSecrets[0] = "sravni-azurecr-io"'
-            ${{ env.REPO_PATH }}/${{ env.TEAM }}/${{ env.SERVICE_NAME }}/values_dev.yaml
+          .global.image.repository = "sravni.azurecr.io/sravni-dadata-service" |
+          .global.imagePullSecrets[0] = "sravni-azurecr-io"'
+          ${{ env.REPO_PATH }}/${{ env.TEAM }}/${{ env.SERVICE_NAME }}/values_dev.yaml
           
       - name: Commit and push
         uses: stefanzweifel/git-auto-commit-action@v4
