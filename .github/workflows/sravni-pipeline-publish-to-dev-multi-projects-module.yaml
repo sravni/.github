@@ -57,11 +57,14 @@ jobs:
       
       - name: Clone values from origin repo
         run: |
-          cat ${{ matrix.project.project_path }}/.k8s/values_dev.yaml > ${{ env.REPO_PATH }}/${{ env.TEAM }}/${{ env.SERVICE_NAME }}/values_dev_test_ci.yaml
+          cat ${{ matrix.project.k8s_yaml_path }} > ${{ env.REPO_PATH }}/${{ env.TEAM }}/${{ env.SERVICE_NAME }}/values_dev_test_ci.yaml
 
       - name: Modify values
         run: |
-          yq -i '.global.image.tag = "${{ matrix.project.image_version }}"' ${{ env.REPO_PATH }}/${{ env.TEAM }}/${{ env.SERVICE_NAME }}/values_dev.yaml
+          yq -i '.global.image.tag = "${{ matrix.project.image_version }}" | \
+                .global.image.repository = "sravni.azurecr.io/sravni-dadata-service" | \
+                .global.imagePullSecrets[0] = "sravni-azurecr-io"' \
+            ${{ env.REPO_PATH }}/${{ env.TEAM }}/${{ env.SERVICE_NAME }}/values_dev.yaml
           
       - name: Commit and push
         uses: stefanzweifel/git-auto-commit-action@v4
