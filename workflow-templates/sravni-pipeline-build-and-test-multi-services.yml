@@ -22,13 +22,13 @@ jobs:
       services: ${{ steps.get-services.outputs.services }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Get services
         id: get-services
         run: |
           services=$(ls -d *.Service | jq -R '[.]' | jq -s -c 'add')
           echo "Services list: ${services}"
-          echo "::set-output name=services::${services}"
+          echo "services=${services}" >> $GITHUB_OUTPUT
 
 #Описание Джобы build_and_test и ее шагов:
   build_and_test:
@@ -50,7 +50,7 @@ jobs:
     #checkout - собственно чекаут репозитория
     steps:
       - name: Checkout source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       #Шаг получения необходимых переменных для работы пайплайна
       #service_name - получается из имени репозитория, например osago-frontend
@@ -68,7 +68,7 @@ jobs:
 
       #Шаг логина в наш реджестри в Azure
       - name: Login to ACR
-        uses: docker/login-action@v1
+        uses: docker/login-action@v2
         with:
           registry: ${{ secrets.CONTAINER_REGISTRY }}
           username: ${{ secrets.DOCKER_LOGIN }}
@@ -76,13 +76,13 @@ jobs:
 
       #Шаг установки buildx
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
         with:
           driver: docker
 
       #Шаг сборки образа (без пуша)
       - name: Docker build
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v4
         with:
           context: .
           file: ${{ matrix.service }}/Dockerfile

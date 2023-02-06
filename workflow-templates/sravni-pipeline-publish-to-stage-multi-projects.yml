@@ -76,14 +76,14 @@ jobs:
             only_build_and_test="true"
             should_push="false"
           fi
-          echo "::set-output name=only_build_and_test::$only_build_and_test" 
-          echo "::set-output name=should_push::$should_push"
+          echo "only_build_and_test=$only_build_and_test" >> $GITHUB_OUTPUT 
+          echo "should_push=$should_push" >> $GITHUB_OUTPUT
       # Из-за не возможности использовать в inputs джобы таких выражений {{ env.TEAM }}, 
       # передаем глобальные env через output джобы
       - id: env-vars
         name: Output environment variables
         run: |
-          echo "::set-output name=team::${{ env.TEAM }}"
+          echo "team=${{ env.TEAM }}" >> $GITHUB_OUTPUT
 
   #Подготавливает список проектов для последующей сборки, тестов и передачи в output.
   #более подробное описание можно посмотреть по пути в uses

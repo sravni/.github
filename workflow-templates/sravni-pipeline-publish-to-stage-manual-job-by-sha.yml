@@ -37,7 +37,7 @@ jobs:
     steps:
       #checkout - собственно чекаут репозитория
       - name: Checkout source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           ref: ${{ inputs.commit-SHA }}
 
@@ -57,7 +57,7 @@ jobs:
 
       #Шаг логина в наш реджестри в Azure
       - name: Login to ACR
-        uses: docker/login-action@v1
+        uses: docker/login-action@v2
         with:
           registry: ${{ secrets.CONTAINER_REGISTRY }}
           username: ${{ secrets.DOCKER_LOGIN }}
@@ -66,7 +66,7 @@ jobs:
       #Шаг сборки образа (с пушем)
       - name: Docker build
         id: docker_build
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v4
         with:
           context: .
           file: ${{ inputs.job_name }}/Dockerfile
@@ -114,17 +114,17 @@ jobs:
             yc-stage-k8s --external
 
       - name: Login to ACR
-        uses: docker/login-action@v1
+        uses: docker/login-action@v2
         with:
           registry: ${{ secrets.CONTAINER_REGISTRY }}
           username: ${{ secrets.DOCKER_LOGIN }}
           password: ${{ secrets.DOCKER_PASS }}
 
       - name: Checkout source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Checkout qaenv helpers
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: sravni/qa-environment-helpers
           path: qaenv
@@ -132,7 +132,7 @@ jobs:
           ref: ${{ secrets.QAENV_REF }}
 
       - name: Checkout helm repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: sravni/helm-charts
           path: charts

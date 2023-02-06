@@ -29,7 +29,7 @@ jobs:
     steps:
       #checkout - собственно чекаут репозитория
       - name: Checkout source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       #Шаг получения необходимых переменных для работы пайплайна
       #service_name - получается из имени репозитория, например osago-frontend
