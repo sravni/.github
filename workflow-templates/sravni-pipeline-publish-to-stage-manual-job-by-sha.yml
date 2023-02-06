@@ -57,7 +57,7 @@ jobs:
 
       #Шаг логина в наш реджестри в Azure
       - name: Login to ACR
-        uses: docker/login-action@v1
+        uses: docker/login-action@v2
         with:
           registry: ${{ secrets.CONTAINER_REGISTRY }}
           username: ${{ secrets.DOCKER_LOGIN }}
@@ -114,7 +114,7 @@ jobs:
             yc-stage-k8s --external
 
       - name: Login to ACR
-        uses: docker/login-action@v1
+        uses: docker/login-action@v2
         with:
           registry: ${{ secrets.CONTAINER_REGISTRY }}
           username: ${{ secrets.DOCKER_LOGIN }}
