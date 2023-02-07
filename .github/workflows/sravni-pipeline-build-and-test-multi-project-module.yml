@@ -169,7 +169,7 @@ jobs:
           file: ${{ matrix.project.dockerfile }}
           build-args: |
             build_number=${{ matrix.project.build_number }}
-            ENVIROMENT=${{ inputs.is_stage == 'true' && 'stage' || 'production'  }}
+            ENVIROMENT=${{ inputs.is_stage && 'stage' || 'production'  }}
             GITHUB_TOKEN=${{ secrets.GH_TOKEN }}
             GITHUB_USERNAME=sravni
             GITHUB_NPM_TOKEN=${{ secrets.GH_TOKEN }}
