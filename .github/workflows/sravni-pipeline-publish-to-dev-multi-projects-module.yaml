@@ -27,11 +27,15 @@ jobs:
   get_branch_name:
     uses: sravni/.github/.github/workflows/sravni-pipeline-get-branch-name-module.yml@master
   
-  vars:
+  vars: 
     name: Setup variables
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner }}
     outputs:
-      team: ${{ env.TEAM }}
+      team: ${{ steps.set_team.outputs.team }}
+    steps:
+      - name: Set team
+        id: set_team
+        run: echo "team=${TEAM}" >> $GITHUB_OUTPUT
 
   publish:
     runs-on: ${{ inputs.runner }}
