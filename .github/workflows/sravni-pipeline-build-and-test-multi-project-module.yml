@@ -83,6 +83,7 @@ jobs:
           echo "BUILD_NUMBER=$build_number" >> $GITHUB_ENV
           echo "IMAGE_VERSION=$image_version" >> $GITHUB_ENV
       
+      
       # Cобирает список проетвов для сборки. 
       # Проверяет существует ли в проекте файл для публикации inputs.k8s_yaml_file_name, 
       # если файла не существует то не добавляет такой проект в список для сборки.
@@ -168,6 +169,7 @@ jobs:
           file: ${{ matrix.project.dockerfile }}
           build-args: |
             build_number=${{ matrix.project.build_number }}
+            ENVIROMENT=${{ inputs.is_stage && 'stage' || 'production'  }}
             GITHUB_TOKEN=${{ secrets.GH_TOKEN }}
             GITHUB_USERNAME=sravni
             GITHUB_NPM_TOKEN=${{ secrets.GH_TOKEN }}
