@@ -19,7 +19,7 @@ jobs:
 
     outputs:
       branch_name: ${{ steps.out_branch_name.outputs.branch_name }}
-
+      branch_name_lowered: ${{ steps.out_branch_name.outputs.branch_name_lowered }}
     steps:
       # Шаги проверки ивента и выставления имени бранчи в зависимости от него
       - name: Get branch name (merge)
