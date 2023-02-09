@@ -21,13 +21,14 @@ jobs:
       branch_name: ${{ steps.out_branch_name.outputs.branch_name }}
 
     steps:
-      #Шаги проверки ивента и выставления имени бранчи в зависимости от него
+      # Шаги проверки ивента и выставления имени бранчи в зависимости от него
       - name: Get branch name (merge)
         if: github.event_name != 'pull_request'
         run: |
           branch=$(echo ${GITHUB_REF#refs/heads/} | tr / -)
           if [ $branch == "yandex" ]; then branch="master";fi
           echo "BRANCH=$branch" >> $GITHUB_ENV
+          echo "BRANCH_LOWERED=${branch,,}" >> $GITHUB_ENV
 
       - name: Get branch name (pull request)
         if: github.event_name == 'pull_request'
@@ -35,9 +36,12 @@ jobs:
           branch=$(echo ${GITHUB_HEAD_REF} | tr / -)
           if [ $branch == "yandex" ]; then branch="master";fi
           echo "BRANCH=$branch" >> $GITHUB_ENV
+          echo "BRANCH_LOWERED=${branch,,}" >> $GITHUB_ENV
           
       - id: out_branch_name
         run: |
           echo "branch_name=${{ env.BRANCH }}" >> $GITHUB_OUTPUT
+          echo "branch_name_lowered=${{ env.BRANCH_LOWERED }}" >> $GITHUB_OUTPUT
+
 
    
