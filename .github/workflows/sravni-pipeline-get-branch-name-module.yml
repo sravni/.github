@@ -12,6 +12,9 @@ on:
       branch_name:
         description: "Название ветки в рамках которой выполняется workflow"
         value: ${{ jobs.get_branch_name.outputs.branch_name }}
+      branch_name_lowered:
+        description: "Название ветки в lowercase в рамках которой выполняется workflow"
+        value: ${{ jobs.get_branch_name.outputs.branch_name_lowered }}
 
 jobs:
   get_branch_name:
