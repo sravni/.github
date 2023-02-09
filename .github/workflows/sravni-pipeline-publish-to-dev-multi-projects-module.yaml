@@ -42,7 +42,7 @@ jobs:
     needs: [ get_branch_name, vars ]
 
     env:
-      BRANCH: ${{ needs.get_branch_name.outputs.branch_name_lowered }}
+      BRANCH: '${{ needs.get_branch_name.outputs.branch_name_lowered }}'
       REPO_PATH: './deploy/${{ needs.vars.outputs.team }}'
       YQ_VERSION: '4.30.3'
 
