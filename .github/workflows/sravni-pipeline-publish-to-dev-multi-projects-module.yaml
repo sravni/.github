@@ -25,7 +25,7 @@ env:
 
 jobs:
   get_branch_name:
-    uses: sravni/.github/.github/workflows/sravni-pipeline-get-branch-name-module.yml@branch_dev_deploy
+    uses: sravni/.github/.github/workflows/sravni-pipeline-get-branch-name-module.yml@master
   
   vars: 
     name: Setup variables
