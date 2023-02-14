@@ -97,7 +97,6 @@ jobs:
           || yq e  -i '.services += {"name": "${{ matrix.project.project_name }}-${{ env.BRANCH }}", "values_file": "values_${{ env.BRANCH }}.yaml", 
           "nameOrigin": "${{ matrix.project.project_name }}"}' ${{ env.REPO_PATH }}/_apps/values_dev.yaml 
           ; fi
-
           ; yq e '.global.image.tag = "${{ matrix.project.image_version }}" | .ingresses[0].host |= sub ("(^)", "${{ env.BRANCH }}-${1}") |
           .global.image.repository = "sravni.azurecr.io/${{ matrix.project.project_name }}" |
           .global.imagePullSecrets[0] = "sravni-azurecr-io"'
