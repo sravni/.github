@@ -70,9 +70,11 @@ jobs:
           fi
 
       - name: Get projects (multi)
-        if: ${{ steps.repo_type.outputs.repo_type == 'multi' }}
         id: get_projects_multi
         run: |
+          # Выходим, если репозиторий не мультисервисный
+          if [[ ${{ steps.repo_type.outputs.repo_type }} != 'multi' ]]; then exit 0; fi
+
           projects=$(for p in $(find * -maxdepth 3 -path "${{ inputs.project_path_mask }}/Dockerfile")
             do  
               project_path=$(echo $p | sed -E 's|(.*)/Dockerfile$|\1|')
@@ -96,9 +98,11 @@ jobs:
           echo "projects=${projects}" >> $GITHUB_OUTPUT
 
       - name: Get projects (mono)
-        if: ${{ steps.repo_type.outputs.repo_type == 'mono' }}
         id: get_projects_mono
         run: |
+          # Выходим, если репозиторий не моносервисный
+          if [[ ${{ steps.repo_type.outputs.repo_type }} != 'mono' ]]; then exit 0; fi
+
           project_name=$(basename `git rev-parse --show-toplevel`) # имя сервиса по названию репы
           image_name="${project_name}:${{ env.IMAGE_VERSION }}"
           project_path='.'
