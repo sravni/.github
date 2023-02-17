@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
 
     outputs:
-      projects: ${{ steps.get_projects.outputs.projects }}
+      projects: ${{ steps.get_projects_multi.outputs.projects || steps.get_projects_mono.outputs.projects }}
     
     steps:
       - name: Checkout source
@@ -54,13 +54,29 @@ jobs:
           echo "BUILD_NUMBER=$build_number" >> $GITHUB_ENV
           echo "IMAGE_VERSION=$image_version" >> $GITHUB_ENV
 
-      - name: Get projects
-        id: get_projects
+      # Определяет тип репозитория: односервисный или мульисервисный.
+      # Определяет по наличию Dockerfile в корне репозитория: если он там есть, то
+      # считаем, что в этой репе один сервис. В этом случае именем сервиса будет имя репы.
+      - name: Check repo type
+        id: repo_type
+        run: |
+          if [[ -f './Dockerfile' ]]
+          then
+            echo 'Определили репозиторий как моносервисный'
+            echo "REPO_TYPE='mono'" >> $GITHUB_ENV
+          else
+            echo 'Определили репозиторий как мультисервисный'
+            echo "REPO_TYPE='multi'" >> $GITHUB_ENV
+          fi
+
+      - name: Get projects (multi)
+        if: ${{ env.REPO_TYPE == 'multi' }}
+        id: get_projects_multi
         run: |
           projects=$(for p in $(find * -maxdepth 3 -path "${{ inputs.project_path_mask }}/Dockerfile")
             do  
               project_path=$(echo $p | sed -E 's|(.*)/Dockerfile$|\1|')
-              if ! test -f "$project_path/.k8s/${{ inputs.k8s_yaml_file_name }}"
+              if [[ ! -f "$project_path/.k8s/${{ inputs.k8s_yaml_file_name }}" ]]
               then 
                 echo ""
               else
@@ -75,7 +91,32 @@ jobs:
                         \"image_version\":\"${{ env.IMAGE_VERSION }}\" }"
               fi
             done | jq -src '.')
-          echo Найдены следующие проекты:
+          echo 'Найдены следующие проекты:'
           echo $projects | jq -r '.[] | .project_name'
-          echo "name=project::${projects}"
           echo "projects=${projects}" >> $GITHUB_OUTPUT
+
+      - name: Get projects (mono)
+        if: ${{ env.REPO_TYPE == 'mono' }}
+        id: get_projects_mono
+        run: |
+          project_name=$(basename `git rev-parse --show-toplevel`) # имя сервиса по названию репы
+          image_name="${project_name}:${{ env.IMAGE_VERSION }}"
+          project_path='.'
+          projects=$(
+            if [[ ! -f "$project_path/.k8s/${{ inputs.k8s_yaml_file_name }}" ]]
+            then
+              echo ""
+            else 
+              echo "{ \"project_name\":\"$project_name\", \
+                    \"dockerfile\":\"./Dockerfile\", \
+                    \"project_path\":\"$project_path\", \
+                    \"k8s_yaml_path\":\"$project_path/.k8s/${{ inputs.k8s_yaml_file_name }}\", \
+                    \"build_number\":\"${{ env.BUILD_NUMBER }}\", \
+                    \"image_name\":\"$image_name\", \
+                    \"image_version\":\"${{ env.IMAGE_VERSION }}\" }"
+            fi | jq -src '.')
+          echo $projects
+          echo 'Найдены следующие проекты:'
+          echo $projects | jq -r '.[] | .project_name'
+          echo "projects=${projects}" >> $GITHUB_OUTPUT
+
