@@ -73,11 +73,10 @@ jobs:
         run: |
           if [[ "${{ env.BRANCH }}" == 'master' ]];
           then
-          fn="${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_dev.yaml";
+          cat ${{ matrix.project.k8s_yaml_path }} > ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_dev.yaml;
           else
-          fn="${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_${{ env.BRANCH }}.yaml";
+          cat ${{ matrix.project.k8s_yaml_path }} > ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_${{ env.BRANCH }}.yaml;
           fi;
-          cat ${{ matrix.project.k8s_yaml_path }} > $vf;
 
       # Для master'а устанавливаем tag образа и убеждаемся, что установлены `global.image.repository` и `global.imagePullSecrets`
       - name: Modify values
