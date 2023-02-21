@@ -67,9 +67,17 @@ jobs:
           sudo wget -O /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/v${{ env.YQ_VERSION }}/yq_linux_amd64
           sudo chmod +x /usr/local/bin/yq
 
+      # Копирование *.yaml файла с вэйльюсами из репы сервиса в deploy. Фактическое название файла приходит в JSON'е в projects.
+      # Если это деплой не из master'а, но в delpoy этот файл должен быть с суффиксом ветки. Если из master'а — просто values_dev.yaml.
       - name: Clone values from origin repo
         run: |
-          cat ${{ matrix.project.k8s_yaml_path }} > ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_dev.yaml
+          if [[ "${{ env.BRANCH }}" == 'master' ]];
+          then
+          fn="${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_dev.yaml";
+          else
+          fn="${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_${{ env.BRANCH }}.yaml";
+          fi;
+          cat ${{ matrix.project.k8s_yaml_path }} > $vf;
 
       # Для master'а устанавливаем tag образа и убеждаемся, что установлены `global.image.repository` и `global.imagePullSecrets`
       - name: Modify values
@@ -84,19 +92,17 @@ jobs:
       # есть запись вида:
       # services:
       #   …
-      #   - name: education-frontend
+      #   - name: sravni-dadata-service
       #   …
-      #   - name: education-frontend-edu-103
-      #     values_file: values_edu-103.yaml
-      #     nameOrigin: education-frontend
+      #   - name: sravni-dadata-service-pe-3103
+      #     values_file: values_pe-3103.yaml
+      #     nameOrigin: sravni-dadata-service
       - name: Create app and set values
         if: ${{ env.BRANCH != 'master' }}
         run: >
-          if [ ! -f "${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_${{ env.BRANCH }}.yaml" ]; 
-          then grep -q ${{ env.BRANCH }} ${{ env.REPO_PATH }}/_apps/values_dev.yaml 
+          grep -q ${{ env.BRANCH }} ${{ env.REPO_PATH }}/_apps/values_dev.yaml 
           || yq e  -i '.services += {"name": "${{ matrix.project.project_name }}-${{ env.BRANCH }}", "values_file": "values_${{ env.BRANCH }}.yaml", 
           "nameOrigin": "${{ matrix.project.project_name }}"}' ${{ env.REPO_PATH }}/_apps/values_dev.yaml 
-          ; fi
           ; yq e '.global.image.tag = "${{ matrix.project.image_version }}" | .ingresses[0].host |= sub ("(^)", "${{ env.BRANCH }}-${1}") |
           .global.image.repository = "sravni.azurecr.io/${{ matrix.project.project_name }}" |
           .global.imagePullSecrets[0] = "sravni-azurecr-io"'
