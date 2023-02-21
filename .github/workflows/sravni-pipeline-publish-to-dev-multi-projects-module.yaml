@@ -1,4 +1,4 @@
-name: Publish to dev  projects base module
+name: Publish to dev projects base module
 
 on:
   workflow_call:
