@@ -63,6 +63,11 @@ jobs:
           path: deploy
           ref: main
       
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: 3.8.2
+
       # Если это первая выкладка проекта на dev, то выполняем скрипт helm_create.sh из репы Deploy.
       # Он создаст необходимые файлы, которые в процессе деплоя будем модифицировать.
       - name: Ensure project exist
