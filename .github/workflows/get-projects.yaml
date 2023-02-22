@@ -1,3 +1,21 @@
+# Модуль для сбора информации о проектах в репозитории.
+# Формирует JSON вида:
+# [
+#  {
+#    "project_name": "sravni-signer-service",
+#    "dockerfile": "Sravni.Signer.Service/Dockerfile",
+#    "project_path": "Sravni.Signer.Service",
+#    "k8s_yaml_path": "Sravni.Signer.Service/.k8s/ya-dev.yaml",
+#    "build_number": "b2a14ff-qa",
+#    "image_name": "sravni-signer-service:b2a14ff-qa",
+#    "image_version": "b2a14ff-qa"
+#  }
+# ]
+#
+# В массиве по одному объекту для каждого проекта найденного в репозитории. Проектом считается папка в которой
+# находится Dockerfile и папка .k8s с ямлями. Если задать параметр project_path_mask, то в результат попадут 
+# только те проекты, папки которых удовлетворяют этой маске.
+
 name: Get projects
 
 on:

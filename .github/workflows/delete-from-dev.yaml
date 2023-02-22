@@ -1,4 +1,4 @@
-name: Delete-from-dev
+name: Delete from dev
 
 on:
   workflow_call:
