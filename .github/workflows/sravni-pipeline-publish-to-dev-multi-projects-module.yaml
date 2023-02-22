@@ -72,7 +72,7 @@ jobs:
             echo 'Проект ${{ env.REPO_PATH }}/${{ matrix.project.project_name }} уже существует'
           else
             echo 'Проект ${{ env.REPO_PATH }}/${{ matrix.project.project_name }} не существует, создадим новый'
-            ./helm_create.sh ${{ env.TEAM }} ${{ matrix.project.project_name }}
+            ./deploy/helm_create.sh ${{ env.TEAM }} ${{ matrix.project.project_name }}
           fi;
 
       - name: Install yq
