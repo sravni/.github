@@ -7,8 +7,12 @@ on:
         description: 'team'
         required: true 
         type: string
+      branch:
+        description: 'Название ветки'
+        required: true
+        type: string
       projects:
-        description: "JSON объект со списком проектов для публикации"
+        description: "JSON объект со списком проектов"
         required: true
         type: string
       runner:
@@ -53,4 +57,3 @@ jobs:
           commit_user_name: sravnidevops
           commit_user_email: company-service@sravni.ru
           commit_message: "Deleted services from repo ${{ github.repository }} and branch ${{ inputs.branch }}"
-          
