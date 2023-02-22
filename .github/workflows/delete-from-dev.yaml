@@ -1,0 +1,56 @@
+name: Delete from dev
+
+on:
+  workflow_call:
+    inputs:
+      team:
+        description: 'team'
+        required: true 
+        type: string
+      projects:
+        description: "JSON объект со списком проектов для публикации"
+        required: true
+        type: string
+      runner:
+        description: "Указывает какой раннер будет использоваться для запуска флоу"
+        required: false
+        default: sravni_dev
+        type: string
+    secrets: 
+      TEST_CI_PAT_FOR_ACTIONS:
+        required: true
+
+jobs:
+  delete:
+    runs-on: ${{ inputs.runner }}
+    steps:
+      - name: Checkout deploy repo
+        uses: actions/checkout@v3
+        with:
+          repository: sravni/deploy
+          token: ${{ secrets.TEST_CI_PAT_FOR_ACTIONS }}
+          path: deploy
+          ref: main
+
+      - name: Install yq
+        run: |
+          sudo wget -O /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/v4.30.3/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: Delete branch services
+        working-directory: './deploy/${{ inputs.team }}'
+        run: |
+          echo '${{ inputs.projects }}' | jq -rc '.[].project_name' | while read pn; do
+            rm -f "${pn}/values_${{ inputs.branch }}.yaml"
+            yq -i "del(.services[] | select(.name == \"${pn}-${{ inputs.branch }}\"))" ./_apps/values_dev.yaml
+          done
+
+      - name: Commit and push
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          repository: ./deploy
+          branch: main
+          commit_user_name: sravnidevops
+          commit_user_email: company-service@sravni.ru
+          commit_message: "Deleted services from repo ${{ github.repository }} and branch ${{ inputs.branch }}"
+          
