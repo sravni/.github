@@ -20,7 +20,7 @@ env:
   ### Название команды
   # Необходимо указать название своей команды
   team: ""
-  
+
   ### Название файла со значениями для helm-чарта
   # Необходимо изменить, если он называется по-другому 
   k8s_yaml_file_name: "ya-dev.yaml"
@@ -65,13 +65,13 @@ jobs:
 
   get_projects:
     needs: [vars, validate_branch]
-    uses: sravni/.github/.github/workflows/get-projects.yaml@get_projects
+    uses: sravni/.github/.github/workflows/get-projects.yaml@master
     with:
       k8s_yaml_file_name: ${{ needs.vars.outputs.k8s_yaml_file_name }}
 
   delete:
     needs: [vars, get_projects]
-    uses: sravni/.github/.github/workflows/delete-from-dev.yaml@get_projects
+    uses: sravni/.github/.github/workflows/delete-from-dev.yaml@master
     with:
       team: ${{ needs.vars.outputs.team }}
       branch: ${{ needs.vars.outputs.branch }}

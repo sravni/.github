@@ -52,7 +52,7 @@ jobs:
   # списка проектов для сборки.
   # | project_name | dockerfile | project_path | k8s_yaml_path | build_number | image_name | image_version |
   get_projects:
-    uses: sravni/.github/.github/workflows/get-projects.yaml@get_projects
+    uses: sravni/.github/.github/workflows/get-projects.yaml@master
     with:
       k8s_yaml_file_name: ${{ inputs.k8s_yaml_file_name }}
       project_path_mask: ${{ inputs.project_path_mask }}
