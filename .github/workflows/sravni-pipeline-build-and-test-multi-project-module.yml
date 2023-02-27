@@ -15,13 +15,6 @@ on:
         description: "Пушить ли собранный образ"
         required: true
         type: boolean
-      # runner указывает какой раннер будет использоваться для запуска данной Джобы
-      # ubuntu-20.04 - офф раннер гитхаба на основе дистрибутива ubuntu
-      # раннеры на основе других дистрибутивов можно найти в следующей доке:
-      # https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources
-      #                           !!!!!!!!!!!!ВАЖНО!!!!!!!!!!
-      # sravni_ycloud_stage - наш раннер, необходимо указывать при наличии интегротестов
-      #                          !!!!!!!!!!!!!!!!!!!!!!!!!!!!
       runner:
         description: "Указывает какой раннер будет использоваться для запуска флоу"
         default: "sravni_ycloud_stage"
@@ -59,67 +52,14 @@ jobs:
   # списка проектов для сборки.
   # | project_name | dockerfile | project_path | k8s_yaml_path | build_number | image_name | image_version |
   get_projects:
-    runs-on: ${{ inputs.runner }}
+    uses: sravni/.github/.github/workflows/get-projects.yaml@master
+    with:
+      k8s_yaml_file_name: ${{ inputs.k8s_yaml_file_name }}
+      project_path_mask: ${{ inputs.project_path_mask }}
+      image_version: ${{ inputs.image_version }}
+      is_stage: ${{ inputs.is_stage }}
+      runner: ${{ inputs.runner }}
 
-    outputs:
-      projects: ${{ steps.get_projects_to_build.outputs.projects }}
-
-    steps:
-      - name: Checkout source
-        uses: actions/checkout@v3
-
-      - name: Get build number and image version
-        run: |
-          if [ -z "${{ inputs.image_version }}" ]
-          then
-            build_number=$(echo ${GITHUB_SHA} | cut -c1-7)
-            if [ "${{ inputs.is_stage }}" = "true" ]
-              then build_number="$build_number-qa"
-            fi
-            image_version="${build_number}"
-          else
-            image_version="${{ inputs.image_version }}"
-          fi
-          echo "BUILD_NUMBER=$build_number" >> $GITHUB_ENV
-          echo "IMAGE_VERSION=$image_version" >> $GITHUB_ENV
-      
-      
-      # Cобирает список проетвов для сборки. 
-      # Проверяет существует ли в проекте файл для публикации inputs.k8s_yaml_file_name, 
-      # если файла не существует то не добавляет такой проект в список для сборки.
-      # project_name - имя проекта, определяется из директории c Dockerfile
-      # project_path - путь к содержимому проект и к Dockerfile
-      # k8s_yaml_path - путь к файлу k8s
-      # build_number - тег нашего образа, состоит из sha коммита и постфикса qa для стейдж окружения, для прода постфикс отсутствует
-      # image_name - полное имя образа, к примеру sravni.azurecr.io/sravni-identity-service:ha751ufq
-      - name: Get projects to build
-        id: get_projects_to_build
-        run: |
-          projects=$(for p in $(find * -maxdepth 2 -path "${{ inputs.project_path_mask }}/Dockerfile")
-            do  
-              project_path=$(echo $p | sed -E 's|(.*)/Dockerfile$|\1|')
-              if ! test -f "$project_path/.k8s/${{ inputs.k8s_yaml_file_name }}"
-              then 
-                echo "" 
-              else
-                project_name=$(echo $p | sed -E 's|(.*/\|)(.*)/Dockerfile$|\2|' | tr '[:upper:]' '[:lower:]' | sed 's|\.|-|g')
-                image_name="${project_name}:${{ env.IMAGE_VERSION }}"
-                echo "{ \"project_name\":\"$project_name\", \
-                        \"dockerfile\":\"$p\", \
-                        \"project_path\":\"$project_path\", \
-                        \"k8s_yaml_path\":\"$project_path/.k8s/${{ inputs.k8s_yaml_file_name }}\", \
-                        \"build_number\":\"${{ env.BUILD_NUMBER }}\", \
-                        \"image_name\":\"$image_name\", \
-                        \"image_version\":\"${{ env.IMAGE_VERSION }}\" }"
-              fi
-            done | jq -s -r -c '.')
-          echo $projects
-          echo Собираем следующие проекты:
-          echo $projects | jq -r '.[] | .project_name'
-          echo "name=project::${projects}"
-          echo "projects=${projects}" >> $GITHUB_OUTPUT
-
-# Описание джобы build_and_test
   build_and_test:
     runs-on: ${{ inputs.runner }}
     needs: [get_projects]
@@ -129,11 +69,9 @@ jobs:
         project: ${{ fromJson(needs.get_projects.outputs.projects) }}
 
     steps:
-      # checkout - собственно чекаут репозитория
       - name: Checkout source
         uses: actions/checkout@v3
 
-      # Шаг логина в наш реджестри в Azure
       - name: Login to ACR
         uses: docker/login-action@v2
         with:
@@ -152,7 +90,6 @@ jobs:
             echo "Образ ${{ matrix.project.image_name }} уже cуществует"
           fi
           
-      # Шаг установки buildx
       - name: Set up Docker Buildx
         if: ${{ env.IMAGE_EXIST == 'false' }}
         uses: docker/setup-buildx-action@v2
@@ -160,7 +97,6 @@ jobs:
           driver: docker
           version: v0.10.0
 
-      # Шаг сборки образа (с пушем)
       - name: Docker build
         if: ${{ env.IMAGE_EXIST == 'false' }}
         uses: docker/build-push-action@v4
