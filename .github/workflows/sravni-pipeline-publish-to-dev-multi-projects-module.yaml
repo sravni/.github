@@ -104,7 +104,7 @@ jobs:
           yq -i '.global.image.tag = "${{ matrix.project.image_version }}" |
           .global.image.repository = "sravni.azurecr.io/${{ matrix.project.project_name }}" |
           .global.imagePullSecrets[0] = "sravni-azurecr-io" |
-          .Branch = "${{ env.BRANCH }}" |
+          .Branch = "${{ env.BRANCH }}"'
           ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_dev.yaml;
 
       # Для деплоев из веток отличных от master, нужно убедиться, что в репе sravni/deploy в файле /deploy/{team}/_apps/values_dev.yaml
@@ -125,8 +125,8 @@ jobs:
           ; yq e -i '.global.image.tag = "${{ matrix.project.image_version }}" |
           .ingresses[0].host |= sub ("(^)", "${{ env.BRANCH }}-${1}") |
           .global.image.repository = "sravni.azurecr.io/${{ matrix.project.project_name }}" |
-          .global.imagePullSecrets[0] = "sravni-azurecr-io"'
-          .Branch = "${{ env.BRANCH }}" |
+          .global.imagePullSecrets[0] = "sravni-azurecr-io" | 
+          .Branch = "${{ env.BRANCH }}"'
           ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_${{ env.BRANCH }}.yaml;
 
       - name: Commit and push
