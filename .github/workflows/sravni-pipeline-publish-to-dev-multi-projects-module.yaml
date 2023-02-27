@@ -104,8 +104,8 @@ jobs:
           yq -i '.global.image.tag = "${{ matrix.project.image_version }}" |
           .global.image.repository = "sravni.azurecr.io/${{ matrix.project.project_name }}" |
           .global.imagePullSecrets[0] = "sravni-azurecr-io" |
-          .ingresses[].host |= sub ("\{\s*branch\s*\}", "${{ env.BRANCH }}")' 
-          ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_dev.yaml
+          ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_dev.yaml;
+          sed -Ei "s/\{\s*branch\s*\}/${{ env.BRANCH }}/g" ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_dev.yaml;
 
       # Для деплоев из веток отличных от master, нужно убедиться, что в репе sravni/deploy в файле /deploy/{team}/_apps/values_dev.yaml
       # есть запись вида:
@@ -124,10 +124,10 @@ jobs:
           "nameOrigin": "${{ matrix.project.project_name }}"}' ${{ env.REPO_PATH }}/_apps/values_dev.yaml
           ; yq e -i '.global.image.tag = "${{ matrix.project.image_version }}" |
           .ingresses[0].host |= sub ("(^)", "${{ env.BRANCH }}-${1}") |
-          .ingresses[].host |= sub ("\{\s*branch\s*\}", "${{ env.BRANCH }}") |
           .global.image.repository = "sravni.azurecr.io/${{ matrix.project.project_name }}" |
           .global.imagePullSecrets[0] = "sravni-azurecr-io"'
-          ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_${{ env.BRANCH }}.yaml
+          ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_${{ env.BRANCH }}.yaml;
+          sed -Ei "s/\{\s*branch\s*\}/${{ env.BRANCH }}/g" ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_${{ env.BRANCH }}.yaml;
 
       - name: Commit and push
         uses: stefanzweifel/git-auto-commit-action@v4
