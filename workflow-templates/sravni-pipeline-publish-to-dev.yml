@@ -43,7 +43,7 @@ jobs:
    
   build_and_test:
     needs: [vars]
-    uses: sravni/.github/.github/workflows/sravni-pipeline-build-and-test-multi-project-module.yml@master
+    uses: sravni/.github/.github/workflows/build-and-test.yaml@master
     with:
       is_stage: true
       with_push: true
@@ -58,7 +58,7 @@ jobs:
   
   deploy:
     needs: [build_and_test, vars]
-    uses: sravni/.github/.github/workflows/sravni-pipeline-publish-to-dev-multi-projects-module.yaml@master
+    uses: sravni/.github/.github/workflows/publish-to-dev.yaml@master
     with:
       projects: ${{ needs.build_and_test.outputs.projects }}
       team: ${{ needs.vars.outputs.team }}
