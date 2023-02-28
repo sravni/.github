@@ -103,7 +103,7 @@ jobs:
             project_name=${{ env.PROJECT_NAME }}
             image_name="${project_name}:${{ env.IMAGE_VERSION }}"
             projects=$(echo "{ \"project_name\":\"$project_name\", \
-                    \"dockerfile\":\"./Dockerfile\", \
+                    \"dockerfile\":\"$p\", \
                     \"project_path\":\"$project_path\", \
                     \"k8s_yaml_path\":\"$project_path/.k8s/${{ inputs.k8s_yaml_file_name }}\", \
                     \"build_number\":\"${{ env.BUILD_NUMBER }}\", \
@@ -113,6 +113,7 @@ jobs:
           echo $projects
           echo Собираем следующие проекты:
           echo $projects | jq -r '.[] | .project_name'
+          echo "name=project::${projects}"
           echo "projects=${projects}" >> $GITHUB_OUTPUT
 
 #Описание джобы build_and_test
