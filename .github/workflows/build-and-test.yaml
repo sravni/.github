@@ -1,0 +1,113 @@
+name: Build and test module
+
+on:
+  workflow_call:
+    inputs:
+      is_stage:
+        description: "Запускается ли план для публикации на стейдж"
+        required: true
+        type: boolean
+      project_path_mask:
+        description: "Маска пути к файлам проекта"
+        required: true
+        type: string
+      with_push:
+        description: "Пушить ли собранный образ"
+        required: true
+        type: boolean
+      runner:
+        description: "Указывает какой раннер будет использоваться для запуска флоу"
+        default: "sravni_ycloud_stage"
+        required: false
+        type: string
+      image_version:
+        description: "Версия образа"
+        required: false
+        type: string
+      k8s_yaml_file_name:
+        description: "Имя файла {environment}.yaml в директории .k8s проекта для валидации его наличия и передачи следующим джобам"
+        required: true
+        type: string
+
+    secrets: 
+      GH_TOKEN:
+        required: true
+      GITHUB_NPM_TOKEN:
+        required: true
+      CONTAINER_REGISTRY:
+        required: true
+      DOCKER_LOGIN:
+        required: true
+      DOCKER_PASS:
+        required: true
+
+    outputs:
+      projects:
+        description: "Собранные проекты"
+        value: ${{ jobs.get_projects.outputs.projects }}
+
+# Описание Джобов воркфлоу
+jobs:
+  # Описание Джобы get_projects и ее шага, в котором происходит составление
+  # списка проектов для сборки.
+  # | project_name | dockerfile | project_path | k8s_yaml_path | build_number | image_name | image_version |
+  get_projects:
+    uses: ./.github/workflows/get-projects.yaml@master
+    with:
+      k8s_yaml_file_name: ${{ inputs.k8s_yaml_file_name }}
+      project_path_mask: ${{ inputs.project_path_mask }}
+      image_version: ${{ inputs.image_version }}
+      is_stage: ${{ inputs.is_stage }}
+      runner: ${{ inputs.runner }}
+
+  build_and_test:
+    runs-on: ${{ inputs.runner }}
+    needs: [get_projects]
+
+    strategy:
+      matrix:
+        project: ${{ fromJson(needs.get_projects.outputs.projects) }}
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v3
+
+      - name: Login to ACR
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ secrets.CONTAINER_REGISTRY }}
+          username: ${{ secrets.DOCKER_LOGIN }}
+          password: ${{ secrets.DOCKER_PASS }}
+      
+      - name: Check if image exist
+        run: |
+          inspect_result=$(docker manifest inspect "${{ secrets.CONTAINER_REGISTRY }}/${{ matrix.project.image_name }}" > /dev/null 2>&1; echo $?)
+          if [ $inspect_result -eq 1 ] 
+          then 
+            echo "IMAGE_EXIST=false" >> $GITHUB_ENV 
+          else 
+            echo "IMAGE_EXIST=true" >> $GITHUB_ENV
+            echo "Образ ${{ matrix.project.image_name }} уже cуществует"
+          fi
+          
+      - name: Set up Docker Buildx
+        if: ${{ env.IMAGE_EXIST == 'false' }}
+        uses: docker/setup-buildx-action@v2
+        with:
+          driver: docker
+          version: v0.10.0
+
+      - name: Docker build
+        if: ${{ env.IMAGE_EXIST == 'false' }}
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ${{ matrix.project.dockerfile }}
+          build-args: |
+            build_number=${{ matrix.project.build_number }}
+            ENVIROMENT=${{ inputs.is_stage && 'stage' || 'production'  }}
+            GITHUB_TOKEN=${{ secrets.GH_TOKEN }}
+            GITHUB_USERNAME=sravni
+            GITHUB_NPM_TOKEN=${{ secrets.GH_TOKEN }}
+          push: ${{ inputs.with_push }}
+          tags: "${{ secrets.CONTAINER_REGISTRY }}/${{ matrix.project.image_name }}"
