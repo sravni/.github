@@ -14,10 +14,11 @@ on:
         description: "JSON объект со списком проектов для публикации"
         required: true
         type: string
-      urlPrefix:
+      url_prefix:
         description: "Префикс адреса ингресса (если пусто, то используется имя ветки)"
         required: false
         type: string
+        default: ''
       runner:
         description: "Указывает какой раннер будет использоваться для запуска флоу"
         required: false
@@ -70,9 +71,9 @@ jobs:
 
     env:
       BRANCH: ${{ needs.get_branch_name.outputs.branch }}
-      # Если передали параметр urlPrefix при запуске, то используем его. 
+      # Если передали параметр url_prefix при запуске, то используем его. 
       # Если не передали, то для master'а оставляем его пустым, а для остальных веток указываем называние ветки.
-      URLPREFIX: ${{ inputs.urlPrefix || (needs.get_branch_name.outputs.branch != 'master' && needs.get_branch_name.outputs.branch || '' }}
+      URL_PREFIX: ${{ inputs.url_prefix || (needs.get_branch_name.outputs.branch != 'master' && needs.get_branch_name.outputs.branch || '' }}
       TEAM: ${{ needs.vars.outputs.team }}
       REPO_PATH: './deploy/${{ needs.vars.outputs.team }}'
       YQ_VERSION: '4.30.3'
@@ -136,7 +137,7 @@ jobs:
           .global.image.repository = "sravni.azurecr.io/${{ matrix.project.project_name }}" |
           .global.imagePullSecrets[0] = "sravni-azurecr-io" |
           .Branch = "${{ env.BRANCH }}" |
-          .UrlPrefix = "${{ env.URLPREFIX }}"'
+          .UrlPrefix = "${{ env.URL_PREFIX }}"'
           ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_dev.yaml;
 
       # Для деплоев из веток отличных от master, нужно убедиться, что в репе sravni/deploy в файле /deploy/{team}/_apps/values_dev.yaml
@@ -158,7 +159,7 @@ jobs:
           .global.image.repository = "sravni.azurecr.io/${{ matrix.project.project_name }}" |
           .global.imagePullSecrets[0] = "sravni-azurecr-io" | 
           .Branch = "${{ env.BRANCH }}" |
-          .UrlPrefix = "${{ env.URLPREFIX }}"'
+          .UrlPrefix = "${{ env.URL_PREFIX }}"'
           ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_${{ env.BRANCH }}.yaml;
 
       - name: Commit and push
