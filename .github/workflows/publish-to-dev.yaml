@@ -36,7 +36,7 @@ jobs:
     name: Set branch name
     runs-on: ${{ inputs.runner }}
     outputs:
-      branch: ${{ steps.out.branch }}
+      branch: ${{ steps.out.outputs.branch }}
     steps:
       - name: Get branch name (merge)
         if: github.event_name != 'pull_request'
