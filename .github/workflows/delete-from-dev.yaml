@@ -28,6 +28,14 @@ jobs:
   delete:
     runs-on: ${{ inputs.runner }}
     steps:
+      - name: Set vars
+        id: vars
+        run: |
+          b=${{ inputs.branch }}
+          b=${b##*/} # split by / and take last field
+          b=${b,,}   # to lower
+          echo "branch=${b}" >> $GITHUB_ENV
+
       - name: Checkout deploy repo
         uses: actions/checkout@v3
         with:
@@ -45,8 +53,8 @@ jobs:
         working-directory: './deploy/${{ inputs.team }}'
         run: |
           echo '${{ inputs.projects }}' | jq -rc '.[].project_name' | while read pn; do
-            rm -f "${pn}/values_${{ inputs.branch }}.yaml"
-            yq -i "del(.services[] | select(.name == \"${pn}-${{ inputs.branch }}\"))" ./_apps/values_dev.yaml
+            rm -f "${pn}/values_${{ env.branch }}.yaml"
+            yq -i "del(.services[] | select(.name == \"${pn}-${{ env.branch }}\"))" ./_apps/values_dev.yaml
           done
 
       - name: Commit and push
