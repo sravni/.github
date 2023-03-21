@@ -70,7 +70,7 @@ jobs:
     needs: [ get_branch_name, vars ]
 
     env:
-      BRANCH: ${{ needs.get_branch_name.outputs.branch }}
+      BRANCH: ${{ inputs.url_prefix || needs.get_branch_name.outputs.branch }}
       # Если передали параметр url_prefix при запуске, то используем его. 
       # Если не передали, то для master'а оставляем его пустым, а для остальных веток указываем называние ветки.
       URL_PREFIX: ${{ inputs.url_prefix || (needs.get_branch_name.outputs.branch != 'master' && needs.get_branch_name.outputs.branch) || '' }}
