@@ -49,6 +49,7 @@ jobs:
       with_push: true
       project_path_mask: ${{ github.event.inputs.project_type || '*' }}
       k8s_yaml_file_name: ${{ needs.vars.outputs.values }}
+      runner: "sravni_dev"
     secrets:
       GH_TOKEN: ${{ secrets.GH_TOKEN }}
       GITHUB_NPM_TOKEN: ${{ secrets.GITHUB_NPM_TOKEN }}
