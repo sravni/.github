@@ -117,7 +117,7 @@ jobs:
           echo Собираем следующие проекты:
           echo $projects | jq -r '.[] | .project_name'
           echo "name=project::${projects}"
-          echo "projects=${projects}" >> "$GITHUB_OUTPUT"
+          echo "projects=${projects}" >> $GITHUB_OUTPUT
 
 # Описание джобы build_and_test
   build_and_test:
