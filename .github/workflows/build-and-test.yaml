@@ -93,9 +93,9 @@ jobs:
       - name: Set up Docker Buildx
         if: ${{ env.IMAGE_EXIST == 'false' }}
         uses: docker/setup-buildx-action@v2
-        with:
-          driver: docker
-          version: v0.10.0
+        # with:
+        #   driver: docker
+        #   version: v0.10.0
 
       - name: Docker build
         if: ${{ env.IMAGE_EXIST == 'false' }}
