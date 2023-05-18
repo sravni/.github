@@ -110,6 +110,6 @@ jobs:
             GITHUB_USERNAME=sravni
             GITHUB_NPM_TOKEN=${{ secrets.GH_TOKEN }}
           push: ${{ inputs.with_push }}
-          cache-from: type=s3,bucket=http://<имя_бакета>.storage.yandexcloud.net,access_key_id=${{ secrets.YC_S3_IMAGE_CACHE_ACCESS_KEY_ID }},secret_access_key=${{ secrets.YC_S3_IMAGE_CACHE_SECRET_ACCESS_KEY }},name=${{ matrix.project.image_name }}
-          cache-to: type=s3,bucket=http://<имя_бакета>.storage.yandexcloud.net,access_key_id=${{ secrets.YC_S3_IMAGE_CACHE_ACCESS_KEY_ID }},secret_access_key=${{ secrets.YC_S3_IMAGE_CACHE_SECRET_ACCESS_KEY }},name=${{ matrix.project.image_name }}
+          cache-from: type=s3,region=ru-central1,bucket=http://<имя_бакета>.storage.yandexcloud.net,access_key_id=${{ secrets.YC_S3_IMAGE_CACHE_ACCESS_KEY_ID }},secret_access_key=${{ secrets.YC_S3_IMAGE_CACHE_SECRET_ACCESS_KEY }},name=${{ matrix.project.image_name }}
+          cache-to: type=s3,region=ru-central1,bucket=http://<имя_бакета>.storage.yandexcloud.net,access_key_id=${{ secrets.YC_S3_IMAGE_CACHE_ACCESS_KEY_ID }},secret_access_key=${{ secrets.YC_S3_IMAGE_CACHE_SECRET_ACCESS_KEY }},name=${{ matrix.project.image_name }}
           tags: "${{ secrets.CONTAINER_REGISTRY }}/${{ matrix.project.image_name }}"
