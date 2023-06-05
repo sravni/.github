@@ -287,7 +287,7 @@ jobs:
             "${service_name}" \
             --namespace "${{ env.namespace }}" \
             --timeout 10m \
-            --wait \
+            --atomic \
             --set global.image.repository="${{ secrets.CONTAINER_REGISTRY }}/${service_name}" \
             --set global.image.tag="${{ env.build_number }}" \
             --set global.imagePullSecrets[0]="${{ env.image_pull_secret_acr }}" \

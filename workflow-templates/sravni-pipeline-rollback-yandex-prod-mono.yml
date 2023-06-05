@@ -74,7 +74,7 @@ jobs:
             "${{ env.service_name }}" \
             --namespace "${{ inputs.namespace }}" \
             --force \
-            --wait \
+            --atomic \
             --timeout 10m
           if [ $? != 0 ]; then
             echo "Rollback failed, see logs" && exit 1
