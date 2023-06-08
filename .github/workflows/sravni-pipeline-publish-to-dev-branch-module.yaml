@@ -57,6 +57,10 @@ jobs:
         run: |
           if [ ! -f "./deploy/${{ env.TEAM }}/${{ env.SERVICE }}/values_${{ env.GITHUB_BRANCH }}.yaml" ]; then grep -q ${{ env.GITHUB_BRANCH }} ${{ env.REPO_PATH }}/${{ env.TEAM }}/_apps/values_dev.yaml || yq e  -i '.services += {"name": "${{ env.SERVICE }}-${{ env.GITHUB_BRANCH }}", "values_file": "values_${{ env.GITHUB_BRANCH }}.yaml", "nameOrigin": "${{ env.SERVICE }}", "createTime": "${{ env.CREATE_TIME }}"}' ${{ env.REPO_PATH }}/${{ env.TEAM }}/_apps/values_dev.yaml ; fi
       
+      - name: Delete stale branches
+        run: |
+          bash ./deploy/delete_stale_branches.sh "./deploy/${{ env.TEAM }}/_apps/values_dev.yaml"
+
       - name: Create values 
         run: |
           if [ ! -f "./deploy/${{ env.TEAM }}/${{ env.SERVICE }}/values_${{ env.GITHUB_BRANCH }}.yaml" ]; then yq e '.global.image.tag = "${{ env.IMAGE_ID }}" | .ingresses[0].host |= sub ("(^)", "${{ env.GITHUB_BRANCH }}.${1}")  ' ${{ env.REPO_PATH }}/${{ env.TEAM }}/${{ env.SERVICE }}/values_dev.yaml > ${{ env.REPO_PATH }}/${{ env.TEAM }}/${{ env.SERVICE }}/values_${{ env.GITHUB_BRANCH }}.yaml ; fi
