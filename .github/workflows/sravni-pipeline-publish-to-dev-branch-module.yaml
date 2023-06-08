@@ -38,6 +38,7 @@ jobs:
           echo "GITHUB_BRANCH=$(echo $GITHUB_REF | cut -d'/' -f4)" >> $GITHUB_ENV
           echo "REPO_PATH=./deploy" >> $GITHUB_ENV
           echo "YQ_VERSION=4.30.3" >> $GITHUB_ENV
+          echo "CREATE_TIME=$(date +%s)" >> $GITHUB_ENV
 
       - name: Checkout deploy repo
         uses: actions/checkout@v3
@@ -54,7 +55,7 @@ jobs:
 
       - name: Create app
         run: |
-          if [ ! -f "./deploy/${{ env.TEAM }}/${{ env.SERVICE }}/values_${{ env.GITHUB_BRANCH }}.yaml" ]; then grep -q ${{ env.GITHUB_BRANCH }} ${{ env.REPO_PATH }}/${{ env.TEAM }}/_apps/values_dev.yaml || yq e  -i '.services += {"name": "${{ env.SERVICE }}-${{ env.GITHUB_BRANCH }}", "values_file": "values_${{ env.GITHUB_BRANCH }}.yaml", "nameOrigin": "${{ env.SERVICE }}"}' ${{ env.REPO_PATH }}/${{ env.TEAM }}/_apps/values_dev.yaml ; fi
+          if [ ! -f "./deploy/${{ env.TEAM }}/${{ env.SERVICE }}/values_${{ env.GITHUB_BRANCH }}.yaml" ]; then grep -q ${{ env.GITHUB_BRANCH }} ${{ env.REPO_PATH }}/${{ env.TEAM }}/_apps/values_dev.yaml || yq e  -i '.services += {"name": "${{ env.SERVICE }}-${{ env.GITHUB_BRANCH }}", "values_file": "values_${{ env.GITHUB_BRANCH }}.yaml", "nameOrigin": "${{ env.SERVICE }}", "createTime": "${{ env.CREATE_TIME }}"}' ${{ env.REPO_PATH }}/${{ env.TEAM }}/_apps/values_dev.yaml ; fi
       
       - name: Create values 
         run: |
