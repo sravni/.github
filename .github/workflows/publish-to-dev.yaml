@@ -175,7 +175,7 @@ jobs:
         run: >
           if [ "${{ env.DELETE_BRANCHES }}" = true ]; 
           then 
-          grep -q ${{ env.GITHUB_BRANCH }} ${{ env.REPO_PATH }}/${{ env.TEAM }}/_apps/values_prod.yaml
+          grep -q ${{ env.GITHUB_BRANCH }} ${{ env.REPO_PATH }}/${{ env.TEAM }}/_apps/values_dev.yaml
           && KEY=$(yq e '.services | to_entries | .[] | select(.value.name == "${{ env.SERVICE }}-${{ env.GITHUB_BRANCH }}") | .key' ${{ env.REPO_PATH }}/${{ env.TEAM }}/_apps/values_dev.yaml)
           && yq e -i '.services.'"$KEY"' += {"createTime": "${{ env.CREATE_TIME }}"}' ${{ env.REPO_PATH }}/${{ env.TEAM }}/_apps/values_dev.yaml ;
           fi;
