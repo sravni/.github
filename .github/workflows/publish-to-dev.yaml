@@ -24,12 +24,17 @@ on:
         required: false
         default: sravni_dev
         type: string
+      delete_branches:
+        required: false
+        default: true
+        type: boolean
     secrets: 
       TEST_CI_PAT_FOR_ACTIONS:
         required: true
 
 env:
   TEAM: ${{ inputs.team }}
+  DELETE_BRANCHES: ${{ inputs.delete_branches }}
 
 jobs:
   get_branch_name:
@@ -152,7 +157,6 @@ jobs:
       #   - name: sravni-dadata-service-pe-3103
       #     values_file: values_pe-3103.yaml
       #     nameOrigin: sravni-dadata-service
-      #     createTime: 1686210433
       - name: Create app and set values
         if: ${{ env.BRANCH != 'master' }}
         run: >
@@ -164,6 +168,22 @@ jobs:
           .global.imagePullSecrets[0] = "sravni-azurecr-io" | 
           .Branch = "${{ env.BRANCH }}"'
           ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_${{ env.BRANCH }}.yaml;
+
+      # Добавляет в вэльюсы ветки тэг времени вида
+      # createTime: 1686210433
+      - name: Adding create time value
+        run: >
+          if [ "${{ env.DELETE_BRANCHES }}" = true ]; 
+          then 
+          grep -q ${{ env.GITHUB_BRANCH }} ${{ env.REPO_PATH }}/${{ env.TEAM }}/_apps/values_prod.yaml
+          && KEY=$(yq e '.services | to_entries | .[] | select(.value.name == "${{ env.SERVICE }}-${{ env.GITHUB_BRANCH }}") | .key' ${{ env.REPO_PATH }}/${{ env.TEAM }}/_apps/values_dev.yaml)
+          && yq e -i '.services.'"$KEY"' += {"createTime": "${{ env.CREATE_TIME }}"}' ${{ env.REPO_PATH }}/${{ env.TEAM }}/_apps/values_dev.yaml ;
+          fi;
+      
+      # Запуск скрипта на удаление вэльюсов веток старше 7 дней
+      - name: Delete stale branches
+        run: |
+          bash ./deploy/delete_stale_branches.sh "./deploy/${{ env.TEAM }}/_apps/values_dev.yaml"
 
       - name: Commit and push
         uses: stefanzweifel/git-auto-commit-action@v4

@@ -16,6 +16,10 @@ on:
         required: false
         default: sravni_dev
         type: string
+      delete_branches:
+        required: false
+        default: true
+        type: boolean
     secrets: 
       TEST_CI_PAT_FOR_ACTIONS:
         required: true
@@ -23,6 +27,7 @@ on:
 env:
   TEAM: ${{ inputs.team }}
   IMAGE_ID: ${{ inputs.image-id }}
+  DELETE_BRANCHES: ${{ inputs.delete_branches }}
 
 jobs:
   publish:
@@ -55,7 +60,16 @@ jobs:
 
       - name: Create app
         run: |
-          if [ ! -f "./deploy/${{ env.TEAM }}/${{ env.SERVICE }}/values_${{ env.GITHUB_BRANCH }}.yaml" ]; then grep -q ${{ env.GITHUB_BRANCH }} ${{ env.REPO_PATH }}/${{ env.TEAM }}/_apps/values_dev.yaml || yq e  -i '.services += {"name": "${{ env.SERVICE }}-${{ env.GITHUB_BRANCH }}", "values_file": "values_${{ env.GITHUB_BRANCH }}.yaml", "nameOrigin": "${{ env.SERVICE }}", "createTime": "${{ env.CREATE_TIME }}"}' ${{ env.REPO_PATH }}/${{ env.TEAM }}/_apps/values_dev.yaml ; fi
+          if [ ! -f "./deploy/${{ env.TEAM }}/${{ env.SERVICE }}/values_${{ env.GITHUB_BRANCH }}.yaml" ]; then grep -q ${{ env.GITHUB_BRANCH }} ${{ env.REPO_PATH }}/${{ env.TEAM }}/_apps/values_dev.yaml || yq e  -i '.services += {"name": "${{ env.SERVICE }}-${{ env.GITHUB_BRANCH }}", "values_file": "values_${{ env.GITHUB_BRANCH }}.yaml", "nameOrigin": "${{ env.SERVICE }}"}' ${{ env.REPO_PATH }}/${{ env.TEAM }}/_apps/values_dev.yaml ; fi
+      
+      - name: Adding create time value
+        run: >
+          if [ "${{ env.DELETE_BRANCHES }}" = true ]; 
+          then 
+          grep -q ${{ env.GITHUB_BRANCH }} ${{ env.REPO_PATH }}/${{ env.TEAM }}/_apps/values_prod.yaml
+          && KEY=$(yq e '.services | to_entries | .[] | select(.value.name == "${{ env.SERVICE }}-${{ env.GITHUB_BRANCH }}") | .key' ${{ env.REPO_PATH }}/${{ env.TEAM }}/_apps/values_dev.yaml)
+          && yq e -i '.services.'"$KEY"' += {"createTime": "${{ env.CREATE_TIME }}"}' ${{ env.REPO_PATH }}/${{ env.TEAM }}/_apps/values_dev.yaml ;
+          fi;
       
       - name: Delete stale branches
         run: |
