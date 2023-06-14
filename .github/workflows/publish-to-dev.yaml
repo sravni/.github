@@ -69,6 +69,9 @@ jobs:
       - name: Set team
         id: set_team
         run: echo "team=${TEAM,,}" >> $GITHUB_OUTPUT
+      - name: Set Timestamp
+        id: set_timestamp
+        run: echo "CREATE_TIME=$(date +%s)" >> $GITHUB_OUTPUT
 
   publish:
     runs-on: ${{ inputs.runner }}
@@ -79,7 +82,6 @@ jobs:
       TEAM: ${{ needs.vars.outputs.team }}
       REPO_PATH: './deploy/${{ needs.vars.outputs.team }}'
       YQ_VERSION: '4.30.3'
-      CREATE_TIME: 'date +%s'
 
     strategy:
       max-parallel: 1
