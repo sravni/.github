@@ -176,12 +176,11 @@ jobs:
       - name: Adding create time value
         if: ${{ env.BRANCH != 'master' }}
         run: >
-          if [ "${{ env.DELETE_BRANCHES }}" = true ]; 
-          then 
-          grep -q '${{ matrix.project.project_name }}-${{ env.BRANCH }}' ${{ env.REPO_PATH }}/_apps/values_dev.yaml
-          && KEY=$(yq e '.services | to_entries | .[] | select(.value.name == "${{ matrix.project.project_name }}-${{ env.BRANCH }}") | .key' ${{ env.REPO_PATH }}/_apps/values_dev.yaml)
-          && CREATE_TIME=$(date +%s)
-          && yq e -i '.services.'"$KEY"' += {"createTime": '"$CREATE_TIME"'}' ${{ env.REPO_PATH }}/_apps/values_dev.yaml ;
+          if [ "${{ env.DELETE_BRANCHES }}" = true ]; then 
+            grep -q '${{ matrix.project.project_name }}-${{ env.BRANCH }}' ${{ env.REPO_PATH }}/_apps/values_dev.yaml
+            && KEY=$(yq e '.services | to_entries | .[] | select(.value.name == "${{ matrix.project.project_name }}-${{ env.BRANCH }}") | .key' ${{ env.REPO_PATH }}/_apps/values_dev.yaml)
+            && CREATE_TIME=$(date +%s)
+            && yq e -i '.services.'"$KEY"' += {"createTime": '"$CREATE_TIME"'}' ${{ env.REPO_PATH }}/_apps/values_dev.yaml ;
           fi;
       
       # Запуск скрипта на удаление вэльюсов веток старше 7 дней
