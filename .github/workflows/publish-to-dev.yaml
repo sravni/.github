@@ -166,8 +166,8 @@ jobs:
       # commit: 71b6345a3c3594da6c16f497cf66bbba9ccd3bc0
       - name: Adding commit SHA
         run: |
+          FULL_SHA=${GITHUB_SHA}
           KEY=$(yq '.services | to_entries | .[] | select(.value.name == "${{ matrix.project.project_name }}-${{ env.BRANCH }}") | .key' ${{ env.REPO_PATH }}/_apps/values_dev.yaml)
-          && FULL_SHA=${GITHUB_SHA}
           && yq -i e ".services[$KEY].commit = \"$FULL_SHA\"" ${{ env.REPO_PATH }}/_apps/values_dev.yaml
 
       # Добавляет в вэльюсы ветки тэг времени вида
