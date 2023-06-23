@@ -110,7 +110,7 @@ jobs:
             "$project_name" \
             --namespace "${{ env.NAMESPACE }}" \
             --timeout 10m \
-            --wait \
+            --atomic \
             --set global.image.repository="${{ secrets.CONTAINER_REGISTRY }}/${{ matrix.project.project_name }}" \
             --set global.image.tag="${{ matrix.project.image_version }}" \
             --set global.imagePullSecrets[0]="${{ env.IMAGE_PULL_SECRET_ACR }}" \
