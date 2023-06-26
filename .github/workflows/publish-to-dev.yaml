@@ -163,15 +163,14 @@ jobs:
           ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_${{ env.BRANCH }}.yaml;
 
       # Добавляет коммит для поля info в Argo вида
-      # commit: 71b6345a3c3594da6c16f497cf66bbba9ccd3bc0
+      # commit: sravni/mortgageinsurance/commit/2b13e85a9c5e439b79e406f08a0cde673fa1f4a3
       - name: Adding commit SHA for branch
         if: ${{ env.BRANCH != 'master' }}
         run: >
           FULL_SHA=${GITHUB_SHA}
           && GIT_REPO=${GITHUB_REPOSITORY}
           && KEY=$(yq '.services | to_entries | .[] | select(.value.name == "${{ matrix.project.project_name }}-${{ env.BRANCH }}") | .key' ${{ env.REPO_PATH }}/_apps/values_dev.yaml)
-          && yq -i e ".services[$KEY].commit = \"$FULL_SHA\"" ${{ env.REPO_PATH }}/_apps/values_dev.yaml
-          && echo "$GIT_REPO/commit/$FULL_SHA"
+          && yq -i e ".services[$KEY].commit = \"$GIT_REPO/commit/$FULL_SHA\"" ${{ env.REPO_PATH }}/_apps/values_dev.yaml
 
       - name: Adding commit SHA for master
         if: ${{ env.BRANCH == 'master' }}
