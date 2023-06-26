@@ -171,7 +171,7 @@ jobs:
           && GIT_REPO=${GITHUB_REPOSITORY}
           && KEY=$(yq '.services | to_entries | .[] | select(.value.name == "${{ matrix.project.project_name }}-${{ env.BRANCH }}") | .key' ${{ env.REPO_PATH }}/_apps/values_dev.yaml)
           && yq -i e ".services[$KEY].commit = \"$FULL_SHA\"" ${{ env.REPO_PATH }}/_apps/values_dev.yaml
-          && echo "$GIT_REPO"
+          && echo "$GIT_REPO/commit/$FULL_SHA"
 
       - name: Adding commit SHA for master
         if: ${{ env.BRANCH == 'master' }}
