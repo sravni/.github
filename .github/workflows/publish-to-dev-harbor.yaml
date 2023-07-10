@@ -197,6 +197,10 @@ jobs:
       - name: Delete stale branches
         run: |
           bash ./deploy/delete_stale_branches.sh "./deploy/${{ env.TEAM }}/_apps/values_dev.yaml"
+      
+      - name: Do rebase
+        run: |
+          cd ./deploy && git pull --rebase && cd ../
 
       - name: Commit and push
         uses: stefanzweifel/git-auto-commit-action@v4
