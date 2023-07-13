@@ -24,7 +24,7 @@ on:
       #                          !!!!!!!!!!!!!!!!!!!!!!!!!!!!
       runner:
         description: "Указывает какой раннер будет использоваться для запуска флоу"
-        default: "sravni_ycloud_stage"
+        default: "sravni_dev"
         required: false
         type: string
       image_version:
