@@ -197,12 +197,16 @@ jobs:
       - name: Delete stale branches
         run: |
           bash ./deploy/delete_stale_branches.sh "./deploy/${{ env.TEAM }}/_apps/values_dev.yaml"
+      
+      - name: Do rebase
+        run: |
+          cd ./deploy && git add . &&  git -c user.name="sravnidevops" -c user.email="company-service@sravni.ru"  commit --author="${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>" -m "${{ matrix.project.project_name }} new version: ${{ matrix.project.image_version }}" && git -c user.name="sravnidevops" -c user.email="company-service@sravni.ru" pull --rebase && git push origin main || sleep 10 && git -c user.name="sravnidevops" -c user.email="company-service@sravni.ru" pull --rebase && git push origin main  &&  cd ../
 
-      - name: Commit and push
-        uses: stefanzweifel/git-auto-commit-action@v4
-        with:
-          repository: ./deploy
-          branch: main
-          commit_user_name: sravnidevops
-          commit_user_email: company-service@sravni.ru
-          commit_message: "${{ matrix.project.project_name }} new version: ${{ matrix.project.image_version }}"
+      # - name: Commit and push
+      #   uses: stefanzweifel/git-auto-commit-action@v4
+      #   with:
+      #     repository: ./deploy
+      #     branch: main
+      #     commit_user_name: sravnidevops
+      #     commit_user_email: company-service@sravni.ru
+      #     commit_message: "${{ matrix.project.project_name }} new version: ${{ matrix.project.image_version }}"
