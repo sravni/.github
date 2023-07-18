@@ -94,7 +94,7 @@ jobs:
           MONGO_INITDB_DATABASE: ${{ inputs.db_name }}
         ports:
           # Maps tcp port 27017 on service container to the host
-          - 27017:27017
+          - 27018:27017
 
     strategy:
       matrix:

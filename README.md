@@ -83,7 +83,7 @@
 
 | Image | Описание | Пример строки подключения | Примечание |
 | --- | --- | --- | --- |
-| [mongo](https://hub.docker.com/_/mongo) | Официальный image для mongoDb | mongodb://{db_user_name}:{db_user_psw}@127.0.0.1:27017/admin | MongoDbClient.GetDatabase({db_name}) |
+| [mongo](https://hub.docker.com/_/mongo) | Официальный image для mongoDb | mongodb://{db_user_name}:{db_user_psw}@127.0.0.1:27018/admin | MongoDbClient.GetDatabase({db_name}) |
 | [mysql](https://hub.docker.com/_/mysql) | Официальный image для mysql | Server=127.0.0.1; Port=3306; Database={db_name}; UserId={db_user_name}; Pwd={db_user_psw}; |  |
 | [postgresql](https://hub.docker.com/_/postgres) | Официальный image для postgresql | Host=127.0.0.1;Port=6432;Username={db_user_name};Password={db_user_psw};Database={db_name}; |  |
 
