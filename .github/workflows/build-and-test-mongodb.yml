@@ -1,0 +1,116 @@
+name: build and test with mongo DB
+
+on:
+  workflow_call:
+    inputs:
+      is_stage:
+        description: "Запускается ли план для публикации на стейдж"
+        required: true
+        type: boolean
+      project_path_mask:
+        description: "Маска пути к файлам проекта"
+        required: true
+        type: string
+      with_push:
+        description: "Пушить ли собранный образ"
+        required: true
+        type: boolean
+      runner:
+        description: "Указывает какой раннер будет использоваться для запуска флоу"
+        default: "sravni_dev"
+        required: false
+        type: string
+      image_version:
+        description: "Версия образа"
+        required: false
+        type: string
+      k8s_yaml_file_name:
+        description: "Имя файла {environment}.yaml в директории .k8s проекта для валидации его наличия и передачи следующим джобам"
+        required: true
+        type: string
+      db_image:
+        description: "image БД"
+        required: true
+        type: string
+      db_user_name:
+        description: "Имя пользователя для БД"
+        required: true
+        type: string
+      db_user_psw:
+        description: "Пароль пользователя для БД"
+        required: true
+        type: string
+      db_name:
+        description: "Название базы данных"
+        required: true
+        type: string
+
+
+    secrets: 
+      GH_TOKEN:
+        required: true
+      GITHUB_NPM_TOKEN:
+        required: true
+      CONTAINER_REGISTRY:
+        required: true
+      DOCKER_LOGIN:
+        required: true
+      DOCKER_PASS:
+        required: true
+
+    outputs:
+      projects:
+        description: "Собранные проекты"
+        value: ${{ jobs.get_projects.outputs.projects }}
+
+# Описание Джобов воркфлоу
+jobs:
+  # Описание Джобы get_projects и ее шага, в котором происходит составление
+  # списка проектов для сборки.
+  # | project_name | dockerfile | project_path | k8s_yaml_path | build_number | image_name | image_version |
+  get_projects:
+    uses: sravni/.github/.github/workflows/get-projects.yaml@master
+    with:
+      k8s_yaml_file_name: ${{ inputs.k8s_yaml_file_name }}
+      project_path_mask: ${{ inputs.project_path_mask }}
+      image_version: ${{ inputs.image_version }}
+      is_stage: ${{ inputs.is_stage }}
+      runner: ${{ inputs.runner }}
+
+  build_and_test:
+    needs: [get_projects]  
+    runs-on: ${{ inputs.runner }}
+
+    # Service containers to run with `db_setup`
+    services:
+      # Label used to access the service container
+      mongodb:
+        # Docker Hub image
+        image: ${{ inputs.db_image }}
+        # Provide the config for mongodb with host 127.0.0.1
+        env:
+          MONGO_INITDB_ROOT_USERNAME: ${{ inputs.db_user_name }}
+          MONGO_INITDB_ROOT_PASSWORD: ${{ inputs.db_user_psw }}
+          MONGO_INITDB_DATABASE: ${{ inputs.db_name }}
+        ports:
+          # Maps tcp port 27017 on service container to the host
+          - 27018:27017
+
+    strategy:
+      matrix:
+        project: ${{ fromJson(needs.get_projects.outputs.projects) }}
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v3
+
+      - name: build and test
+        uses: sravni/build-and-test-action@v1
+        with:
+          is_stage: true
+          with_push: true
+          gh_token: ${{ secrets.GH_TOKEN }}
+          github_npm_token: ${{ secrets.GITHUB_NPM_TOKEN }}
+          container_registry: ${{ secrets.CONTAINER_REGISTRY }}
+          docker_login: ${{ secrets.DOCKER_LOGIN }}
+          docker_pass: ${{ secrets.DOCKER_PASS }}
