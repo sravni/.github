@@ -67,7 +67,10 @@
 - build-and-test-mongodb - поднимает контейнерную службу с базой данных mongodb
 - build-and-test-mysql - поднимает контейнерную службу с базой данных mysql
 
+Пример:
+
 | Параметры | Описание | Обязательный (да/нет) | Значение по умолчанию |
+| --- | --- | --- | --- |
 | db_image | Официальный docker image БД | Да | Отсутствует |
 | db_user_name | Логин пользователя к БД | Да | Отсутствует |
 | db_user_psw | Пароль пользователя к БД | Да | Отсутствует |
@@ -76,10 +79,13 @@
 Ниже представлены строки подключения к каждой из текущих БД.
 Обратите внимание, как правильно подключаться к mongoDb, т.к. указанное вами имя БД не нужно указывать внутри строки подключения.
 
+Пример:
+
 | Image | Описание | Пример строки подключения | Примечание |
+| --- | --- | --- | --- |
 | [mongo](https://hub.docker.com/_/mongo) | Официальный image для mongoDb | mongodb://{db_user_name}:{db_user_psw}@127.0.0.1:27017/admin | MongoDbClient.GetDatabase({db_name}) |
-| [mysql](https://hub.docker.com/_/mysql) | Официальный image для mysql | Server=127.0.0.1; Port=3306; Database={db_name}; UserId={db_user_name}; Pwd={db_user_psw}; | - |
-| [postgresql](https://hub.docker.com/_/postgres) | Официальный image для postgresql | Host=127.0.0.1;Port=6432;Username={db_user_name};Password={db_user_psw};Database={db_name}; | - |
+| [mysql](https://hub.docker.com/_/mysql) | Официальный image для mysql | Server=127.0.0.1; Port=3306; Database={db_name}; UserId={db_user_name}; Pwd={db_user_psw}; |  |
+| [postgresql](https://hub.docker.com/_/postgres) | Официальный image для postgresql | Host=127.0.0.1;Port=6432;Username={db_user_name};Password={db_user_psw};Database={db_name}; |  |
 
 ## Tips and Tricks
 
