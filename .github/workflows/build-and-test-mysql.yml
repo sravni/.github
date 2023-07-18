@@ -91,6 +91,7 @@ jobs:
         env:
           MYSQL_USER: ${{ inputs.db_user_name }}
           MYSQL_PASSWORD: ${{ inputs.db_user_psw }}
+          MYSQL_ROOT_PASSWORD: ${{ inputs.db_user_psw }}
           MYSQL_DATABASE: ${{ inputs.db_name }}
         ports:
           # Maps tcp port 3306 on service container to the host
