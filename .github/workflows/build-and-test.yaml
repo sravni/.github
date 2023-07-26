@@ -111,3 +111,5 @@ jobs:
             GITHUB_NPM_TOKEN=${{ secrets.GH_TOKEN }}
           push: ${{ inputs.with_push }}
           tags: "${{ secrets.CONTAINER_REGISTRY }}/${{ matrix.project.image_name }}"
+          cache-from: type=registry,ref=registry.yc.prod.infra.sravni.market/github-actions/${{ matrix.project.image_name }}
+          cache-to: type=registry,ref=registry.yc.prod.infra.sravni.market/github-actions/${{ matrix.project.image_name }}
