@@ -19,8 +19,8 @@ on:
         description: 'team'
         required: true 
         type: string
-      environment:
-        description: 'environment'
+      cluster:
+        description: 'cluster'
         required: true 
         type: string
       runner:
@@ -56,7 +56,7 @@ on:
 
 env:
   TEAM: ${{ inputs.team }}
-  ENVIRONMENT: ${{ inputs.environment }}
+  CLUSTER: ${{ inputs.cluster }}
 
 # Описание Джобов воркфлоу
 jobs:
@@ -93,7 +93,7 @@ jobs:
       
       - name: Check if image exist
         run: |
-          inspect_result=$(docker manifest inspect "${{ secrets.HARBOR_REGISTRY }}/${{ env.TEAM }}_${{ env.ENVIRONMENT }}/${{ matrix.project.image_name }}" > /dev/null 2>&1; echo $?)
+          inspect_result=$(docker manifest inspect "${{ secrets.HARBOR_REGISTRY }}/${{ env.TEAM }}_${{ env.CLUSTER }}/${{ matrix.project.image_name }}" > /dev/null 2>&1; echo $?)
           if [ $inspect_result -eq 1 ] 
           then 
             echo "IMAGE_EXIST=false" >> $GITHUB_ENV 
@@ -122,4 +122,4 @@ jobs:
             GITHUB_USERNAME=sravni
             GITHUB_NPM_TOKEN=${{ secrets.GH_TOKEN }}
           push: ${{ inputs.with_push }}
-          tags: "${{ secrets.HARBOR_REGISTRY }}/${{ env.TEAM }}_${{ env.ENVIRONMENT }}/${{ matrix.project.image_name }}"
+          tags: "${{ secrets.HARBOR_REGISTRY }}/${{ env.TEAM }}_${{ env.CLUSTER }}/${{ matrix.project.image_name }}"
