@@ -15,6 +15,14 @@ on:
         description: "Пушить ли собранный образ"
         required: true
         type: boolean
+      team:
+         description: 'team'
+         required: true 
+         type: string
+      environment:
+         description: 'environment'
+         required: true 
+         type: string
       runner:
         description: "Указывает какой раннер будет использоваться для запуска флоу"
         default: "sravni_dev"
@@ -45,6 +53,10 @@ on:
       projects:
         description: "Собранные проекты"
         value: ${{ jobs.get_projects.outputs.projects }}
+
+env:
+  TEAM: ${{ inputs.team }}
+  ENVIRONMENT: ${{ inputs.environment }}
 
 # Описание Джобов воркфлоу
 jobs:
@@ -81,7 +93,7 @@ jobs:
       
       - name: Check if image exist
         run: |
-          inspect_result=$(docker manifest inspect "${{ secrets.HARBOR_REGISTRY }}/${{ matrix.project.image_name }}" > /dev/null 2>&1; echo $?)
+          inspect_result=$(docker manifest inspect "${{ secrets.HARBOR_REGISTRY }}/${{ env.TEAM }}_${{ env.ENVIRONMENT }}/${{ matrix.project.image_name }}" > /dev/null 2>&1; echo $?)
           if [ $inspect_result -eq 1 ] 
           then 
             echo "IMAGE_EXIST=false" >> $GITHUB_ENV 
@@ -110,4 +122,4 @@ jobs:
             GITHUB_USERNAME=sravni
             GITHUB_NPM_TOKEN=${{ secrets.GH_TOKEN }}
           push: ${{ inputs.with_push }}
-          tags: "${{ secrets.HARBOR_REGISTRY }}/${{ matrix.project.image_name }}"
+          tags: "${{ secrets.HARBOR_REGISTRY }}/${{ env.TEAM }}_${{ env.ENVIRONMENT }}/${{ matrix.project.image_name }}"
