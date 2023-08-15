@@ -136,8 +136,8 @@ jobs:
         if: ${{ env.BRANCH == 'master' }}
         run: >
           yq -i '.global.image.tag = "${{ matrix.project.image_version }}" |
-          .global.image.repository = "registry.yc.prod.infra.sravni.market/devops/${{ matrix.project.project_name }}" |
-          .global.imagePullSecrets[0] = "sravni-azurecr-io" |
+          .global.image.repository = "registry.yc.prod.infra.sravni.market/${{ env.TEAM }}_dev/${{ matrix.project.project_name }}" |
+          .global.imagePullSecrets[0] = "harbor-pull-secret" |
           .Branch = "${{ env.BRANCH }}"'
           ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_dev.yaml;
 
@@ -157,8 +157,8 @@ jobs:
           || yq e  -i '.services += {"name": "${{ matrix.project.project_name }}-${{ env.BRANCH }}", "values_file": "values_${{ env.BRANCH }}.yaml",
           "nameOrigin": "${{ matrix.project.project_name }}"}' ${{ env.REPO_PATH }}/_apps/values_dev.yaml
           ; yq e -i '.global.image.tag = "${{ matrix.project.image_version }}" |
-          .global.image.repository = "registry.yc.prod.infra.sravni.market/devops/${{ matrix.project.project_name }}" |
-          .global.imagePullSecrets[0] = "sravni-azurecr-io" | 
+          .global.image.repository = "registry.yc.prod.infra.sravni.market/${{ env.TEAM }}_dev/${{ matrix.project.project_name }}" |
+          .global.imagePullSecrets[0] = "harbor-pull-secret" | 
           .Branch = "${{ env.BRANCH }}"'
           ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_${{ env.BRANCH }}.yaml;
 
