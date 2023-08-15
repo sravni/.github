@@ -98,7 +98,6 @@ jobs:
           version: v0.10.0
           config-inline: |
             [registry."registry.yc.prod.infra.sravni.market/dockerhub_proxy"]
-              http = true
 
       - name: Docker build
         if: ${{ env.IMAGE_EXIST == 'false' }}
