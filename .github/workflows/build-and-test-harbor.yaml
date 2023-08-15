@@ -16,13 +16,13 @@ on:
         required: true
         type: boolean
       team:
-         description: 'team'
-         required: true 
-         type: string
+        description: 'team'
+        required: true 
+        type: string
       environment:
-         description: 'environment'
-         required: true 
-         type: string
+        description: 'environment'
+        required: true 
+        type: string
       runner:
         description: "Указывает какой раннер будет использоваться для запуска флоу"
         default: "sravni_dev"
