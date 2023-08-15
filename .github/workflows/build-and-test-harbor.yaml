@@ -64,9 +64,6 @@ jobs:
     runs-on: ${{ inputs.runner }}
     needs: [get_projects]
 
-    env:
-      TEAM: ${{ needs.vars.outputs.team }}
-
     strategy:
       matrix:
         project: ${{ fromJson(needs.get_projects.outputs.projects) }}
@@ -84,7 +81,7 @@ jobs:
       
       - name: Check if image exist
         run: |
-          inspect_result=$(docker manifest inspect "${{ secrets.HARBOR_REGISTRY }}/${{ env.TEAM }}_dev/${{ matrix.project.image_name }}" > /dev/null 2>&1; echo $?)
+          inspect_result=$(docker manifest inspect "${{ secrets.HARBOR_REGISTRY }}/${{ matrix.project.image_name }}" > /dev/null 2>&1; echo $?)
           if [ $inspect_result -eq 1 ] 
           then 
             echo "IMAGE_EXIST=false" >> $GITHUB_ENV 
@@ -113,4 +110,4 @@ jobs:
             GITHUB_USERNAME=sravni
             GITHUB_NPM_TOKEN=${{ secrets.GH_TOKEN }}
           push: ${{ inputs.with_push }}
-          tags: "${{ secrets.HARBOR_REGISTRY }}/${{ env.TEAM }}_dev/${{ matrix.project.image_name }}"
+          tags: "${{ secrets.HARBOR_REGISTRY }}/${{ matrix.project.image_name }}"
