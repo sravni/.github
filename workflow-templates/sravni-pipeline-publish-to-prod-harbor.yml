@@ -1,4 +1,4 @@
-name: Publish-to-Dev 
+name: Publish-to-Prod
 
 on:
   push:
