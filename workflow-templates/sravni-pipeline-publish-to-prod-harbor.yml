@@ -1,0 +1,76 @@
+name: Publish-to-Dev 
+
+on:
+  push:
+    branches:
+      - "master"
+  workflow_dispatch:
+    inputs:
+      project_type:
+        description: 'Проекты для публикации'
+        required: false
+        default: '*'
+        type: choice
+        options:
+          - '*'
+          - '*.Service'
+          - '*.Backoffice'
+          - '*.Job'
+
+env:
+  ### Название команды
+  # Необходимо указать название своей команды
+  team: ""
+  
+  ### Название файла со значениями для helm-чарта
+  # Необходимо изменить, если он называется по-другому 
+  k8s_yaml_file_name: "ya-prod.yaml"
+
+  ### Окружение
+  # Необходимо указать кластер (dev или prod)
+  cluster: "prod"
+
+jobs:
+  vars:
+    name: Setup variables
+    runs-on: ubuntu-latest
+    outputs:
+      team: ${{ steps.set_team.outputs.team }}
+      cluster: ${{ steps.set_cluster.outputs.cluster }}
+      values: ${{ steps.set_values.outputs.values }}
+    steps:
+      - name: Set team
+        id: set_team
+        run: echo "team=${team,,}" >> $GITHUB_OUTPUT
+      - name: Set cluster
+        id: set_cluster
+        run: echo "cluster=${cluster,,}" >> $GITHUB_OUTPUT
+      - name: Set values file name
+        id: set_values
+        run: echo "values=${k8s_yaml_file_name,,}" >> $GITHUB_OUTPUT
+ 
+  build_and_test:
+    needs: [vars]
+    uses: sravni/.github/.github/workflows/build-and-test-harbor.yaml@master
+    with:
+      is_stage: true
+      with_push: true
+      project_path_mask: ${{ github.event.inputs.project_type || '*' }}
+      k8s_yaml_file_name: ${{ needs.vars.outputs.values }}
+      runner: "sravni_dev"
+    secrets:
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      GITHUB_NPM_TOKEN: ${{ secrets.GITHUB_NPM_TOKEN }}
+      HARBOR_REGISTRY: ${{ secrets.HARBOR_REGISTRY }}/${{ needs.vars.outputs.team }}_${{ needs.vars.outputs.cluster }}
+      HARBOR_LOGIN: ${{ secrets.HARBOR_LOGIN }}
+      HARBOR_PASS: ${{ secrets.HARBOR_PASSWORD }}
+  
+  deploy:
+    needs: [build_and_test, vars]
+    uses: sravni/.github/.github/workflows/publish-to-prod-harbor.yaml@master
+    with:
+      projects: ${{ needs.build_and_test.outputs.projects }}
+      team: ${{ needs.vars.outputs.team }}
+    secrets:
+      TEST_CI_PAT_FOR_ACTIONS: ${{ secrets.TEST_CI_PAT_FOR_ACTIONS }}
+  
