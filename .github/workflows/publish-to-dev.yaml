@@ -153,7 +153,7 @@ jobs:
       - name: Create app and set values
         if: ${{ env.BRANCH != 'master' }}
         run: >
-          grep -xq '  - name: {{ matrix.project.project_name }}-${{ env.BRANCH }}' ${{ env.REPO_PATH }}/_apps/values_dev.yaml
+          grep -xq '  - name: ${{ matrix.project.project_name }}-${{ env.BRANCH }}' ${{ env.REPO_PATH }}/_apps/values_dev.yaml
           || yq e  -i '.services += {"name": "${{ matrix.project.project_name }}-${{ env.BRANCH }}", "values_file": "values_${{ env.BRANCH }}.yaml",
           "nameOrigin": "${{ matrix.project.project_name }}"}' ${{ env.REPO_PATH }}/_apps/values_dev.yaml
           ; yq e -i '.global.image.tag = "${{ matrix.project.image_version }}" |
