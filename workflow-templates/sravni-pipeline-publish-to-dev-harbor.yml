@@ -32,7 +32,7 @@ env:
   k8s_yaml_file_name: "ya-dev.yaml"
 
   ### Окружение
-  # Необходимо указать кластер (dev или prod)
+  # Необходимо указать кластер (dev, stage или prod)
   cluster: "dev"
 
 jobs:
