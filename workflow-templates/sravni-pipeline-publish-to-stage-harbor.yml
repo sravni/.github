@@ -1,4 +1,4 @@
-name: Publish-to-Prod
+name: Publish-to-Stage
 
 on:
   push:
@@ -24,11 +24,11 @@ env:
   
   ### Название файла со значениями для helm-чарта
   # Необходимо изменить, если он называется по-другому 
-  k8s_yaml_file_name: "ya-prod.yaml"
+  k8s_yaml_file_name: "ya-stage.yaml"
 
   ### Окружение
   # Необходимо указать кластер (dev, stage или prod)
-  cluster: "prod"
+  cluster: "stage"
 
 jobs:
   vars:
@@ -67,7 +67,7 @@ jobs:
   
   deploy:
     needs: [build_and_test, vars]
-    uses: sravni/.github/.github/workflows/publish-to-prod-harbor.yaml@master
+    uses: sravni/.github/.github/workflows/publish-to-stage-harbor.yaml@master
     with:
       projects: ${{ needs.build_and_test.outputs.projects }}
       team: ${{ needs.vars.outputs.team }}
