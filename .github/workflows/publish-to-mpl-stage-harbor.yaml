@@ -73,7 +73,7 @@ jobs:
         with:
           version: 3.8.2
 
-      # Если это первая выкладка проекта на stage, то выполняем скрипт helm_create.sh из репы Deploy.
+      # Если это первая выкладка проекта на mpl-stage, то выполняем скрипт helm_create.sh из репы Deploy.
       # Он создаст необходимые файлы, которые в процессе деплоя будем модифицировать.
       - name: Ensure project exist
         run: |
@@ -81,7 +81,7 @@ jobs:
           then
             echo 'Проект ${{ env.REPO_PATH }}/${{ matrix.project.project_name }} уже существует'
           else
-            echo 'Проект ${{ env.REPO_PATH }}/${{ matrix.project.project_name }} не существует, создайте его сначала в dev кластере!'
+            echo 'Проект ${{ env.REPO_PATH }}/${{ matrix.project.project_name }} не существует, создайте его сначала в mpl-stage кластере!'
           fi;
 
       - name: Install yq
@@ -90,15 +90,15 @@ jobs:
           sudo chmod +x /usr/local/bin/yq
 
       # Копирование *.yaml файла с вэйльюсами из репы сервиса в deploy. Фактическое название файла приходит в JSON'е в projects.
-      # Имя этого файла должно стать values_stage.yaml.
+      # Имя этого файла должно стать values_mpl_stage.yaml.
       - name: Clone values from origin repo
         run: |
-          cat ${{ matrix.project.k8s_yaml_path }} > ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_stage.yaml;
+          cat ${{ matrix.project.k8s_yaml_path }} > ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_mpl_stage.yaml;
 
       - name: Create app
         run: >
-          grep -xq '  - name: ${{ matrix.project.project_name }}' ${{ env.REPO_PATH }}/_apps/values_stage.yaml
-          || yq e  -i '.services += {"name": "${{ matrix.project.project_name }}"}' ${{ env.REPO_PATH }}/_apps/values_stage.yaml;
+          grep -xq '  - name: ${{ matrix.project.project_name }}' ${{ env.REPO_PATH }}/_apps/values_mpl_stage.yaml
+          || yq e  -i '.services += {"name": "${{ matrix.project.project_name }}"}' ${{ env.REPO_PATH }}/_apps/values_mpl_stage.yaml;
 
       # Устанавливаем tag образа и убеждаемся, что установлены `global.image.repository` и `global.imagePullSecrets`
       - name: Modify values
@@ -106,7 +106,7 @@ jobs:
           yq -i '.global.image.tag = "${{ matrix.project.image_version }}" |
           .global.image.repository = "registry.yc.prod.infra.sravni.market/${{ env.TEAM }}_stage/${{ matrix.project.project_name }}" |
           .global.imagePullSecrets[0] = "harbor-pull-secret"'
-          ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_stage.yaml;
+          ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_mpl_stage.yaml;
 
       # Добавляет коммит для поля info в Argo вида
       # commit: sravni/mortgageinsurance/commit/2b13e85a9c5e439b79e406f08a0cde673fa1f4a3
@@ -114,8 +114,8 @@ jobs:
         run: >
           FULL_SHA=${GITHUB_SHA}
           && GIT_REPO=${GITHUB_REPOSITORY}
-          && KEY=$(yq '.services | to_entries | .[] | select(.value.name == "${{ matrix.project.project_name }}") | .key' ${{ env.REPO_PATH }}/_apps/values_stage.yaml)
-          && yq -i e ".services[$KEY].commit = \"$GIT_REPO/commit/$FULL_SHA\"" ${{ env.REPO_PATH }}/_apps/values_stage.yaml
+          && KEY=$(yq '.services | to_entries | .[] | select(.value.name == "${{ matrix.project.project_name }}") | .key' ${{ env.REPO_PATH }}/_apps/values_mpl_stage.yaml)
+          && yq -i e ".services[$KEY].commit = \"$GIT_REPO/commit/$FULL_SHA\"" ${{ env.REPO_PATH }}/_apps/values_mpl_stage.yaml
       
       - name: Do rebase and commit
         run: |
