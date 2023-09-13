@@ -1,4 +1,4 @@
-name: Publish-to-Stage
+name: Publish-to-Mpl-Stage
 
 on:
   push:
