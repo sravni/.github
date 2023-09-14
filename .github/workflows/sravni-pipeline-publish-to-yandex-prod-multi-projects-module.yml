@@ -34,12 +34,10 @@ on:
       YANDEX_PROD_FOLDER_ID:
         required: true
 
-
-
-
 env:
   NAMESPACE: ${{ inputs.namespace }}
   IMAGE_PULL_SECRET_ACR: sravni-azurecr-io
+  YQ_VERSION: '4.30.3'
 
 jobs:
   publish:
