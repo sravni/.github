@@ -118,5 +118,12 @@ jobs:
           && yq -i e ".services[$KEY].commit = \"$GIT_REPO/commit/$FULL_SHA\"" ${{ env.REPO_PATH }}/_apps/values_prod.yaml
       
       - name: Do rebase and commit
-        run: |
-          cd ./deploy && git add . &&  git -c user.name="sravnidevops" -c user.email="company-service@sravni.ru"  commit --author="${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>" -m "${{ matrix.project.project_name }} new version: ${{ matrix.project.image_version }}" && git -c user.name="sravnidevops" -c user.email="company-service@sravni.ru" pull --rebase && git push origin main || sleep 10 && git -c user.name="sravnidevops" -c user.email="company-service@sravni.ru" pull --rebase && git push origin main  &&  cd ../
+        run: >
+          cd ./deploy 
+          && git add .
+          && git -c user.name="sravnidevops" -c user.email="company-service@sravni.ru" commit --author="${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>" -m "${{ matrix.project.project_name }} new version: ${{ matrix.project.image_version }}"
+          && git -c user.name="sravnidevops" -c user.email="company-service@sravni.ru" pull --rebase
+          && git push origin main || sleep 10
+          && git -c user.name="sravnidevops" -c user.email="company-service@sravni.ru" pull --rebase
+          && git push origin main 
+          && cd ../
