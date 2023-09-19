@@ -34,12 +34,10 @@ on:
       YANDEX_PROD_FOLDER_ID:
         required: true
 
-
-
-
 env:
   NAMESPACE: ${{ inputs.namespace }}
   IMAGE_PULL_SECRET_ACR: sravni-azurecr-io
+  YQ_VERSION: '4.30.3'
 
 jobs:
   publish:
@@ -91,10 +89,14 @@ jobs:
           token: ${{ secrets.GH_TOKEN }}
           ref: '${{ secrets.CHARTS_REF }}'
       
+      - name: Install yq
+        run: |
+          sudo wget -O /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/v${{ env.YQ_VERSION }}/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
       
       - name: Define chart directory
         run: |
-          if echo "${{ matrix.project.project_name }}" | grep -iqF "job" 
+          if cat ${{ matrix.project.k8s_yaml_path }} | yq -e '.jobs[]' &> /dev/null
           then chart_directory="./charts/cronjobs/"
           else chart_directory="./charts/generic-application/"
           fi
@@ -114,7 +116,7 @@ jobs:
             --set global.image.repository="${{ secrets.CONTAINER_REGISTRY }}/${{ matrix.project.project_name }}" \
             --set global.image.tag="${{ matrix.project.image_version }}" \
             --set global.imagePullSecrets[0]="${{ env.IMAGE_PULL_SECRET_ACR }}" \
-            -f ../.././"${{ matrix.project.k8s_yaml_path }}" \
+            -f "../../${{ matrix.project.k8s_yaml_path }}" \
             ./ \
             2>&1
           if [ $? != 0 ]; then
