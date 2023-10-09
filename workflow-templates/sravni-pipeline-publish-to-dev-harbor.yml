@@ -38,7 +38,7 @@ env:
 jobs:
   vars:
     name: Setup variables
-    runs-on: ubuntu-latest
+    runs-on: "sravni_dev"
     outputs:
       team: ${{ steps.set_team.outputs.team }}
       cluster: ${{ steps.set_cluster.outputs.cluster }}
