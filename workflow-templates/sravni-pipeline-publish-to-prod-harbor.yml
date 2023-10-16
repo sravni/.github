@@ -53,7 +53,7 @@ jobs:
     needs: [vars]
     uses: sravni/.github/.github/workflows/build-and-test-harbor.yaml@master
     with:
-      is_stage: true
+      is_stage: false
       with_push: true
       project_path_mask: ${{ github.event.inputs.project_type || '*' }}
       k8s_yaml_file_name: ${{ needs.vars.outputs.values }}
