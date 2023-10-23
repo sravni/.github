@@ -98,7 +98,7 @@ jobs:
       - name: Create app
         run: >
           grep -xq '  - name: ${{ matrix.project.project_name }}' ${{ env.REPO_PATH }}/_apps/values_prod.yaml
-          || yq e  -i '.services += {"name": "${{ matrix.project.project_name }}"}' ${{ env.REPO_PATH }}/_apps/values_prod.yaml;
+          || yq e  -i '.services += {"name": "${{ matrix.project.project_name }}", "autosync": "disabled"}' ${{ env.REPO_PATH }}/_apps/values_prod.yaml;
 
       # Устанавливаем tag образа и убеждаемся, что установлены `global.image.repository` и `global.imagePullSecrets`
       - name: Modify values
