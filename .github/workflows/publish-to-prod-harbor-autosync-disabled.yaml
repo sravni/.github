@@ -73,15 +73,14 @@ jobs:
         with:
           version: 3.8.2
 
-      # Если это первая выкладка проекта на prod, то выполняем скрипт helm_create.sh из репы Deploy.
-      # Он создаст необходимые файлы, которые в процессе деплоя будем модифицировать.
+      # Проверка - существует ли приложение в dev окружении.
       - name: Ensure project exist
         run: |
           if [[ -d ${{ env.REPO_PATH }}/${{ matrix.project.project_name }} ]];
           then
             echo 'Проект ${{ env.REPO_PATH }}/${{ matrix.project.project_name }} уже существует'
           else
-            echo 'Проект ${{ env.REPO_PATH }}/${{ matrix.project.project_name }} не существует, создайте его сначала в prod кластере!'
+            echo 'Проект ${{ env.REPO_PATH }}/${{ matrix.project.project_name }} не существует, создайте его сначала в dev окружении!'
           fi;
 
       - name: Install yq
