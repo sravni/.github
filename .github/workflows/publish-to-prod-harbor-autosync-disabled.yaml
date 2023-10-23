@@ -67,11 +67,6 @@ jobs:
           token: ${{ secrets.TEST_CI_PAT_FOR_ACTIONS }}
           path: deploy
           ref: main
-      
-      - name: Install Helm
-        uses: azure/setup-helm@v3
-        with:
-          version: 3.8.2
 
       # Проверка - существует ли приложение в dev окружении.
       - name: Ensure project exist
