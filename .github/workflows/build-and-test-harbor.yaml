@@ -117,7 +117,7 @@ jobs:
             GITHUB_TOKEN=${{ secrets.GH_TOKEN }}
             GITHUB_USERNAME=sravni
             GITHUB_NPM_TOKEN=${{ secrets.GH_TOKEN }}
-            NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL_PROD }}
+            NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }}
             NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
             SLACK_CLIENT_SECRET=${{ secrets.SLACK_CLIENT_SECRET }}
             SLACK_CLIENT_ID=${{ secrets.SLACK_CLIENT_ID }}
