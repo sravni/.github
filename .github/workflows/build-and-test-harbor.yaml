@@ -40,6 +40,14 @@ on:
         required: true
       HARBOR_PASS:
         required: true
+      NEXTAUTH_URL:         # Добавлено для команды MFO
+        required: false     #
+      NEXTAUTH_SECRET:      # Добавлено для команды MFO
+        required: false     #
+      SLACK_CLIENT_SECRET:  # Добавлено для команды MFO
+        required: false     #
+      SLACK_CLIENT_ID:      # Добавлено для команды MFO
+        required: false     #
 
     outputs:
       projects:
@@ -109,5 +117,9 @@ jobs:
             GITHUB_TOKEN=${{ secrets.GH_TOKEN }}
             GITHUB_USERNAME=sravni
             GITHUB_NPM_TOKEN=${{ secrets.GH_TOKEN }}
+            NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL_PROD }}
+            NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
+            SLACK_CLIENT_SECRET=${{ secrets.SLACK_CLIENT_SECRET }}
+            SLACK_CLIENT_ID=${{ secrets.SLACK_CLIENT_ID }}
           push: ${{ inputs.with_push }}
           tags: "${{ secrets.HARBOR_REGISTRY }}/${{ matrix.project.image_name }}"
