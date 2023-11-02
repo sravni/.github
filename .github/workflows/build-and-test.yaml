@@ -28,6 +28,10 @@ on:
         description: "Имя файла {environment}.yaml в директории .k8s проекта для валидации его наличия и передачи следующим джобам"
         required: true
         type: string
+      k8s_canary_yaml_file_name:
+        description: "Имя canary файла {environment}.yaml в директории .k8s проекта для валидации его наличия и передачи следующим джобам"
+        required: false
+        type: string
 
     secrets: 
       GH_TOKEN:
@@ -55,6 +59,7 @@ jobs:
     uses: ./.github/workflows/get-projects.yaml
     with:
       k8s_yaml_file_name: ${{ inputs.k8s_yaml_file_name }}
+      k8s_canary_yaml_file_name: ${{ inputs.k8s_canary_yaml_file_name }}
       project_path_mask: ${{ inputs.project_path_mask }}
       image_version: ${{ inputs.image_version }}
       is_stage: ${{ inputs.is_stage }}
