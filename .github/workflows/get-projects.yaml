@@ -35,6 +35,10 @@ on:
         description: "Имя файла {environment}.yaml в директории .k8s проекта для валидации его наличия и передачи следующим джобам"
         required: true
         type: string
+      k8s_canary_yaml_file_name:
+        description: "Имя canary файла {environment}.yaml в директории .k8s проекта для валидации его наличия и передачи следующим джобам"
+        required: false
+        type: string
       is_stage:
         description: "Запускается ли план для публикации на стейдж"
         required: false
