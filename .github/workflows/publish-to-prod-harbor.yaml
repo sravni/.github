@@ -115,7 +115,7 @@ jobs:
         run: >
           cd ./deploy 
           && git add .
-          && git -c user.name="sravnidevops" -c user.email="company-service@sravni.ru" commit --author="${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>" -m "[PROD] ${{ matrix.project.project_name }} new version: ${{ matrix.project.image_version }}"
+          && git -c user.name="sravnidevops" -c user.email="company-service@sravni.ru" commit --author="${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>" -m "[PROD] ${{ matrix.project.project_name }} new version: ${{ matrix.project.image_version }} / run_id: ${{ github.run_id }}"
           && git -c user.name="sravnidevops" -c user.email="company-service@sravni.ru" pull --rebase
           && git push origin main || sleep 10
           && git -c user.name="sravnidevops" -c user.email="company-service@sravni.ru" pull --rebase
