@@ -6,6 +6,7 @@
 #    "dockerfile": "Sravni.Signer.Service/Dockerfile",
 #    "project_path": "Sravni.Signer.Service",
 #    "k8s_yaml_path": "Sravni.Signer.Service/.k8s/ya-dev.yaml",
+#    "k8s_canary_yaml_path": "Sravni.Signer.Service/.k8s/ya-prod-canary.yaml",
 #    "build_number": "b2a14ff-qa",
 #    "image_name": "sravni-signer-service:b2a14ff-qa",
 #    "image_version": "b2a14ff-qa"
@@ -33,6 +34,10 @@ on:
       k8s_yaml_file_name:
         description: "Имя файла {environment}.yaml в директории .k8s проекта для валидации его наличия и передачи следующим джобам"
         required: true
+        type: string
+      k8s_canary_yaml_file_name:
+        description: "Имя canary файла {environment}.yaml в директории .k8s проекта для валидации его наличия и передачи следующим джобам"
+        required: false
         type: string
       is_stage:
         description: "Запускается ли план для публикации на стейдж"
@@ -111,6 +116,7 @@ jobs:
                         \"dockerfile\":\"$p\", \
                         \"project_path\":\"$project_path\", \
                         \"k8s_yaml_path\":\"$project_path/.k8s/${{ inputs.k8s_yaml_file_name }}\", \
+                        \"k8s_canary_yaml_path\":\"$project_path/.k8s/${{ inputs.k8s_canary_yaml_file_name }}\", \
                         \"build_number\":\"${{ env.BUILD_NUMBER }}\", \
                         \"image_name\":\"$image_name\", \
                         \"image_version\":\"${{ env.IMAGE_VERSION }}\" }"
@@ -138,6 +144,7 @@ jobs:
                     \"dockerfile\":\"./Dockerfile\", \
                     \"project_path\":\"$project_path\", \
                     \"k8s_yaml_path\":\"$project_path/.k8s/${{ inputs.k8s_yaml_file_name }}\", \
+                    \"k8s_canary_yaml_path\":\"$project_path/.k8s/${{ inputs.k8s_canary_yaml_file_name }}\", \
                     \"build_number\":\"${{ env.BUILD_NUMBER }}\", \
                     \"image_name\":\"$image_name\", \
                     \"image_version\":\"${{ env.IMAGE_VERSION }}\" }"

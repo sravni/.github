@@ -24,12 +24,17 @@ on:
         required: false
         default: sravni_prod
         type: string
+      canary:
+        required: false
+        default: false
+        type: boolean
     secrets: 
       TEST_CI_PAT_FOR_ACTIONS:
         required: true
 
 env:
   TEAM: ${{ inputs.team }}
+  CANARY: ${{ inputs.canary }}
 
 jobs:
   vars: 
@@ -93,6 +98,24 @@ jobs:
         run: >
           grep -xq '  - name: ${{ matrix.project.project_name }}' ${{ env.REPO_PATH }}/_apps/values_prod.yaml
           || yq e  -i '.services += {"name": "${{ matrix.project.project_name }}"}' ${{ env.REPO_PATH }}/_apps/values_prod.yaml;
+
+      # Для включенной опции канареечного релиза (canary: true) копируется ya-prod-canary.yaml файл с вэйльюсами из репы сервиса в deploy. 
+      # Фактическое название файла приходит в JSON'е в projects.
+      # Имя этого файла должно стать values_prod.yaml.
+      - name: Clone canary values from origin repo
+        run: >
+          if [ "${{ env.CANARY }}" = true ]; 
+          then 
+          cat ${{ matrix.project.k8s_canary_yaml_path }} > ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}-canary/values_prod.yaml;
+          fi;
+
+      - name: Create canary app
+        run: >
+          if [ "${{ env.CANARY }}" = true ]; 
+          then 
+          grep -xq '  - name: ${{ matrix.project.project_name }}-canary' ${{ env.REPO_PATH }}/_apps/values_prod.yaml
+          || yq e  -i '.services += {"name": "${{ matrix.project.project_name }}-canary"}' ${{ env.REPO_PATH }}/_apps/values_prod.yaml;
+          fi;
 
       # Устанавливаем tag образа и убеждаемся, что установлены `global.image.repository` и `global.imagePullSecrets`
       - name: Modify values
