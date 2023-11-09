@@ -35,7 +35,7 @@ on:
         description: "Имя файла {environment}.yaml в директории .k8s проекта для валидации его наличия и передачи следующим джобам"
         required: true
         type: string
-        default: ya-prod.yaml
+        default: "ya-prod.yaml"
       k8s_canary_yaml_file_name:
         description: "Имя canary файла {environment}.yaml в директории .k8s проекта для валидации его наличия и передачи следующим джобам"
         required: false
