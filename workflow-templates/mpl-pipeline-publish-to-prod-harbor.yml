@@ -1,4 +1,4 @@
-name: Publish-to-Mpl-Stage
+name: Publish-to-Mpl-Prod
 
 on:
   push:
