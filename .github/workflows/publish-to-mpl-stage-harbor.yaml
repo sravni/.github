@@ -98,7 +98,7 @@ jobs:
       - name: Modify values
         run: >
           yq -i '.global.image.tag = "${{ matrix.project.image_version }}" |
-          .global.image.repository = "registry.yc.prod.infra.sravni.market/${{ env.TEAM }}_stage/${{ matrix.project.project_name }}" |
+          .global.image.repository = "registry.yc.prod.infra.sravni.market/${{ env.TEAM }}_mpl_stage/${{ matrix.project.project_name }}" |
           .global.imagePullSecrets[0] = "harbor-pull-secret"'
           ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_mpl_stage.yaml;
 
