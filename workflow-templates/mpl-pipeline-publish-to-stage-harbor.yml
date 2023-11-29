@@ -28,7 +28,7 @@ env:
 
   ### Окружение
   # Необходимо указать кластер (dev, stage или prod)
-  cluster: "stage"
+  cluster: "mpl_stage"
 
 jobs:
   vars:
