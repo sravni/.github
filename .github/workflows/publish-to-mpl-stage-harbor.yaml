@@ -22,7 +22,7 @@ on:
       runner:
         description: "Указывает какой раннер будет использоваться для запуска флоу"
         required: false
-        default: marketplace_stage
+        default: ubuntu-latest
         type: string
     secrets: 
       TEST_CI_PAT_FOR_ACTIONS:
