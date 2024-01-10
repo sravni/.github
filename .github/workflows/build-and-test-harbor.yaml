@@ -28,6 +28,10 @@ on:
         description: "Имя файла {environment}.yaml в директории .k8s проекта для валидации его наличия и передачи следующим джобам"
         required: true
         type: string
+      build_enviroments_values:
+        description: "Строка с переменными окружения на стадди билда, в опрделенном формате"
+        required: false
+        type: string
 
     secrets: 
       GH_TOKEN:
@@ -124,5 +128,6 @@ jobs:
             SLACK_CLIENT_SECRET=${{ secrets.SLACK_CLIENT_SECRET }}
             SLACK_CLIENT_ID=${{ secrets.SLACK_CLIENT_ID }}
             ALLURE_TOKEN=${{ secrets.ALLURE_TOKEN }}
+            ${{ inputs.build_enviroments_values }}
           push: ${{ inputs.with_push }}
           tags: "${{ secrets.HARBOR_REGISTRY }}/${{ matrix.project.image_name }}"
