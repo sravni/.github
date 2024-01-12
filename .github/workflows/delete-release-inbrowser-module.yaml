@@ -3,19 +3,24 @@ name: Build and Release InBrowser module
 on:
     workflow_call:
         inputs:
-            runner:
-                description: "Указывает какой раннер будет использоваться для запуска флоу"
-                default: "sravni_dev"
-                required: false
-                type: string
             enviroment_file_name:
-                description: "Имя файла {environment}.yaml в директории enviroment проекта получения переменных окружения на момент сборки проекта"
-                required: true
-                type: string
+              description: "Имя файла {environment}.yaml в директории enviroment проекта получения переменных окружения на момент сборки проекта"
+              required: true
+              type: string
             project_folder:
-                description: "Название папки в корне репозитория с проектом"
-                required: true
-                type: string           
+              description: "Название папки в корне репозитория с проектом"
+              required: true
+              type: string  
+            branch:
+              description: "Название ветки проекта, которую нужно удалить"
+              required: false
+              type: string
+            runner:
+              description: "Указывает какой раннер будет использоваться для запуска флоу"
+              default: "sravni_dev"
+              required: false
+              type: string
+         
 
         secrets:           
             GH_TOKEN:
@@ -24,28 +29,8 @@ on:
                 required: true
 
 jobs:
-    get_branch_name:
-      name: Set branch name
-      runs-on: sravni_dev
-      outputs:
-        branch: ${{ steps.branch_dispatch.outputs.branch || steps.branch_delete.outputs.branch || steps.branch_pr.outputs.branch }}
-      steps:
-        - name: Set branch (dispatch)
-          id: branch_dispatch
-          if: ${{ github.event_name == 'workflow_dispatch' }}
-          run: B="${{ github.event.inputs.branch_name }}" && echo "branch=${B,,}" >> $GITHUB_OUTPUT
-        - name: Set branch (delete)
-          id: branch_delete
-          if: ${{ github.event_name == 'delete' }}
-          run: B="${{ github.event.ref }}" && echo "branch=${B#refs/heads/}" | tr '[:upper:]' '[:lower:]' >> $GITHUB_OUTPUT
-        - name: Set branch (pull_request)
-          id: branch_pr
-          if: ${{ github.event_name == 'pull_request' }}
-          run: B="${{ github.event.pull_request.head.ref }}" && echo "branch=${B,,}" >> $GITHUB_OUTPUT
-    
     delete_release:
         runs-on: ${{ inputs.runner }}
-        needs: [get_branch_name]
         steps:
             - uses: actions/checkout@v4
 
@@ -82,7 +67,7 @@ jobs:
 
             - name: Create build enviroment values
               env:
-                BRANCH: ${{ needs.get_branch_name.outputs.branch }}
+                BRANCH: ${{ inputs.branch }}
                 S3_PUBLIC_PATH: ${{ secrets.S3_CDN_PUBLIC_PATH }}
               run: |
                 values=$(while IFS=$'\t' read -r name value _; do
