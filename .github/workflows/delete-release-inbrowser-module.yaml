@@ -1,0 +1,87 @@
+name: Build and Release InBrowser module
+
+on:
+    workflow_call:
+        inputs:
+            enviroment_file_name:
+              description: "Имя файла {environment}.yaml в директории enviroment проекта получения переменных окружения на момент сборки проекта"
+              required: true
+              type: string
+            project_folder:
+              description: "Название папки в корне репозитория с проектом"
+              required: true
+              type: string  
+            branch:
+              description: "Название ветки проекта, которую нужно удалить"
+              required: false
+              type: string
+            runner:
+              description: "Указывает какой раннер будет использоваться для запуска флоу"
+              default: "sravni_dev"
+              required: false
+              type: string
+         
+
+        secrets:           
+            GH_TOKEN:
+                required: true
+            S3_CDN_PUBLIC_PATH:
+                required: true
+
+jobs:
+    delete_release:
+        runs-on: ${{ inputs.runner }}
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Install yq
+              run: |
+                sudo wget -O /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/v4.30.3/yq_linux_amd64
+                sudo chmod +x /usr/local/bin/yq     
+
+            - name: Install envsubst
+              run: |
+                sudo apt-get update -y
+                sudo apt-get install -y gettext
+
+            - uses: actions/setup-node@v4
+              with:
+                node-version: '16.x'
+                registry-url: https://npm.pkg.github.com/
+                scope: '@sravni'
+
+            - name: Install yarn
+              run: npm install -g yarn
+
+            - name: Get Yarn cache path
+              id: yarn-cache
+              run: echo "::set-output name=dir::$(yarn cache dir)"
+
+            - name: Load Yarn cache
+              uses: actions/cache@v3
+              with:
+                path: ${{ steps.yarn-cache.outputs.dir }}
+                key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+                restore-keys: |
+                    ${{ runner.os }}-yarn-
+
+            - name: Create build enviroment values
+              env:
+                BRANCH: ${{ inputs.branch }}
+                S3_PUBLIC_PATH: ${{ secrets.S3_CDN_PUBLIC_PATH }}
+              run: |
+                values=$(while IFS=$'\t' read -r name value _; do
+                    echo "$name=$value" | envsubst
+                done < <(yq -oy e '.env[] | [.name, .value] | @tsv' ./${{ inputs.project_folder }}/enviroments/${{ inputs.enviroment_file_name }}))
+
+                echo "$values" >> $GITHUB_ENV
+                
+            - name: Install dependencies
+              env:
+                NODE_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
+              run: yarn install --frozen-lockfile           
+
+            - name: Delete single-spa module
+              run: yarn --cwd ./${{ inputs.project_folder }} delete:singleSpaProject
+
+
