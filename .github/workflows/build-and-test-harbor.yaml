@@ -123,6 +123,6 @@ jobs:
             NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
             SLACK_CLIENT_SECRET=${{ secrets.SLACK_CLIENT_SECRET }}
             SLACK_CLIENT_ID=${{ secrets.SLACK_CLIENT_ID }}
-            ALLURE_TOKEN=${{ secrets.ALLURE_TOKEN }}            
+            ALLURE_TOKEN=${{ secrets.ALLURE_TOKEN }}
           push: ${{ inputs.with_push }}
           tags: "${{ secrets.HARBOR_REGISTRY }}/${{ matrix.project.image_name }}"
