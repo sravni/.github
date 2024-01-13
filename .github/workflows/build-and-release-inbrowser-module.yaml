@@ -82,11 +82,11 @@ jobs:
             env:
               BRANCH: ${{ inputs.branch }}
               SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_SOURCEMAP_WEB_FRONTEND_AUTH_TOKEN }}
-              S3_ENDPOINT: ${{ secrets.S3_CDN_ENDPOINT }}
-              S3_BUCKET: ${{ secrets.S3_CDN_BUCKET }}
-              S3_PUBLIC_PATH: ${{ secrets.S3_CDN_PUBLIC_PATH }}
-              S3_ACCESS_KEY_ID: ${{ secrets.S3_CDN_ACCESS_KEY_ID }}
-              S3_SECRET_ACCESS_KEY_ID: ${{ secrets.S3_CDN_SECRET_ACCESS_KEY_ID }}
+              S3_CDN_ENDPOINT: ${{ secrets.S3_CDN_ENDPOINT }}
+              S3_CDN_BUCKET: ${{ secrets.S3_CDN_BUCKET }}
+              S3_CDN_PUBLIC_PATH: ${{ secrets.S3_CDN_PUBLIC_PATH }}
+              S3_CDN_ACCESS_KEY_ID: ${{ secrets.S3_CDN_ACCESS_KEY_ID }}
+              S3_CDN_SECRET_ACCESS_KEY_ID: ${{ secrets.S3_CDN_SECRET_ACCESS_KEY_ID }}
             run: |
               values=$(while IFS=$'\t' read -r name value _; do
                   echo "$name=$value" | envsubst
