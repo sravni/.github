@@ -68,7 +68,7 @@ jobs:
             - name: Create build enviroment values
               env:
                 BRANCH: ${{ inputs.branch }}
-                S3_PUBLIC_PATH: ${{ secrets.S3_CDN_PUBLIC_PATH }}
+                S3_CDN_PUBLIC_PATH: ${{ secrets.S3_CDN_PUBLIC_PATH }}
               run: |
                 values=$(while IFS=$'\t' read -r name value _; do
                     echo "$name=$value" | envsubst
