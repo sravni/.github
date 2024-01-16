@@ -79,7 +79,7 @@ jobs:
             - name: Install dependencies
               env:
                 NODE_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
-              run: yarn install --frozen-lockfile           
+              run: yarn --cwd ./${{ inputs.project_folder }} install --frozen-lockfile           
 
             - name: Delete single-spa module
               run: yarn --cwd ./${{ inputs.project_folder }} delete:singleSpaProject
