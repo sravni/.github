@@ -52,14 +52,14 @@ jobs:
               node-version: '18.x'
               registry-url: https://npm.pkg.github.com/
               scope: '@sravni'
-    
+
           - name: Install yarn
             run: npm install -g yarn
-    
+
           - name: Get Yarn cache path
             id: yarn-cache
             run: echo "::set-output name=dir::$(yarn cache dir)"
-    
+
           - name: Load Yarn cache
             uses: actions/cache@v2
             with:
@@ -108,8 +108,7 @@ jobs:
             run: yarn --cwd ./${{ inputs.shared_folder }} build
 
           - name: Build Project
-            run: |              
-              yarn --cwd ./${{ inputs.project_folder }} build
+            run: yarn --cwd ./${{ inputs.project_folder }} build
 
           - name: Publish Static
             run: yarn --cwd ./${{ inputs.project_folder }} publish:static
