@@ -47,6 +47,12 @@ jobs:
         steps:
           - uses: actions/checkout@v4
 
+          - uses: actions/setup-node@v4
+            with:
+              node-version: '18.x'
+              registry-url: https://npm.pkg.github.com/
+              scope: '@sravni'
+
           - name: Install yq
             run: |
               sudo wget -O /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/v4.30.3/yq_linux_amd64
@@ -57,31 +63,25 @@ jobs:
               sudo apt-get update -y
               sudo apt-get install -y gettext
 
-          - uses: actions/setup-node@v4
-            with:
-              node-version: '18.x'
-              registry-url: https://npm.pkg.github.com/
-              scope: '@sravni'
-
           - name: Install yarn
             run: npm install -g yarn
 
-          - name: Get Yarn cache path
-            id: yarn-cache
-            run: echo "::set-output name=dir::$(yarn cache dir)"
+          # - name: Get Yarn cache path
+          #   id: yarn-cache
+          #   run: echo "::set-output name=dir::$(yarn cache dir)"
 
-          - name: Load Yarn cache
-            uses: actions/cache@v3
-            with:
-              path: ${{ steps.yarn-cache.outputs.dir }}
-              key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-              restore-keys: |
-                  ${{ runner.os }}-yarn-
+          # - name: Load Yarn cache
+          #   uses: actions/cache@v3
+          #   with:
+          #     path: ${{ steps.yarn-cache.outputs.dir }}
+          #     key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          #     restore-keys: |
+          #         ${{ runner.os }}-yarn-
 
           - name: Create build enviroment values
             env:
               BRANCH: ${{ inputs.branch }}
-              SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_SOURCEMAP_WEB_FRONTEND_AUTH_TOKEN }}
+              SENTRY_SOURCEMAP_WEB_FRONTEND_AUTH_TOKEN: ${{ secrets.SENTRY_SOURCEMAP_WEB_FRONTEND_AUTH_TOKEN }}
               S3_CDN_ENDPOINT: ${{ secrets.S3_CDN_ENDPOINT }}
               S3_CDN_BUCKET: ${{ secrets.S3_CDN_BUCKET }}
               S3_CDN_PUBLIC_PATH: ${{ secrets.S3_CDN_PUBLIC_PATH }}
@@ -94,22 +94,22 @@ jobs:
 
               echo "$values" >> $GITHUB_ENV
               
-          - name: Install dependencies
+          - name: Install dependencies Shared
+            if: inputs.shared_folder != ''
             env:
               NODE_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
-            run: yarn install --frozen-lockfile
+            run: yarn --cwd ./${{ inputs.shared_folder }} install --frozen-lockfile
+
+          - name: Install dependencies Project
+            env:
+              NODE_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
+            run: |
+              yarn --cwd ./${{ inputs.project_folder }} install --frozen-lockfile --verbose
 
           - name: Build Shared
             if: inputs.shared_folder != ''
             run: yarn --cwd ./${{ inputs.shared_folder }} build
 
           - name: Build Project
-            run: yarn --cwd ./${{ inputs.project_folder }} build
-
-          - name: Publish Static
-            run: yarn --cwd ./${{ inputs.project_folder }} publish:static
-
-          - name: Publish single-spa module
-            run: yarn --cwd ./${{ inputs.project_folder }} publish:singleSpaProject
-
-
+            run: |              
+              yarn --cwd ./${{ inputs.project_folder }} build --verbose
