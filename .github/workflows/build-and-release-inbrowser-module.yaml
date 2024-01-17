@@ -67,7 +67,7 @@ jobs:
             run: npm install -g yarn
 
           - name: Install webpack
-            run: npm install webpack
+            run: npm install -g webpack
 
           # - name: Get Yarn cache path
           #   id: yarn-cache
