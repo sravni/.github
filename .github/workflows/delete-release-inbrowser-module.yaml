@@ -64,18 +64,30 @@ jobs:
                 key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
                 restore-keys: |
                     ${{ runner.os }}-yarn-
+                
+            - name: Install yq
+              uses: chrisdickinson/setup-yq@latest
+              with:
+                yq-version: 'v4.30.3'
 
-            - name: Create build enviroment values
+            - name: Replace variables in yaml file 
+              uses: vafinvr/template-env-action@master
               env:
                 BRANCH: ${{ inputs.branch }}
+                SENTRY_SOURCEMAP_WEB_FRONTEND_AUTH_TOKEN: ${{ secrets.SENTRY_SOURCEMAP_WEB_FRONTEND_AUTH_TOKEN }}
+                S3_CDN_ENDPOINT: ${{ secrets.S3_CDN_ENDPOINT }}
+                S3_CDN_BUCKET: ${{ secrets.S3_CDN_BUCKET }}
                 S3_CDN_PUBLIC_PATH: ${{ secrets.S3_CDN_PUBLIC_PATH }}
-              run: |
-                values=$(while IFS=$'\t' read -r name value _; do
-                    echo "$name=$value" | envsubst
-                done < <(yq -oy e '.env[] | [.name, .value] | @tsv' ./${{ inputs.project_folder }}/enviroments/${{ inputs.enviroment_file_name }}))
+                S3_CDN_ACCESS_KEY_ID: ${{ secrets.S3_CDN_ACCESS_KEY_ID }}
+                S3_CDN_SECRET_ACCESS_KEY_ID: ${{ secrets.S3_CDN_SECRET_ACCESS_KEY_ID }}
+              with:
+                filename: ./${{ inputs.project_folder }}/enviroments/${{ inputs.enviroment_file_name }}
 
-                echo "$values" >> $GITHUB_ENV
-                
+            - name: Read build enviroment values from yaml
+              uses: dcarbone/yaml-to-env-action@v1.0.0
+              with:
+                yaml-file: './${{ inputs.project_folder }}/enviroments/${{ inputs.enviroment_file_name }}'
+
             - name: Install dependencies
               env:
                 NODE_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
@@ -83,5 +95,3 @@ jobs:
 
             - name: Delete single-spa module
               run: yarn --cwd ./${{ inputs.project_folder }} delete:singleSpaProject
-
-
