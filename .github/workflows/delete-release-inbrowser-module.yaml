@@ -60,6 +60,11 @@ jobs:
               with:
                 yq-version: 'v4.30.3'
 
+            - name: Install dependencies
+              env:
+                NODE_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
+              run: yarn --cwd ./${{ inputs.project_folder }} install --frozen-lockfile
+
             - name: Replace variables in yaml file 
               uses: vafinvr/template-env-action@master
               env:
@@ -77,11 +82,6 @@ jobs:
               uses: dcarbone/yaml-to-env-action@v1.0.0
               with:
                 yaml-file: './${{ inputs.project_folder }}/enviroments/${{ inputs.enviroment_file_name }}'
-
-            - name: Install dependencies
-              env:
-                NODE_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
-              run: yarn --cwd ./${{ inputs.project_folder }} install --frozen-lockfile
 
             - name: Delete single-spa module
               run: yarn --cwd ./${{ inputs.project_folder }} delete:singleSpaProject
