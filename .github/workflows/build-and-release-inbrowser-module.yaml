@@ -117,4 +117,4 @@ jobs:
 
           - name: Build Project
             run: |              
-              yarn --cwd ./${{ inputs.project_folder }} build --verbose
+              yarn --cwd ./${{ inputs.project_folder }} build 
