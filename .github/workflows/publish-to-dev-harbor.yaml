@@ -208,7 +208,8 @@ jobs:
       
       - name: Prepare k6 tests
         run: |
-          if [ "${{ env.K6 }}" = true ];
+          if [ "${{ env.K6 }}" = true ]; 
+          then
           rm -rf ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/k6-tests
           cp -r .k6 ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/k6-tests
           fi;
