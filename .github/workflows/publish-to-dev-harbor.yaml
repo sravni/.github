@@ -24,6 +24,11 @@ on:
         required: false
         default: sravni_dev
         type: string
+      k6:
+        description: "Включает нагрузочные тесты k6 после релиза "
+        required: false
+        default: true
+        type: boolean
       delete_branches:
         required: false
         default: true
@@ -35,6 +40,7 @@ on:
 env:
   TEAM: ${{ inputs.team }}
   DELETE_BRANCHES: ${{ inputs.delete_branches }}
+  K6: ${{ inputs.k6}}
 
 jobs:
   get_branch_name:
@@ -199,6 +205,13 @@ jobs:
       - name: Delete stale branches
         run: |
           bash ./deploy/delete_stale_branches.sh "./deploy/${{ env.TEAM }}/_apps/values_dev.yaml"
+      
+      - name: Prepare k6 tests
+        run: |
+          if [ "${{ env.K6 }}" = true ];
+          rm -rf ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/k6-tests
+          cp -r .k6 ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/k6-tests
+          fi;
       
       - name: Do rebase and commit
         run: >
