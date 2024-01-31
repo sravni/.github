@@ -27,7 +27,7 @@ on:
       k6:
         description: "Включает нагрузочные тесты k6 после релиза "
         required: false
-        default: true
+        default: false
         type: boolean
       delete_branches:
         required: false
