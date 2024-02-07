@@ -105,9 +105,13 @@ jobs:
 
           - name: Build Shared
             if: inputs.shared_folder != ''
+            env:
+              NODE_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
             run: yarn --cwd ./${{ inputs.shared_folder }} build
 
           - name: Build Project
+            env:
+              NODE_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
             run: yarn --cwd ./${{ inputs.project_folder }} build
 
           - name: Publish Static
