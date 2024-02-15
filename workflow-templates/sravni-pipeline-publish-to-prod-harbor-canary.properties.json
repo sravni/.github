@@ -1,0 +1,5 @@
+{
+    "name": "Sravni pipeline publish to prod harbor canary",
+    "description": "Pipeline для выкатки канарейки в прод используя харбор",
+    "iconName": "sravni-pipeline-publish-to-prod-harbor-canary"
+}
