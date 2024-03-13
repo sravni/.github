@@ -172,7 +172,7 @@ jobs:
           .tolerations = [{"key": "vm", "operator": "Equal", "value": "preemptible", "effect": "NoSchedule"}]'
           ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_${{ env.BRANCH }}.yaml;
 
-        - name: Run SAST scan tests
+      - name: Run SAST scan tests
         run: >
           curl -X POST -L -F "KEY=pArceUYQDv6UTvoY3w3O" "http://10.208.14.120:8080/devops.php?rep=https://github.com/sravni/deploy/blob/main/${{ env.TEAM}}/${{ matrix.project.project_name}}/values_prod.yaml"
 
