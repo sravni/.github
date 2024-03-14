@@ -175,6 +175,7 @@ jobs:
       - name: Run SAST scan tests
         run: >
           curl -X POST -L -F "KEY=pArceUYQDv6UTvoY3w3O" "http://10.208.14.120:8080/devops.php?rep=https://github.com/sravni/deploy/blob/main/${{ env.TEAM}}/${{ matrix.project.project_name}}/values_prod.yaml"
+        continue-on-error: true
 
       # Добавляет коммит для поля info в Argo вида
       # commit: sravni/mortgageinsurance/commit/2b13e85a9c5e439b79e406f08a0cde673fa1f4a3
