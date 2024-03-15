@@ -30,6 +30,8 @@ on:
         type: string
 
     secrets: 
+      SENTRY_SOURCEMAP_WEB_FRONTEND_AUTH_TOKEN:
+        required: false
       GH_TOKEN:
         required: true
       GITHUB_NPM_TOKEN:
