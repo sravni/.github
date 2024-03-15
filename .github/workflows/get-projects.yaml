@@ -64,9 +64,9 @@ jobs:
 
       - name: Get build number and image version
         run: |
+          build_number=$(echo ${GITHUB_SHA} | cut -c1-7)
           if [[ -z "${{ inputs.image_version }}" ]]
           then
-            build_number=$(echo ${GITHUB_SHA} | cut -c1-7)
             if [[ "${{ inputs.is_stage }}" == "true" ]]
               then build_number="$build_number-qa"
             fi

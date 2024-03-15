@@ -90,6 +90,7 @@ jobs:
           password: ${{ secrets.HARBOR_PASS }}
       
       - name: Check if image exist
+        if: ${{ !inputs.image_version }}
         run: |
           inspect_result=$(docker manifest inspect "${{ secrets.HARBOR_REGISTRY }}/${{ matrix.project.image_name }}" > /dev/null 2>&1; echo $?)
           if [ $inspect_result -eq 1 ] 
@@ -99,7 +100,12 @@ jobs:
             echo "IMAGE_EXIST=true" >> $GITHUB_ENV
             echo "Образ ${{ matrix.project.image_name }} уже cуществует"
           fi
-          
+
+      - name: IMAGE_EXIST false of set image_version
+        if: ${{ inputs.image_version }}
+        run: |
+          echo "IMAGE_EXIST=false" >> $GITHUB_ENV 
+
       - name: Set up Docker Buildx
         if: ${{ env.IMAGE_EXIST == 'false' }}
         uses: docker/setup-buildx-action@v2
