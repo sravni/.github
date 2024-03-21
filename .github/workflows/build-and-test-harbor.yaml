@@ -108,6 +108,8 @@ jobs:
         with:
           driver: docker
           version: v0.10.0
+          driver-opts: |
+            network=host
 
       - name: Docker build
         if: ${{ env.IMAGE_EXIST == 'false' }}
