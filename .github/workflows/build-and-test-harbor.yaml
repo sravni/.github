@@ -81,6 +81,13 @@ jobs:
         project: ${{ fromJson(needs.get_projects.outputs.projects) }}
 
     steps:
+      - name: Set job data for metrics
+        id: data
+        run: |
+          echo "repository=${{ matrix.project.image_name }}" >> $GITHUB_OUTPUT
+          echo "env=${{ inputs.is_stage && 'stage' || 'production'  }}" >> $GITHUB_OUTPUT
+          echo "start_timestamp=$(date +%s)" >> $GITHUB_OUTPUT
+
       - name: Checkout source
         uses: actions/checkout@v3
 
@@ -129,3 +136,11 @@ jobs:
             SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_SOURCEMAP_WEB_FRONTEND_AUTH_TOKEN }}
           push: ${{ inputs.with_push }}
           tags: "${{ secrets.HARBOR_REGISTRY }}/${{ matrix.project.image_name }}"
+
+      - name: Collect and send metrics
+        env:
+          RESULT_DURATION: ${{ expr $(date +%s) - ${{ steps.data.outputs.start_timestamp }} }}
+        run : |
+          # Calculate duration before sending
+          echo "$RESULT_DURATION"
+          #curl -d 'sravni_jobs{repository="${{ steps.data.outputs.repository }}", env="${{ steps.data.outputs.env }}"} $()' -X POST https://vm-receive.yc.dev.infra.sravni-team.ru/insert/0/prometheus/api/v1/import/prometheus -v
