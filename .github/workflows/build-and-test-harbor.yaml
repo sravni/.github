@@ -141,7 +141,7 @@ jobs:
         id: job_duration
         run: |
           echo ${{ steps.data.outputs.start_timestamp }}
-          echo ${{ steps.data.outputs.start_timestamp }} >> $GITHUB_OUTPUT
+          echo "${{ steps.data.outputs.start_timestamp }}" >> $GITHUB_OUTPUT
           #echo "$(( $($(date +%s) - steps.data.outputs.start_timestamp) ))" >> $GITHUB_OUTPUT
           
           
