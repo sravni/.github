@@ -139,7 +139,7 @@ jobs:
 
       - name: Collect and send metrics
         env:
-          RESULT_DURATION: ${{ expr $(date +%s) - steps.data.outputs.start_timestamp }}
+          RESULT_DURATION: ${{ echo $(( $(date +%s - steps.data.outputs.start_timestamp) )) }}
         run : |
           # Calculate duration before sending
           echo "$RESULT_DURATION"
