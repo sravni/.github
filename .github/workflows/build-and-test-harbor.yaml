@@ -137,9 +137,14 @@ jobs:
           push: ${{ inputs.with_push }}
           tags: "${{ secrets.HARBOR_REGISTRY }}/${{ matrix.project.image_name }}"
 
+      # - name: Calculate job duration
+      #   id: job_duration
+      #   run: |
+      #     echo $(( $(date +%s - steps.data.outputs.start_timestamp) ))
+          
       - name: Collect and send metrics
         env:
-          RESULT_DURATION: ${{ echo $(( $(date +%s - steps.data.outputs.start_timestamp) )) }}
+          RESULT_DURATION: ${{ echo "$(( $(date +%s - steps.data.outputs.start_timestamp) ))" }}
         run : |
           # Calculate duration before sending
           echo "$RESULT_DURATION"
