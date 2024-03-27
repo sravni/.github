@@ -139,7 +139,7 @@ jobs:
 
       - name: Sleep
         run: |
-          sleep 100
+          sleep 34
 
       - name: Calculate job duration
         id: job_duration
@@ -153,4 +153,4 @@ jobs:
           
       - name: Send metrics
         run : |
-          curl -d 'sravni_jobs{repository="${{ steps.data.outputs.repository }}", env="${{ steps.data.outputs.env }}"} ${{steps.job_duration.outputs.result}}' -X POST https://vm-receive.yc.dev.infra.sravni-team.ru/insert/0/prometheus/api/v1/import/prometheus -v
+          curl -d 'sravni_jobs{job="$GITHUB_JOB", repository="${{ steps.data.outputs.repository }}", env="${{ steps.data.outputs.env }}"} ${{steps.job_duration.outputs.result}}' -X POST https://vm-receive.yc.dev.infra.sravni-team.ru/insert/0/prometheus/api/v1/import/prometheus -v
