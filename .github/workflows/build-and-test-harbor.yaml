@@ -144,7 +144,7 @@ jobs:
       - name: Calculate job duration
         id: job_duration
         run: |
-          echo "result=echo $(( $(date +%s) - ${{steps.data.outputs.start_timestamp}} ))" >> $GITHUB_OUTPUT
+          echo "result=$(( $(date +%s) - ${{steps.data.outputs.start_timestamp}} ))" >> $GITHUB_OUTPUT
       # echo "$(( $($(date +%s) - steps.data.outputs.start_timestamp) ))" >> $GITHUB_OUTPUT
 
       # - name: Send metrics
