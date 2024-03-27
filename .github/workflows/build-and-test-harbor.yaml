@@ -142,6 +142,10 @@ jobs:
         run: |
           echo "result=echo $((${{steps.data.outputs.start_timestamp}} - 2342155))" >> $GITHUB_OUTPUT
       # echo "$(( $($(date +%s) - steps.data.outputs.start_timestamp) ))" >> $GITHUB_OUTPUT
+
+      - name: Send metrics
+        run: |
+          echo "${{steps.job_duration.outputs.result}}"
           
           
           
