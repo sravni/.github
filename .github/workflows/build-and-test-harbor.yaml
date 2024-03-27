@@ -147,16 +147,10 @@ jobs:
           echo "result=echo $(( $(date +%s) - ${{steps.data.outputs.start_timestamp}} ))" >> $GITHUB_OUTPUT
       # echo "$(( $($(date +%s) - steps.data.outputs.start_timestamp) ))" >> $GITHUB_OUTPUT
 
+      # - name: Send metrics
+      #   run: |
+      #     echo "${{steps.job_duration.outputs.result}}"
+          
       - name: Send metrics
-        run: |
-          echo "${{steps.job_duration.outputs.result}}"
-          
-          
-          
-      # - name: Collect and send metrics
-      #   env:
-      #     RESULT_DURATION: ${{ echo "$(( $(date +%s - steps.data.outputs.start_timestamp) ))" }}
-      #   run : |
-      #     # Calculate duration before sending
-      #     echo "$RESULT_DURATION"
-      #     #curl -d 'sravni_jobs{repository="${{ steps.data.outputs.repository }}", env="${{ steps.data.outputs.env }}"} $()' -X POST https://vm-receive.yc.dev.infra.sravni-team.ru/insert/0/prometheus/api/v1/import/prometheus -v
+        run : |
+          curl -d 'sravni_jobs{repository="${{ steps.data.outputs.repository }}", env="${{ steps.data.outputs.env }}"} ${{steps.job_duration.outputs.result}}' -X POST https://vm-receive.yc.dev.infra.sravni-team.ru/insert/0/prometheus/api/v1/import/prometheus -v
