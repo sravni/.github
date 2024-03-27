@@ -140,7 +140,7 @@ jobs:
       - name: Calculate job duration
         id: job_duration
         run: |
-          echo "result=1711572627" >> $GITHUB_OUTPUT
+          echo "result=${{steps.data.outputs.start_timestamp}}" >> $GITHUB_OUTPUT
       # echo "$(( $($(date +%s) - steps.data.outputs.start_timestamp) ))" >> $GITHUB_OUTPUT
           
           
