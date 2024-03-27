@@ -140,7 +140,6 @@ jobs:
       - name: Sleep
         run: |
           sleep 34
-          exit 1
 
       - name: Calculate job duration
         if: always()
