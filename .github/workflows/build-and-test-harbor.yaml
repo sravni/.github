@@ -137,6 +137,10 @@ jobs:
           push: ${{ inputs.with_push }}
           tags: "${{ secrets.HARBOR_REGISTRY }}/${{ matrix.project.image_name }}"
 
+      - name: Sleep
+        run: |
+          sleep 100
+
       - name: Calculate job duration
         id: job_duration
         run: |
