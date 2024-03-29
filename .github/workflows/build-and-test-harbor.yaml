@@ -146,8 +146,9 @@ jobs:
         id: job_duration
         run: |
           echo "result=$(( $(date +%s) - ${{steps.data.outputs.start_timestamp}} ))" >> $GITHUB_OUTPUT
+          echo "REPO_NAME=${{ github.event.repository.name }}" >> $GITHUB_ENV
           echo "${{ github.action_repository }}"
-          echo "${{ env.GITHUB_ACTION_REPOSITORY }}"
+          echo "${{ env.REPO_NAME }}"
       # echo "$(( $($(date +%s) - steps.data.outputs.start_timestamp) ))" >> $GITHUB_OUTPUT
 
       # - name: Send metrics
