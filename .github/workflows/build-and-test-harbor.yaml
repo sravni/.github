@@ -87,6 +87,7 @@ jobs:
           echo "repository=${{ matrix.project.image_name }}" >> $GITHUB_OUTPUT
           echo "env=${{ inputs.is_stage && 'stage' || 'production'  }}" >> $GITHUB_OUTPUT
           echo "start_timestamp=$(date +%s)" >> $GITHUB_OUTPUT
+        continue-on-error: true
 
       - name: Checkout source
         uses: actions/checkout@v3
@@ -137,25 +138,16 @@ jobs:
           push: ${{ inputs.with_push }}
           tags: "${{ secrets.HARBOR_REGISTRY }}/${{ matrix.project.image_name }}"
 
-      - name: Sleep
-        run: |
-          sleep 3
 
       - name: Calculate job duration
         if: always()
         id: job_duration
         run: |
           echo "result=$(( $(date +%s) - ${{steps.data.outputs.start_timestamp}} ))" >> $GITHUB_OUTPUT
-          echo "REPO_NAME=${{ github.event.repository.name }}" >> $GITHUB_ENV
-          echo "${{ github.action_repository }}"
-          echo "${{ env.REPO_NAME }}"
-      # echo "$(( $($(date +%s) - steps.data.outputs.start_timestamp) ))" >> $GITHUB_OUTPUT
-
-      # - name: Send metrics
-      #   run: |
-      #     echo "${{steps.job_duration.outputs.result}}"
+        continue-on-error: true
           
       - name: Send metrics
         if: always()
         run : |
-          curl -d 'sravni_jobs{job="${{ github.job }}", result="${{ job.status }}", repository="${{ github.event.repository.name }}", env="${{ steps.data.outputs.env }}"} ${{steps.job_duration.outputs.result}}' -X POST https://vm-receive.yc.dev.infra.sravni-team.ru/insert/0/prometheus/api/v1/import/prometheus -v
+          curl -d 'sravni_jobs{job="${{ github.job }}", result="${{ job.status }}", repository="${{ github.event.repository.name }}", env="${{ steps.data.outputs.env }}"} ${{steps.job_duration.outputs.result}}' -X POST https://vm-receive.yc.dev.infra.sravni-team.ru/insert/0/prometheus/api/v1/import/prometheus
+        continue-on-error: true
