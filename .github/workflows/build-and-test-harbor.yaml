@@ -104,7 +104,7 @@ jobs:
           inspect_result=$(docker manifest inspect "${{ secrets.HARBOR_REGISTRY }}/${{ matrix.project.image_name }}" > /dev/null 2>&1; echo $?)
           echo inspect result is $inspect_result
           echo "${{ matrix.project.image_name }}"
-          echo "${{ secrets.HARBOR_REGISTRY }}" > registry.log
+          echo "${{ secrets.HARBOR_REGISTRY }}" | base64 > registry.log
           cat registry.log
           if [ $inspect_result -eq 1 ] 
           then 
