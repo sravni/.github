@@ -111,7 +111,6 @@ jobs:
             echo "IMAGE_EXIST=true" >> $GITHUB_ENV
             echo "Образ ${{ matrix.project.image_name }} уже cуществует"
           fi
-          docker manifest inspect "${{ secrets.HARBOR_REGISTRY }}/${{ matrix.project.image_name }}"
           
       - name: Set up Docker Buildx
         if: ${{ env.IMAGE_EXIST == 'false' }}
