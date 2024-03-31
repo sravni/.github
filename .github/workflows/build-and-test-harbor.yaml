@@ -102,13 +102,16 @@ jobs:
       - name: Check if image exist
         run: |
           inspect_result=$(docker manifest inspect "${{ secrets.HARBOR_REGISTRY }}/${{ matrix.project.image_name }}" > /dev/null 2>&1; echo $?)
+          echo inspect result is $inspect_result
           if [ $inspect_result -eq 1 ] 
           then 
             echo "IMAGE_EXIST=false" >> $GITHUB_ENV 
+            echo "Образ ${{ matrix.project.image_name }} не cуществует"
           else 
             echo "IMAGE_EXIST=true" >> $GITHUB_ENV
             echo "Образ ${{ matrix.project.image_name }} уже cуществует"
           fi
+          docker manifest inspect "${{ secrets.HARBOR_REGISTRY }}/${{ matrix.project.image_name }}"
           
       - name: Set up Docker Buildx
         if: ${{ env.IMAGE_EXIST == 'false' }}
