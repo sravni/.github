@@ -108,9 +108,9 @@ jobs:
           password: ${{ secrets.HARBOR_PASS }}
       
       - name: Check if image is a canary
-        with: 
-          canary: ${{ inputs.canary}}
         run: |
+          echo ${{ inputs.canary }}
+          echo ${{ env.CANARY }}
           echo $canary
           if [[ "${{ canary }}" == 'true' ]]
           then
