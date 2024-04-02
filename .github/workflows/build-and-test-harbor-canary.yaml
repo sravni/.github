@@ -111,7 +111,6 @@ jobs:
         run: |
           echo ${{ inputs.canary }}
           echo ${{ env.CANARY }}
-          echo $canary
           if [[ "${{ canary }}" == 'true' ]]
           then
           canary_tag="canary-"
