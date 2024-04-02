@@ -107,7 +107,7 @@ jobs:
           username: ${{ secrets.HARBOR_LOGIN }}
           password: ${{ secrets.HARBOR_PASS }}
       
-      - name: Get build number and image version
+      - name: Check if image is a canary
         run: |
           if [[ "${{ inputs.canary }}" == 'true' ]]
           then
