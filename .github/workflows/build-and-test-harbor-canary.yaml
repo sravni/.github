@@ -32,7 +32,7 @@ on:
         description: "Включить канарейку"
         required: false
         type: boolean
-        default: true
+        default: false
 
     secrets: 
       GH_TOKEN:
@@ -109,7 +109,7 @@ jobs:
       
       - name: Check if image is a canary
         run: |
-          if [[ "${{ inputs.canary }}" == 'true' ]]
+          if [[ "${{ env.CANARY }}" == 'true' ]]
           then
           canary_tag="canary-"
           else
