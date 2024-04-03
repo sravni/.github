@@ -1,0 +1,175 @@
+name: Build and test canary module
+
+on:
+  workflow_call:
+    inputs:
+      is_stage:
+        description: "Запускается ли план для публикации на стейдж"
+        required: true
+        type: boolean
+      project_path_mask:
+        description: "Маска пути к файлам проекта"
+        required: true
+        type: string
+      with_push:
+        description: "Пушить ли собранный образ"
+        required: true
+        type: boolean
+      runner:
+        description: "Указывает какой раннер будет использоваться для запуска флоу"
+        default: "sravni_dev"
+        required: false
+        type: string
+      image_version:
+        description: "Версия образа"
+        required: false
+        type: string
+      k8s_yaml_file_name:
+        description: "Имя файла {environment}.yaml в директории .k8s проекта для валидации его наличия и передачи следующим джобам"
+        required: true
+        type: string
+      canary:
+        description: "Включить канарейку"
+        required: false
+        type: boolean
+        default: false
+
+    secrets: 
+      GH_TOKEN:
+        required: true
+      GITHUB_NPM_TOKEN:
+        required: true
+      HARBOR_REGISTRY:
+        required: true
+      HARBOR_LOGIN:
+        required: true
+      HARBOR_PASS:
+        required: true
+      NEXTAUTH_URL:         # Добавлено для команды MFO
+        required: false     #
+      NEXTAUTH_SECRET:      # Добавлено для команды MFO
+        required: false     #
+      SLACK_CLIENT_SECRET:  # Добавлено для команды MFO
+        required: false     #
+      SLACK_CLIENT_ID:      # Добавлено для команды MFO
+        required: false     #
+      ALLURE_TOKEN:         # Добавлено для команды Mobile
+        required: false     #
+      SENTRY_SOURCEMAP_WEB_FRONTEND_AUTH_TOKEN: # AUTH токен для source map сентри, добавлено для команды OSAGO
+        required: false
+
+    outputs:
+      projects:
+        description: "Собранные проекты"
+        value: ${{ jobs.get_projects.outputs.projects }}
+
+env:
+  CANARY: ${{ inputs.canary }}
+
+# Описание Джобов воркфлоу
+jobs:
+  # Описание Джобы get_projects и ее шага, в котором происходит составление
+  # списка проектов для сборки.
+  # | project_name | dockerfile | project_path | k8s_yaml_path | build_number | image_name | image_version |
+  get_projects:
+    uses: ./.github/workflows/get-projects.yaml
+    with:
+      k8s_yaml_file_name: ${{ inputs.k8s_yaml_file_name }}
+      project_path_mask: ${{ inputs.project_path_mask }}
+      image_version: ${{ inputs.image_version }}
+      is_stage: ${{ inputs.is_stage }}
+      runner: ${{ inputs.runner }}
+
+  build_and_test:
+    runs-on: ${{ inputs.runner }}
+    needs: [get_projects]
+
+    strategy:
+      matrix:
+        project: ${{ fromJson(needs.get_projects.outputs.projects) }}
+
+    steps:
+      - name: Set job data for metrics
+        id: data
+        run: |
+          echo "repository=${{ matrix.project.image_name }}" >> $GITHUB_OUTPUT
+          echo "env=${{ inputs.is_stage && 'stage' || 'production'  }}" >> $GITHUB_OUTPUT
+          echo "start_timestamp=$(date +%s)" >> $GITHUB_OUTPUT
+        continue-on-error: true
+
+      - name: Checkout source
+        uses: actions/checkout@v3
+
+      - name: Login to ACR
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ secrets.HARBOR_REGISTRY }}
+          username: ${{ secrets.HARBOR_LOGIN }}
+          password: ${{ secrets.HARBOR_PASS }}
+      
+      - name: Check if image is a canary
+        run: |
+          echo env.CANARY ${{ env.CANARY }}
+          echo inputs.CANARY ${{ inputs.CANARY }}
+          echo canary $canary
+          if [[ "${{ env.CANARY }}" == 'true' ]]
+          then
+          canary_tag="canary-"
+          else
+            canary_tag=""
+          fi
+          echo "CANARY_TAG=$canary_tag" >> $GITHUB_ENV
+
+      - name: Check if image exist
+        run: |
+          inspect_result=$(docker manifest inspect "${{ secrets.HARBOR_REGISTRY }}/${{ env.CANARY_TAG }}${{ matrix.project.image_name }}" > /dev/null 2>&1; echo $?)
+          if [ $inspect_result -eq 1 ] 
+          then 
+            echo "IMAGE_EXIST=false" >> $GITHUB_ENV 
+          else 
+            echo "IMAGE_EXIST=true" >> $GITHUB_ENV
+            echo "Образ ${{ matrix.project.image_name }} уже cуществует"
+          fi
+
+      - name: Set up Docker Buildx
+        if: ${{ env.IMAGE_EXIST == 'false' }}
+        uses: docker/setup-buildx-action@v2
+        with:
+          driver: docker
+          version: v0.10.0
+
+      - name: Docker build
+        if: ${{ env.IMAGE_EXIST == 'false' }}
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ${{ matrix.project.dockerfile }}
+          build-args: |
+            build_number=${{ matrix.project.build_number }}
+            ENVIROMENT=${{ inputs.is_stage && 'stage' || 'production'  }}
+            GITHUB_TOKEN=${{ secrets.GH_TOKEN }}
+            GITHUB_USERNAME=sravni
+            GITHUB_NPM_TOKEN=${{ secrets.GH_TOKEN }}
+            NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }}
+            NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
+            SLACK_CLIENT_SECRET=${{ secrets.SLACK_CLIENT_SECRET }}
+            SLACK_CLIENT_ID=${{ secrets.SLACK_CLIENT_ID }}
+            ALLURE_TOKEN=${{ secrets.ALLURE_TOKEN }}
+            SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_SOURCEMAP_WEB_FRONTEND_AUTH_TOKEN }}
+          push: ${{ inputs.with_push }}
+          tags: "${{ secrets.HARBOR_REGISTRY }}/${{ env.CANARY_TAG }}${{ matrix.project.image_name }}"
+
+
+      - name: Calculate job duration
+        if: always()
+        id: job_duration
+        run: |
+          echo "result=$(( $(date +%s) - ${{steps.data.outputs.start_timestamp}} ))" >> $GITHUB_OUTPUT
+        continue-on-error: true
+          
+      - name: Send metrics
+        if: always()
+        run : |
+          curl -d 'sravni_jobs{job="${{ github.job }}", result="${{ job.status }}", repository="${{ github.event.repository.name }}", env="${{ steps.data.outputs.env }}"} ${{steps.job_duration.outputs.result}}' -X POST https://vm-receive.yc.dev.infra.sravni-team.ru/insert/0/prometheus/api/v1/import/prometheus
+          curl -d 'sravni_jobs_event{job="${{ github.job }}", result="${{ job.status }}", repository="${{ github.event.repository.name }}", env="${{ steps.data.outputs.env }}"} 1' -X POST https://vm-receive.yc.dev.infra.sravni-team.ru/insert/0/prometheus/api/v1/import/prometheus
+        continue-on-error: true
