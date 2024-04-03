@@ -32,7 +32,7 @@ on:
         description: "Включить канарейку"
         required: false
         type: string
-        default: "false"
+        default: false
 
     secrets: 
       GH_TOKEN:
