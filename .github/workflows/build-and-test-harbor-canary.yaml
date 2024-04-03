@@ -31,7 +31,7 @@ on:
       canary:
         description: "Включить канарейку"
         required: false
-        type: string
+        type: boolean
         default: false
 
     secrets: 
