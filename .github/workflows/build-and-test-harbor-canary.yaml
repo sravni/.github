@@ -31,7 +31,7 @@ on:
       canary:
         description: "Включить канарейку"
         required: false
-        type: boolean
+        type: string
         default: false
 
     secrets: 
@@ -111,6 +111,7 @@ jobs:
         run: |
           echo ${{ env.CANARY }}
           echo ${{ inputs.CANARY }}
+          echo $canary
           if [[ "${{ env.CANARY }}" == 'true' ]]
           then
           canary_tag="canary-"
