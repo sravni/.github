@@ -109,9 +109,9 @@ jobs:
       
       - name: Check if image is a canary
         run: |
-          echo ${{ env.CANARY }}
-          echo ${{ inputs.CANARY }}
-          echo $canary
+          echo env.CANARY ${{ env.CANARY }}
+          echo inputs.CANARY ${{ inputs.CANARY }}
+          echo canary $canary
           if [[ "${{ env.CANARY }}" == 'true' ]]
           then
           canary_tag="canary-"
@@ -157,7 +157,7 @@ jobs:
             ALLURE_TOKEN=${{ secrets.ALLURE_TOKEN }}
             SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_SOURCEMAP_WEB_FRONTEND_AUTH_TOKEN }}
           push: ${{ inputs.with_push }}
-          tags: "${{ secrets.HARBOR_REGISTRY }}/${{ matrix.project.image_name }}"
+          tags: "${{ secrets.HARBOR_REGISTRY }}/${{ env.CANARY_TAG }}${{ matrix.project.image_name }}"
 
 
       - name: Calculate job duration
