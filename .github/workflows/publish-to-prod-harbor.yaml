@@ -26,7 +26,7 @@ on:
         type: string
       canary:
         required: false
-        default: false
+        default: '1'
         type: string
     secrets: 
       TEST_CI_PAT_FOR_ACTIONS:
