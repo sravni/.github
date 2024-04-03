@@ -31,8 +31,8 @@ on:
       canary:
         description: "Включить канарейку"
         required: false
-        type: boolean
-        default: false
+        type: string
+        default: "false"
 
     secrets: 
       GH_TOKEN:
