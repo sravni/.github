@@ -28,6 +28,11 @@ on:
         description: "Имя файла {environment}.yaml в директории .k8s проекта для валидации его наличия и передачи следующим джобам"
         required: true
         type: string
+      canary:
+        description: "Включить канарейку"
+        required: false
+        type: boolean
+        default: false
 
     secrets: 
       GH_TOKEN:
@@ -57,6 +62,9 @@ on:
       projects:
         description: "Собранные проекты"
         value: ${{ jobs.get_projects.outputs.projects }}
+
+env:
+  CANARY: ${{ inputs.canary }}
 
 # Описание Джобов воркфлоу
 jobs:
@@ -99,9 +107,22 @@ jobs:
           username: ${{ secrets.HARBOR_LOGIN }}
           password: ${{ secrets.HARBOR_PASS }}
       
+      - name: Check if image is a canary
+        run: |
+          echo env.CANARY ${{ env.CANARY }}
+          echo inputs.CANARY ${{ inputs.CANARY }}
+          echo canary $canary
+          if [[ "${{ env.CANARY }}" == 'true' ]]
+          then
+          canary_tag="canary-"
+          else
+            canary_tag=""
+          fi
+          echo "CANARY_TAG=$canary_tag" >> $GITHUB_ENV
+
       - name: Check if image exist
         run: |
-          inspect_result=$(docker manifest inspect "${{ secrets.HARBOR_REGISTRY }}/${{ matrix.project.image_name }}" > /dev/null 2>&1; echo $?)
+          inspect_result=$(docker manifest inspect "${{ secrets.HARBOR_REGISTRY }}/${{ env.CANARY_TAG }}${{ matrix.project.image_name }}" > /dev/null 2>&1; echo $?)
           if [ $inspect_result -eq 1 ] 
           then 
             echo "IMAGE_EXIST=false" >> $GITHUB_ENV 
@@ -136,7 +157,7 @@ jobs:
             ALLURE_TOKEN=${{ secrets.ALLURE_TOKEN }}
             SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_SOURCEMAP_WEB_FRONTEND_AUTH_TOKEN }}
           push: ${{ inputs.with_push }}
-          tags: "${{ secrets.HARBOR_REGISTRY }}/${{ matrix.project.image_name }}"
+          tags: "${{ secrets.HARBOR_REGISTRY }}/${{ env.CANARY_TAG }}${{ matrix.project.image_name }}"
 
 
       - name: Calculate job duration
