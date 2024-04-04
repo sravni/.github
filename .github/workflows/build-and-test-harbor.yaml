@@ -109,9 +109,6 @@ jobs:
       
       - name: Check if image is a canary
         run: |
-          echo env.CANARY ${{ env.CANARY }}
-          echo inputs.CANARY ${{ inputs.CANARY }}
-          echo canary $canary
           if [[ "${{ env.CANARY }}" == 'true' ]]
           then
           canary_tag="canary-"
