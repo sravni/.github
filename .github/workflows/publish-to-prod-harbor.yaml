@@ -164,7 +164,6 @@ jobs:
           && KEY=$(yq e '.services | to_entries | .[] | select(.value.name == "${{ matrix.project.project_name }}") | .key' ${{ env.REPO_PATH }}/_apps/values_prod.yaml)
           && CREATE_TIME=$(date +%s)
           && yq e -i '.services.'"$KEY"' += {"createTime": '"$CREATE_TIME"'}' ${{ env.REPO_PATH }}/_apps/values_prod.yaml ;
-          fi;
       
       - name: Do rebase and commit
         run: >
