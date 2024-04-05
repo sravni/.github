@@ -167,7 +167,7 @@ jobs:
 
       - name: Delete stale canary
         run: |
-          bash ./deploy/delete_stale_canary.sh "./deploy/${{ env.TEAM }}/_apps/values_prod.yaml"
+          bash ./deploy/delete_stale_branches.sh "./deploy/${{ env.TEAM }}/_apps/values_prod.yaml"
       
       - name: Do rebase and commit
         run: >
