@@ -158,7 +158,7 @@ jobs:
           fi;
 
       - name: Adding create time value
-        if: ${{ env.CANARY = 'true' }}
+        if: ${{ env.CANARY == 'true' }}
         run: >
           grep -xq '  - name: ${{ matrix.project.project_name }}' ${{ env.REPO_PATH }}/_apps/values_prod.yaml
           && KEY=$(yq e '.services | to_entries | .[] | select(.value.name == "${{ matrix.project.project_name }}") | .key' ${{ env.REPO_PATH }}/_apps/values_prod.yaml)
