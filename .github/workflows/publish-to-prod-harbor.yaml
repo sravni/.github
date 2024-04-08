@@ -167,7 +167,7 @@ jobs:
 
       - name: Delete stale canary
         run: |
-          grep -q "canary" "./deploy/devops/_apps/values_prod.yaml";
+          grep "canary" "./deploy/devops/_apps/values_prod.yaml";
           if grep -q "canary" "./deploy/${{ env.TEAM }}/_apps/values_prod.yaml"; then
             bash ./deploy/delete_stale_branches.sh "./deploy/${{ env.TEAM }}/_apps/values_prod.yaml"
           fi
