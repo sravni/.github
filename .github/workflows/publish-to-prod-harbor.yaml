@@ -166,7 +166,7 @@ jobs:
           && yq e -i '.services.'"$KEY"' += {"createTime": '"$CREATE_TIME"'}' ${{ env.REPO_PATH }}/_apps/values_prod.yaml ;
 
       - name: Delete stale canary
-        run: |
+        run: >
           if grep -q "canary" "./deploy/${{ env.TEAM }}/_apps/values_prod.yaml"; then
             bash ./deploy/delete_stale_branches.sh "./deploy/${{ env.TEAM }}/_apps/values_prod.yaml"
           fi
