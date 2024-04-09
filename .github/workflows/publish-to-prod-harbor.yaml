@@ -156,6 +156,20 @@ jobs:
           && KEY=$(yq '.services | to_entries | .[] | select(.value.name == "${{ matrix.project.project_name }}") | .key' ${{ env.REPO_PATH }}/_apps/values_prod.yaml)
           && yq -i e ".services[$KEY].commit = \"$GIT_REPO/commit/$FULL_SHA\"" ${{ env.REPO_PATH }}/_apps/values_prod.yaml;
           fi;
+
+      - name: Adding create time value for canary
+        if: ${{ env.CANARY == 'true' }}
+        run: >
+          grep -xq '  - name: ${{ matrix.project.project_name }}-canary' ${{ env.REPO_PATH }}/_apps/values_prod.yaml
+          && KEY=$(yq e '.services | to_entries | .[] | select(.value.name == "${{ matrix.project.project_name }}-canary") | .key' ${{ env.REPO_PATH }}/_apps/values_prod.yaml)
+          && CREATE_TIME=$(date +%s)
+          && yq e -i '.services.'"$KEY"' += {"createTime": '"$CREATE_TIME"'}' ${{ env.REPO_PATH }}/_apps/values_prod.yaml ;
+
+      - name: Delete stale canary
+        run: |
+          if grep -q "canary" "./deploy/${{ env.TEAM }}/_apps/values_prod.yaml"; then
+            bash ./deploy/delete_stale_canaries.sh "./deploy/${{ env.TEAM }}/_apps/values_prod.yaml"
+          fi
       
       - name: Do rebase and commit
         run: >
@@ -165,5 +179,5 @@ jobs:
           && git -c user.name="sravnidevops" -c user.email="company-service@sravni.ru" pull --rebase
           && git push origin main || sleep 10
           && git -c user.name="sravnidevops" -c user.email="company-service@sravni.ru" pull --rebase
-          && git push origin main 
+          && git push origin main
           && cd ../
