@@ -161,5 +161,5 @@ jobs:
         if: always()
         run : |
           curl -d 'sravni_jobs{job="${{ github.job }}", result="${{ job.status }}", repository="${{ github.event.repository.name }}", env="${{ steps.data.outputs.env }}"} ${{steps.job_duration.outputs.result}}' -X POST https://vm-receive.yc.dev.infra.sravni-team.ru/insert/0/prometheus/api/v1/import/prometheus
-          curl -d 'sravni_jobs_event{job="${{ github.job }}", result="${{ job.status }}", repository="${{ github.event.repository.name }}", env="${{ steps.data.outputs.env }}"} 1' -X POST https://vm-receive.yc.dev.infra.sravni-team.ru/insert/0/prometheus/api/v1/import/prometheus
+          curl -d 'sravni_jobs_event{job="${{ github.job }}", run_id="${{github.run_id}}", run_attempt="${{github.run_attempt}}", result="${{ job.status }}", repository="${{ github.event.repository.name }}", env="${{ steps.data.outputs.env }}"} 1' -X POST https://vm-receive.yc.dev.infra.sravni-team.ru/insert/0/prometheus/api/v1/import/prometheus
         continue-on-error: true
