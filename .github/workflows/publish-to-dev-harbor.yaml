@@ -22,7 +22,7 @@ on:
       runner:
         description: "Указывает какой раннер будет использоваться для запуска флоу"
         required: false
-        default: ubuntu-latest
+        default: "sravni_dev"
         type: string
       k6:
         description: "Включает нагрузочные тесты k6 после релиза "
