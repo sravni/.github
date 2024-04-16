@@ -132,9 +132,9 @@ jobs:
           with_push: true
           gh_token: ${{ secrets.GH_TOKEN }}
           github_npm_token: ${{ secrets.GITHUB_NPM_TOKEN }}
-          docker_registry: ${{ secrets.HARBOR_REGISTRY }}
-          docker_login: ${{ secrets.HARBOR_LOGIN }}
-          docker_pass: ${{ secrets.HARBOR_PASS }}
+          harbor_registry: ${{ secrets.HARBOR_REGISTRY }}
+          harbor_login: ${{ secrets.HARBOR_LOGIN }}
+          harbor_pass: ${{ secrets.HARBOR_PASS }}
           nextauth_url: ${{ secrets.NEXTAUTH_URL }}
           nextauth_secret: ${{ secrets.NEXTAUTH_SECRET }}
           slack_client_secret: ${{ secrets.SLACK_CLIENT_SECRET }}
