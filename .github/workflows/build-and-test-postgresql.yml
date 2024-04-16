@@ -123,7 +123,7 @@ jobs:
 
     steps:
       - name: Checkout source
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: build and test
         uses: sravni/build-and-test-action@v3
