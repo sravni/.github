@@ -118,7 +118,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: build and test
-        uses: sravni/build-and-test-action@v1.1
+        uses: sravni/build-and-test-action@v1
         with:
           is_stage: true
           with_push: true
