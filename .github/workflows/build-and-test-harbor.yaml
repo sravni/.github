@@ -33,6 +33,10 @@ on:
         required: false
         type: boolean
         default: false
+      download_artifact_name:
+        description: "Имя артефакта для скачивания. Детали в actions/download-artifact"
+        required: false
+        type: string
 
     secrets:
       GH_TOKEN:
@@ -127,6 +131,13 @@ jobs:
             echo "IMAGE_EXIST=true" >> $GITHUB_ENV
             echo "Образ ${{ matrix.project.image_name }} уже cуществует"
           fi
+
+      - name: Download artifact
+        if: ${{ env.IMAGE_EXIST == 'false' && inputs.download_artifact_name != '' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.download_artifact_name }}
+          path: download-artifact
 
       - name: Docker build
         if: ${{ env.IMAGE_EXIST == 'false' }}
