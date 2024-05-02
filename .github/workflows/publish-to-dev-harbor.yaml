@@ -169,7 +169,7 @@ jobs:
         run: >
           yq e -i '.resources.cpu = "100m" |
           .resources.cpulimits = "100m" |
-          .resources.memory = "64Mi"'
+          .resources.memory = "128Mi"'
           ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_${{ env.BRANCH }}.yaml;
 
       - name: Run SAST scan tests
