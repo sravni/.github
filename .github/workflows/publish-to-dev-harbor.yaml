@@ -162,11 +162,12 @@ jobs:
           .tolerations = [{"key": "vm", "operator": "Equal", "value": "preemptible", "effect": "NoSchedule"}]'
           ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_${{ env.BRANCH }}.yaml;
 
-      # Если используется префикс, то значения для деплоя ставятся дэфолтно-минимальные для экономии ресурсов
+      # Если используется url префикс, то значения для деплоя ставятся дэфолтно-минимальные для экономии ресурсов
+      # Этот функционал используется у платформе в репе oidc-handler-frontend
       - name: Modify values to default if we have url prefix
         if: ${{ inputs.url_prefix  != '' }}
         run: >
-          yq e -i '.resources.cpu = 100m |
+          yq e -i '.resources.cpu = "100m" |
           .resources.cpulimits = "100m" |
           .resources.memory = "64Mi"'
           ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_${{ env.BRANCH }}.yaml;
