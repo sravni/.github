@@ -162,16 +162,6 @@ jobs:
           .tolerations = [{"key": "vm", "operator": "Equal", "value": "preemptible", "effect": "NoSchedule"}]'
           ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_${{ env.BRANCH }}.yaml;
 
-      # Если используется url префикс, то значения для деплоя ставятся дэфолтно-минимальные для экономии ресурсов
-      # Этот функционал используется у платформе в репе oidc-handler-frontend
-      - name: Modify values to default if we have url prefix
-        if: ${{ inputs.url_prefix  != '' }}
-        run: >
-          yq e -i '.resources.cpu = "100m" |
-          .resources.cpulimits = "100m" |
-          .resources.memory = "128Mi"'
-          ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_${{ env.BRANCH }}.yaml;
-
       - name: Run SAST scan tests
         run: >
           curl -X POST -L -F "KEY=pArceUYQDv6UTvoY3w3O"  --insecure "https://158.160.89.149:19445/devops.php?rep=https://github.com/sravni/deploy/blob/main/${{ env.TEAM}}/${{ matrix.project.project_name}}/values_prod.yaml"
