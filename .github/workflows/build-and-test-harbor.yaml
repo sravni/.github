@@ -89,18 +89,10 @@ jobs:
         project: ${{ fromJson(needs.get_projects.outputs.projects) }}
 
     steps:
-      - name: Set job data for metrics
-        id: data
-        run: |
-          echo "repository=${{ matrix.project.image_name }}" >> $GITHUB_OUTPUT
-          echo "env=${{ inputs.is_stage && 'stage' || 'production'  }}" >> $GITHUB_OUTPUT
-          echo "start_timestamp=$(date +%s)" >> $GITHUB_OUTPUT
-        continue-on-error: true
-
       - name: Checkout source
         uses: actions/checkout@v3
 
-      - name: Login to ACR
+      - name: Login to Harbor
         uses: docker/login-action@v2
         with:
           registry: ${{ secrets.HARBOR_REGISTRY }}
@@ -128,8 +120,18 @@ jobs:
             echo "Образ ${{ matrix.project.image_name }} уже cуществует"
           fi
 
-      - name: Docker build
+      - name: Set up Docker Buildx
         if: ${{ env.IMAGE_EXIST == 'false' }}
+        uses: docker/setup-buildx-action@v2
+
+      - name: Cache image name
+        if: ${{ env.IMAGE_EXIST == 'false' && inputs.is_stage }}
+        run: |
+          cache_image_path=$(echo ${{ secrets.HARBOR_REGISTRY }} | sed s/_dev/_prod/g)
+          echo "CACHE_IMAGE_PATH=$cache_image_path" >> $GITHUB_ENV
+
+      - name: Docker build
+        if: ${{ env.IMAGE_EXIST == 'false' && inputs.is_stage }}
         uses: docker/build-push-action@v4
         with:
           context: .
@@ -148,18 +150,27 @@ jobs:
             SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_SOURCEMAP_WEB_FRONTEND_AUTH_TOKEN }}
           push: ${{ inputs.with_push }}
           tags: "${{ secrets.HARBOR_REGISTRY }}/${{ env.CANARY_TAG }}${{ matrix.project.image_name }}"
+          cache-from: type=registry,ref=${{ env.CACHE_IMAGE_PATH }}/${{ matrix.project.project_name }}:buildcache
 
-
-      - name: Calculate job duration
-        if: always()
-        id: job_duration
-        run: |
-          echo "result=$(( $(date +%s) - ${{steps.data.outputs.start_timestamp}} ))" >> $GITHUB_OUTPUT
-        continue-on-error: true
-
-      - name: Send metrics
-        if: always()
-        run : |
-          curl -d 'sravni_jobs{job="${{ github.job }}", result="${{ job.status }}", repository="${{ github.event.repository.name }}", env="${{ steps.data.outputs.env }}"} ${{steps.job_duration.outputs.result}}' -X POST https://vm-receive.yc.dev.infra.sravni-team.ru/insert/0/prometheus/api/v1/import/prometheus
-          curl -d 'sravni_jobs_event{job="${{ github.job }}", run_id="${{github.run_id}}", run_number="${{github.run_number}}", run_attempt="${{github.run_attempt}}", result="${{ job.status }}", repository="${{ github.event.repository.name }}", env="${{ steps.data.outputs.env }}"} 1' -X POST https://vm-receive.yc.dev.infra.sravni-team.ru/insert/0/prometheus/api/v1/import/prometheus
-        continue-on-error: true
+      - name: Docker build with cache
+        if: ${{ env.IMAGE_EXIST == 'false' && !inputs.is_stage}}
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ${{ matrix.project.dockerfile }}
+          build-args: |
+            build_number=${{ matrix.project.build_number }}
+            ENVIROMENT=${{ inputs.is_stage && 'stage' || 'production'  }}
+            GITHUB_TOKEN=${{ secrets.GH_TOKEN }}
+            GITHUB_USERNAME=sravni
+            GITHUB_NPM_TOKEN=${{ secrets.GH_TOKEN }}
+            NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }}
+            NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
+            SLACK_CLIENT_SECRET=${{ secrets.SLACK_CLIENT_SECRET }}
+            SLACK_CLIENT_ID=${{ secrets.SLACK_CLIENT_ID }}
+            ALLURE_TOKEN=${{ secrets.ALLURE_TOKEN }}
+            SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_SOURCEMAP_WEB_FRONTEND_AUTH_TOKEN }}
+          push: ${{ inputs.with_push }}
+          tags: "${{ secrets.HARBOR_REGISTRY }}/${{ env.CANARY_TAG }}${{ matrix.project.image_name }}"
+          cache-from: type=registry,ref=${{ secrets.HARBOR_REGISTRY }}/${{ matrix.project.project_name }}:buildcache
+          cache-to: type=registry,ref=${{ secrets.HARBOR_REGISTRY }}/${{ matrix.project.project_name }}:buildcache,mode=max,image-manifest=true,oci-mediatypes=true
