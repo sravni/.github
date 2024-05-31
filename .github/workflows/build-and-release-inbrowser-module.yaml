@@ -85,8 +85,20 @@ jobs:
             run: |
               yarn --cwd ./${{ inputs.project_folder }} install --frozen-lockfile
 
-          - name: Replace variables in yaml file 
-            uses: vafinvr/template-env-action@master
+          # - name: Replace variables in yaml file 
+          #   uses: vafinvr/template-env-action@master
+          #   env:
+          #     BRANCH: ${{ inputs.branch }}
+          #     SENTRY_SOURCEMAP_WEB_FRONTEND_AUTH_TOKEN: ${{ secrets.SENTRY_SOURCEMAP_WEB_FRONTEND_AUTH_TOKEN }}
+          #     S3_CDN_ENDPOINT: ${{ secrets.S3_CDN_ENDPOINT }}
+          #     S3_CDN_BUCKET: ${{ secrets.S3_CDN_BUCKET }}
+          #     S3_CDN_PUBLIC_PATH: ${{ secrets.S3_CDN_PUBLIC_PATH }}
+          #     S3_CDN_ACCESS_KEY_ID: ${{ secrets.S3_CDN_ACCESS_KEY_ID }}
+          #     S3_CDN_SECRET_ACCESS_KEY_ID: ${{ secrets.S3_CDN_SECRET_ACCESS_KEY_ID }}
+          #   with:
+          #     filename: ./${{ inputs.project_folder }}/enviroments/${{ inputs.enviroment_file_name }} 
+
+          - name: Replace variables in yaml file
             env:
               BRANCH: ${{ inputs.branch }}
               SENTRY_SOURCEMAP_WEB_FRONTEND_AUTH_TOKEN: ${{ secrets.SENTRY_SOURCEMAP_WEB_FRONTEND_AUTH_TOKEN }}
@@ -95,8 +107,21 @@ jobs:
               S3_CDN_PUBLIC_PATH: ${{ secrets.S3_CDN_PUBLIC_PATH }}
               S3_CDN_ACCESS_KEY_ID: ${{ secrets.S3_CDN_ACCESS_KEY_ID }}
               S3_CDN_SECRET_ACCESS_KEY_ID: ${{ secrets.S3_CDN_SECRET_ACCESS_KEY_ID }}
-            with:
-              filename: ./${{ inputs.project_folder }}/enviroments/${{ inputs.enviroment_file_name }}
+            run: |
+              set -e
+              FILENAME="./${{ inputs.project_folder }}/enviroments/${{ inputs.enviroment_file_name }}"
+
+              if [ -z $FILENAME ]; then
+                echo 'The path to the file is required'
+                exit 1
+              fi
+
+              while IFS='=' read -r -a var; do
+                echo "Setting ${var[0]} to ${var[1]} "
+                echo ${var[1]} | wc -l
+                sed -i "s|$(printf '%s\n' "\${${var[0]}}" | sed -e 's/[]\/$*.^[]/\\&/g')|${var[1]}|g" $FILENAME
+              done < <(printenv)
+            shell: bash
   
           - name: Read build enviroment values from yaml
             uses: dcarbone/yaml-to-env-action@v1.0.0
