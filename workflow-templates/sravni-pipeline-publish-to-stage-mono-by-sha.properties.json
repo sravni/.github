@@ -1,5 +1,0 @@
-{
-    "name": "Sravni pipeline publish to stage mono by sha",
-    "description": "Mono repo publish to stage by sha workflow template.",
-    "iconName": "sravni-pipeline-publish-to-stage"
-}
