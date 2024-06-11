@@ -1,5 +1,0 @@
-{
-    "name": "Sravni pipeline publish to prod multi service repo",
-    "description": "Multi services repo publish to prod workflow template.",
-    "iconName": "sravni-pipeline-publish-to-prod"
-}

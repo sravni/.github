@@ -1,3 +1,0 @@
-refs:  
-QAENV_REF = DEV-103  
-CHARTS_REF = v0.4.10  

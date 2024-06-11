@@ -1,8 +1,0 @@
-{
-    "name": "Sravni pipeline build and test PHP",
-    "description": "PHP build and test workflow template.",
-    "iconName": "sravni-pipeline-build-and-test",
-    "categories": [
-        "PHP"
-    ]
-}

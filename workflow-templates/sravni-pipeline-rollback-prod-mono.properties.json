@@ -1,5 +1,0 @@
-{
-    "name": "Sravni pipeline rollback yandex prod mono",
-    "description": "Mono rollback yandex prod workflow template.",
-    "iconName": "sravni-pipeline-rollback-yandex-prod-mono"
-}

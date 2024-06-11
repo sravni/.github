@@ -1,5 +1,0 @@
-{
-    "name": "Sravni pipeline build and test mono repo",
-    "description": "Mono repo service build and test workflow template.",
-    "iconName": "sravni-pipeline-build-and-test"
-}
