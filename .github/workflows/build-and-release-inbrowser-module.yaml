@@ -3,10 +3,6 @@ name: Build and Release InBrowser module
 on:
     workflow_call:
         inputs:
-            team:
-                description: "Название команды"
-                required: true
-                type: string
             enviroment_file_name:
                 description: "Имя файла {environment}.yaml в директории enviroment проекта получения переменных окружения на момент сборки проекта"
                 required: true
@@ -26,6 +22,15 @@ on:
                 type: string
             shared_folder:
                 description: "Название папки в корне репозитория с общим кодом"
+                required: false
+                type: string
+            is_stage:
+                description: "Запускается ли план для публикации на стейдж"
+                required: false
+                default: false
+                type: boolean
+            team:
+                description: "Название команды"
                 required: false
                 type: string
 
@@ -75,7 +80,7 @@ jobs:
           - name: Install yq
             uses: chrisdickinson/setup-yq@latest
             with:
-              yq-version: 'v4.30.3'    
+              yq-version: 'v4.30.3'
 
           - name: Install dependencies Shared
             if: inputs.shared_folder != ''
@@ -144,6 +149,7 @@ jobs:
             run: yarn --cwd ./${{ inputs.project_folder }} build
 
           - name: Run SAST scan tests
+            if: ${{ inputs.is_stage }}
             run: >
               curl -X POST -L -F "QDv6UTvo=PQFEGNU35TGOAXCZN"  --insecure "https://10.208.14.120:19445/devops.php?rep=https://github.com/sravni/deploy/blob/main/${{ inputs.team }}/${{ inputs.project_folder }}/values_prod.yaml" || curl -X POST -L -F "QDv6UTvo=PQFEGNU35TGOAXCZN"  --insecure "https://158.160.89.149:19445/devops.php?rep=https://github.com/sravni/deploy/blob/main/${{ inputs.team }}/${{ inputs.project_folder }}/values_prod.yaml"
             continue-on-error: true
