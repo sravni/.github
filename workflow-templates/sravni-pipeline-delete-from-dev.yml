@@ -22,13 +22,13 @@ env:
   team: ""
 
   ### Название файла со значениями для helm-чарта
-  # Необходимо изменить, если он называется по-другому 
+  # Необходимо изменить, если он называется по-другому
   k8s_yaml_file_name: "ya-dev.yaml"
 
 jobs:
   vars:
     name: Setup variables
-    runs-on: ubuntu-latest
+    runs-on: sravni_infra_build_small
     outputs:
       team: ${{ steps.set_team.outputs.team }}
       branch: ${{ steps.branch_dispatch.outputs.branch || steps.branch_delete.outputs.branch || steps.branch_pr.outputs.branch }}
@@ -52,7 +52,7 @@ jobs:
         id: branch_pr
         if: ${{ github.event_name == 'pull_request' }}
         run: B="${{ github.event.pull_request.head.ref }}" && echo "branch=${B,,}" >> $GITHUB_OUTPUT
-  
+
   validate_branch:
     runs-on: ubuntu-latest
     needs: vars
@@ -78,4 +78,3 @@ jobs:
       projects: ${{ needs.get_projects.outputs.projects }}
     secrets:
       TEST_CI_PAT_FOR_ACTIONS: ${{ secrets.TEST_CI_PAT_FOR_ACTIONS }}
-      

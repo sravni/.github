@@ -1,5 +1,5 @@
 ### Универсальный модуль публикации проектов на PROD
-# Принимает на вход название команды и JSON с информацией о проектах для деплоя. 
+# Принимает на вход название команды и JSON с информацией о проектах для деплоя.
 
 name: Publish to prod projects base module
 
@@ -8,7 +8,7 @@ on:
     inputs:
       team:
         description: 'team'
-        required: true 
+        required: true
         type: string
       projects:
         description: "JSON объект со списком проектов для публикации"
@@ -24,7 +24,7 @@ on:
         required: false
         default: sravni_prod
         type: string
-    secrets: 
+    secrets:
       TEST_CI_PAT_FOR_ACTIONS:
         required: true
 
@@ -32,7 +32,7 @@ env:
   TEAM: ${{ inputs.team }}
 
 jobs:
-  vars: 
+  vars:
     name: Setup variables
     runs-on: ${{ inputs.runner }}
     outputs:
@@ -110,14 +110,14 @@ jobs:
           && GIT_REPO=${GITHUB_REPOSITORY}
           && KEY=$(yq '.services | to_entries | .[] | select(.value.name == "${{ matrix.project.project_name }}") | .key' ${{ env.REPO_PATH }}/_apps/values_mpl_prod.yaml)
           && yq -i e ".services[$KEY].commit = \"$GIT_REPO/commit/$FULL_SHA\"" ${{ env.REPO_PATH }}/_apps/values_mpl_prod.yaml
-      
+
       - name: Do rebase and commit
         run: >
-          cd ./deploy 
+          cd ./deploy
           && git add .
           && git -c user.name="sravnidevops" -c user.email="company-service@sravni.ru" commit --author="${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>" -m "${{ matrix.project.project_name }} new version: ${{ matrix.project.image_version }} / run_id: ${{ github.run_id }}"
           && git -c user.name="sravnidevops" -c user.email="company-service@sravni.ru" pull --rebase
           && git push origin main || sleep 10
           && git -c user.name="sravnidevops" -c user.email="company-service@sravni.ru" pull --rebase
-          && git push origin main 
+          && git push origin main
           && cd ../

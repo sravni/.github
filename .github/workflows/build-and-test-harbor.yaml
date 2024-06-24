@@ -17,7 +17,7 @@ on:
         type: boolean
       runner:
         description: "Указывает какой раннер будет использоваться для запуска флоу"
-        default: "sravni_dev"
+        default: "sravni_infra"
         required: false
         type: string
       image_version:

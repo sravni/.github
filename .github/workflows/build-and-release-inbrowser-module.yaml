@@ -17,7 +17,7 @@ on:
                 type: string
             runner:
                 description: "Указывает какой раннер будет использоваться для запуска флоу"
-                default: "sravni_dev"
+                default: "sravni_infra"
                 required: false
                 type: string
             shared_folder:
@@ -38,7 +38,7 @@ on:
             SENTRY_SOURCEMAP_WEB_FRONTEND_AUTH_TOKEN:
                 required: false
             GH_TOKEN:
-                required: true             
+                required: true
             S3_CDN_ENDPOINT:
                 required: true
             S3_CDN_BUCKET:
@@ -50,7 +50,7 @@ on:
             S3_CDN_SECRET_ACCESS_KEY_ID:
                 required: true
 
-jobs: 
+jobs:
     build_and_release:
         runs-on: ${{ inputs.runner }}
         steps:
@@ -94,7 +94,7 @@ jobs:
             run: |
               yarn --cwd ./${{ inputs.project_folder }} install --frozen-lockfile
 
-          # - name: Replace variables in yaml file 
+          # - name: Replace variables in yaml file
           #   uses: vafinvr/template-env-action@master
           #   env:
           #     BRANCH: ${{ inputs.branch }}
@@ -105,7 +105,7 @@ jobs:
           #     S3_CDN_ACCESS_KEY_ID: ${{ secrets.S3_CDN_ACCESS_KEY_ID }}
           #     S3_CDN_SECRET_ACCESS_KEY_ID: ${{ secrets.S3_CDN_SECRET_ACCESS_KEY_ID }}
           #   with:
-          #     filename: ./${{ inputs.project_folder }}/enviroments/${{ inputs.enviroment_file_name }} 
+          #     filename: ./${{ inputs.project_folder }}/enviroments/${{ inputs.enviroment_file_name }}
 
           - name: Replace variables in yaml file
             env:
@@ -131,7 +131,7 @@ jobs:
                 sed -i "s|$(printf '%s\n' "\${${var[0]}}" | sed -e 's/[]\/$*.^[]/\\&/g')|${var[1]}|g" $FILENAME
               done < <(printenv)
             shell: bash
-  
+
           - name: Read build enviroment values from yaml
             uses: dcarbone/yaml-to-env-action@v1.0.0
             with:
