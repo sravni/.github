@@ -10,19 +10,19 @@ on:
             project_folder:
               description: "Название папки в корне репозитория с проектом"
               required: true
-              type: string  
+              type: string
             branch:
               description: "Название ветки проекта, которую нужно удалить"
               required: false
               type: string
             runner:
               description: "Указывает какой раннер будет использоваться для запуска флоу"
-              default: "sravni_dev"
+              default: "sravni_infra"
               required: false
               type: string
-         
 
-        secrets:           
+
+        secrets:
             GH_TOKEN:
                 required: true
             S3_CDN_PUBLIC_PATH:
@@ -54,7 +54,7 @@ jobs:
                 key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
                 restore-keys: |
                     ${{ runner.os }}-yarn-
-                
+
             - name: Install yq
               uses: chrisdickinson/setup-yq@latest
               with:
@@ -65,7 +65,7 @@ jobs:
                 NODE_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
               run: yarn --cwd ./${{ inputs.project_folder }} install --frozen-lockfile
 
-            - name: Replace variables in yaml file 
+            - name: Replace variables in yaml file
               uses: vafinvr/template-env-action@master
               env:
                 BRANCH: ${{ inputs.branch }}

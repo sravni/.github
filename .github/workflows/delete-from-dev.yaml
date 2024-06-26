@@ -5,7 +5,7 @@ on:
     inputs:
       team:
         description: 'team'
-        required: true 
+        required: true
         type: string
       branch:
         description: 'Название ветки'
@@ -18,9 +18,9 @@ on:
       runner:
         description: "Указывает какой раннер будет использоваться для запуска флоу"
         required: false
-        default: sravni_dev
+        default: sravni_infra_build_small
         type: string
-    secrets: 
+    secrets:
       TEST_CI_PAT_FOR_ACTIONS:
         required: true
 

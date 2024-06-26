@@ -17,7 +17,7 @@ on:
         type: boolean
       runner:
         description: "Указывает какой раннер будет использоваться для запуска флоу"
-        default: "sravni_dev"
+        default: "sravni_infra"
         required: false
         type: string
       image_version:
@@ -46,7 +46,7 @@ on:
         type: string
 
 
-    secrets: 
+    secrets:
       GH_TOKEN:
         required: true
       GITHUB_NPM_TOKEN:
@@ -78,7 +78,7 @@ jobs:
       runner: ${{ inputs.runner }}
 
   build_and_test:
-    needs: [get_projects]  
+    needs: [get_projects]
     runs-on: ${{ inputs.runner }}
 
     # Service containers to run with `db_setup`

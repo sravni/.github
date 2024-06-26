@@ -1,5 +1,5 @@
 ### Универсальный модуль публикации проектов на DEV
-# Принимает на вход название команды и JSON с информацией о проектах для деплоя. 
+# Принимает на вход название команды и JSON с информацией о проектах для деплоя.
 
 name: Publish to dev projects base module
 
@@ -8,7 +8,7 @@ on:
     inputs:
       team:
         description: 'team'
-        required: true 
+        required: true
         type: string
       projects:
         description: "JSON объект со списком проектов для публикации"
@@ -22,7 +22,7 @@ on:
       runner:
         description: "Указывает какой раннер будет использоваться для запуска флоу"
         required: false
-        default: sravni_dev
+        default: sravni_infra_build_small
         type: string
       delete_branches:
         required: false
@@ -54,13 +54,13 @@ jobs:
         run: |
           branch=$(echo ${GITHUB_HEAD_REF##*/})
           echo "BRANCH=${branch,,}" >> $GITHUB_ENV
-      
+
       - name: Output
         id: out
         run: |
           echo "branch=${{ env.BRANCH }}" >> $GITHUB_OUTPUT
 
-  vars: 
+  vars:
     name: Setup variables
     runs-on: ${{ inputs.runner }}
     outputs:
@@ -96,7 +96,7 @@ jobs:
           token: ${{ secrets.TEST_CI_PAT_FOR_ACTIONS }}
           path: deploy
           ref: main
-      
+
       - name: Install Helm
         uses: azure/setup-helm@v3
         with:
@@ -160,7 +160,7 @@ jobs:
           "nameOrigin": "${{ matrix.project.project_name }}"}' ${{ env.REPO_PATH }}/_apps/values_dev.yaml
           ; yq e -i '.global.image.tag = "${{ matrix.project.image_version }}" |
           .global.image.repository = "registry.yc.prod.infra.sravni.market/${{ env.TEAM }}_dev/${{ matrix.project.project_name }}" |
-          .global.imagePullSecrets[0] = "harbor-pull-secret" | 
+          .global.imagePullSecrets[0] = "harbor-pull-secret" |
           .Branch = "${{ env.BRANCH }}" |
           .nodeSelector = "'"dev/nodepool: preemptible"'" |
           .tolerations = [{"key": "vm", "operator": "Equal", "value": "preemptible", "effect": "NoSchedule"}]'
@@ -189,26 +189,26 @@ jobs:
       - name: Adding create time value
         if: ${{ env.BRANCH != 'master' }}
         run: >
-          if [ "${{ env.DELETE_BRANCHES }}" = true ]; 
-          then 
+          if [ "${{ env.DELETE_BRANCHES }}" = true ];
+          then
           grep -xq '  - name: ${{ matrix.project.project_name }}-${{ env.BRANCH }}' ${{ env.REPO_PATH }}/_apps/values_dev.yaml
           && KEY=$(yq e '.services | to_entries | .[] | select(.value.name == "${{ matrix.project.project_name }}-${{ env.BRANCH }}") | .key' ${{ env.REPO_PATH }}/_apps/values_dev.yaml)
           && CREATE_TIME=$(date +%s)
           && yq e -i '.services.'"$KEY"' += {"createTime": '"$CREATE_TIME"'}' ${{ env.REPO_PATH }}/_apps/values_dev.yaml ;
           fi;
-      
+
       # Запуск скрипта на удаление вэльюсов веток старше 7 дней
       - name: Delete stale branches
         run: |
           bash ./deploy/delete_stale_branches.sh "./deploy/${{ env.TEAM }}/_apps/values_dev.yaml"
-      
+
       - name: Do rebase and commit
         run: >
-          cd ./deploy 
+          cd ./deploy
           && git add .
           && git -c user.name="sravnidevops" -c user.email="company-service@sravni.ru" commit --author="${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>" -m "[DEV] ${{ matrix.project.project_name }} new version: ${{ matrix.project.image_version }} / run_id: ${{ github.run_id }}"
           && git -c user.name="sravnidevops" -c user.email="company-service@sravni.ru" pull --rebase
           && git push origin main || sleep 10
           && git -c user.name="sravnidevops" -c user.email="company-service@sravni.ru" pull --rebase
-          && git push origin main 
+          && git push origin main
           && cd ../
