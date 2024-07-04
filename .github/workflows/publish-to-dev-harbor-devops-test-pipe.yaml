@@ -99,8 +99,8 @@ jobs:
         run: |
           cd ${{ env.REPO_PATH }}/${{ matrix.project.project_name }};
           helm dependency update;
-          helm template -f ${{ matrix.project.k8s_yaml_path }};
-          
+          helm template . -f ${{ matrix.project.k8s_yaml_path }};
+
   publish:
     runs-on: ${{ inputs.runner }}
     needs: [ get_branch_name, vars, helm_check ]
