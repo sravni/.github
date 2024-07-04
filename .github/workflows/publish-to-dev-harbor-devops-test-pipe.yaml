@@ -22,13 +22,13 @@ on:
       runner:
         description: "Указывает какой раннер будет использоваться для запуска флоу"
         required: false
-        default: sravni_infra_build_small
+        default: "sravni_infra_build_small"
         type: string
       delete_branches:
         required: false
         default: true
         type: boolean
-    secrets: 
+    secrets:
       TEST_CI_PAT_FOR_ACTIONS:
         required: true
 
@@ -70,6 +70,44 @@ jobs:
         id: set_team
         run: echo "team=${TEAM,,}" >> $GITHUB_OUTPUT
 
+  helm_check:
+    name: Helm check
+    runs-on: ${{ inputs.runner }}
+    needs: [ get_branch_name, vars ]
+
+    env:
+      BRANCH: ${{ inputs.url_prefix || needs.get_branch_name.outputs.branch }}
+      TEAM: ${{ needs.vars.outputs.team }}
+      REPO_PATH: './deploy/${{ needs.vars.outputs.team }}'
+
+    strategy:
+      max-parallel: 1
+      matrix:
+        project: ${{ fromJson(inputs.projects) }}
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v3
+      - name: Checkout deploy repo
+        uses: actions/checkout@v3
+        with:
+          repository: sravni/deploy
+          token: ${{ secrets.TEST_CI_PAT_FOR_ACTIONS }}
+          path: deploy
+          ref: main
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: 3.8.2
+      - name: Helm check
+        run: |
+          if [[ "${{ env.BRANCH }}" == 'master' ]];
+          then
+          cat ${{ matrix.project.k8s_yaml_path }} > ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_dev.yaml && helm template -f ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_dev.yaml;
+          else
+          cat ${{ matrix.project.k8s_yaml_path }} > ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_${{ env.BRANCH }}.yaml && helm template -f ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_${{ env.BRANCH }}.yaml;
+          fi;
+
   publish:
     runs-on: ${{ inputs.runner }}
     needs: [ get_branch_name, vars ]
@@ -101,7 +139,7 @@ jobs:
         uses: azure/setup-helm@v3
         with:
           version: 3.8.2
-
+  
       # Если это первая выкладка проекта на dev, то выполняем скрипт helm_create.sh из репы Deploy.
       # Он создаст необходимые файлы, которые в процессе деплоя будем модифицировать.
       - name: Ensure project exist
