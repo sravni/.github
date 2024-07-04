@@ -110,7 +110,7 @@ jobs:
 
   publish:
     runs-on: ${{ inputs.runner }}
-    needs: [ get_branch_name, vars ]
+    needs: [ get_branch_name, vars, helm_check ]
 
     env:
       BRANCH: ${{ inputs.url_prefix || needs.get_branch_name.outputs.branch }}
