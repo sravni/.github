@@ -95,6 +95,10 @@ jobs:
           token: ${{ secrets.TEST_CI_PAT_FOR_ACTIONS }}
           path: deploy
           ref: main
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: 3.8.2
       - name: Helm check
         run: |
           if [[ "${{ env.BRANCH }}" == 'master' ]];
@@ -131,6 +135,11 @@ jobs:
           path: deploy
           ref: main
 
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: 3.8.2
+  
       # Если это первая выкладка проекта на dev, то выполняем скрипт helm_create.sh из репы Deploy.
       # Он создаст необходимые файлы, которые в процессе деплоя будем модифицировать.
       - name: Ensure project exist
@@ -143,6 +152,11 @@ jobs:
             cd deploy
             ./helm_create.sh ${{ env.TEAM }} ${{ matrix.project.project_name }}
           fi;
+
+      - name: Install yq
+        run: |
+          sudo wget -O /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/v${{ env.YQ_VERSION }}/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
 
       # Копирование *.yaml файла с вэйльюсами из репы сервиса в deploy. Фактическое название файла приходит в JSON'е в projects.
       # Если это деплой не из master'а, но в delpoy этот файл должен быть с суффиксом ветки. Если из master'а — просто values_dev.yaml.
