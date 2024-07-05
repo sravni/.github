@@ -96,7 +96,7 @@ jobs:
           path: deploy
           ref: main
       - name: Helm dep update
-        working directory: ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}
+        working-directory: ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}
         run: helm dependency update
       - name: Helm check
         run: |
