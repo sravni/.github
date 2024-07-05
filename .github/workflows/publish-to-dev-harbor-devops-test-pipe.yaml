@@ -35,7 +35,7 @@ on:
         required: true
       HARBOR_LOGIN:
         required: true
-      HARBOR_PASS:
+      HARBOR_PASSWORD:
         required: true
 
 env:
