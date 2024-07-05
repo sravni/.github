@@ -79,6 +79,7 @@ jobs:
       BRANCH: ${{ inputs.url_prefix || needs.get_branch_name.outputs.branch }}
       TEAM: ${{ needs.vars.outputs.team }}
       REPO_PATH: './deploy/${{ needs.vars.outputs.team }}'
+      GH_TOKEN: '${{ secrets.GH_TOKEN }}'
 
     strategy:
       max-parallel: 1
