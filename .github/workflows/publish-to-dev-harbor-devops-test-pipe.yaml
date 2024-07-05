@@ -95,6 +95,9 @@ jobs:
           token: ${{ secrets.TEST_CI_PAT_FOR_ACTIONS }}
           path: deploy
           ref: main
+      - name: Helm dep update
+        working directory: ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}
+        run: helm dependency update
       - name: Helm check
         run: |
           helm template ${{ env.REPO_PATH }}/${{ matrix.project.project_name }} -f ${{ matrix.project.k8s_yaml_path }};
