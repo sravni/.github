@@ -101,7 +101,7 @@ jobs:
           ls -al pk.Service/.k8s/
           cd ${{ env.REPO_PATH }}/${{ matrix.project.project_name }};
           helm dependency update;
-          helm template . -f ${{ matrix.project.k8s_yaml_path }};
+          helm template . -f ./deploy/${{ matrix.project.k8s_yaml_path }};
 
   publish:
     runs-on: ${{ inputs.runner }}
