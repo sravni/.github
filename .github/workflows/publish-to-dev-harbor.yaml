@@ -40,7 +40,7 @@ on:
         required: true
       HARBOR_LOGIN:
         required: true
-      HARBOR_PASS:
+      HARBOR_PASSWORD:
         required: true
 
 env:
@@ -113,7 +113,7 @@ jobs:
         with:
           registry: ${{ secrets.HARBOR_REGISTRY }}
           username: ${{ secrets.HARBOR_LOGIN }}
-          password: ${{ secrets.HARBOR_PASS }}
+          password: ${{ secrets.HARBOR_PASSWORD }}
       - name: Helm dep update
         working-directory: ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}
         run: helm dependency update
