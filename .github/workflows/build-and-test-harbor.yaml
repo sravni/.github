@@ -127,7 +127,7 @@ jobs:
       - name: Cache image name
         if: ${{ env.IMAGE_EXIST == 'false' && inputs.is_stage }}
         run: |
-          cache_image_path=$(echo ${{ secrets.HARBOR_REGISTRY }} | sed s/_dev/_prod/g)
+          cache_image_path=$(echo ${{ secrets.HARBOR_REGISTRY }} | awk -F "/" '{ print $1 }')$(echo /buildcache)
           echo "CACHE_IMAGE_PATH=$cache_image_path" >> $GITHUB_ENV
 
       - name: Docker build
@@ -172,5 +172,5 @@ jobs:
             SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_SOURCEMAP_WEB_FRONTEND_AUTH_TOKEN }}
           push: ${{ inputs.with_push }}
           tags: "${{ secrets.HARBOR_REGISTRY }}/${{ env.CANARY_TAG }}${{ matrix.project.image_name }}"
-          cache-from: type=registry,ref=${{ secrets.HARBOR_REGISTRY }}/${{ matrix.project.project_name }}:buildcache
-          cache-to: type=registry,ref=${{ secrets.HARBOR_REGISTRY }}/${{ matrix.project.project_name }}:buildcache,mode=max,image-manifest=true,oci-mediatypes=true
+          cache-from: type=registry,ref=${{ env.CACHE_IMAGE_PATH }}/${{ matrix.project.project_name }}:buildcache
+          cache-to: type=registry,ref=${{ env.CACHE_IMAGE_PATH }}/${{ matrix.project.project_name }}:buildcache,mode=max,image-manifest=true,oci-mediatypes=true
