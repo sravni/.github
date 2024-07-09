@@ -118,14 +118,8 @@ jobs:
         working-directory: ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}
         run: helm dependency update
       - name: Helm check
-        run: |
-          if [[ "${{ env.BRANCH }}" == 'master' ]];
-          then
-          cat ${{ matrix.project.k8s_yaml_path }} > ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_dev.yaml && helm template -f ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_dev.yaml;
-          else
-          cat ${{ matrix.project.k8s_yaml_path }} > ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_${{ env.BRANCH }}.yaml && helm template -f ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_${{ env.BRANCH }}.yaml;
-          fi;
-
+        run: helm template ${{ env.REPO_PATH }}/${{ matrix.project.project_name }} -f ${{ matrix.project.k8s_yaml_path }};
+      
   publish:
     runs-on: ${{ inputs.runner }}
     needs: [ get_branch_name, vars, helm_check ]
