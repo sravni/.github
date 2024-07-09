@@ -110,11 +110,11 @@ jobs:
           ref: main
 
       - name: Login to Harbor
-      uses: docker/login-action@v2
-      with:
-        registry: ${{ secrets.HARBOR_REGISTRY }}
-        username: ${{ secrets.HARBOR_LOGIN }}
-        password: ${{ secrets.HARBOR_PASSWORD }}
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ secrets.HARBOR_REGISTRY }}
+          username: ${{ secrets.HARBOR_LOGIN }}
+          password: ${{ secrets.HARBOR_PASSWORD }}
 
       # Если это первая выкладка проекта на dev, то выполняем скрипт helm_create.sh из репы Deploy.
       # Он создаст необходимые файлы, которые в процессе деплоя будем модифицировать.
