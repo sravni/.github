@@ -31,6 +31,12 @@ on:
     secrets:
       TEST_CI_PAT_FOR_ACTIONS:
         required: true
+      HARBOR_REGISTRY:
+        required: true
+      HARBOR_LOGIN:
+        required: true
+      HARBOR_PASSWORD:
+        required: true
 
 env:
   TEAM: ${{ inputs.team }}
@@ -79,6 +85,7 @@ jobs:
       BRANCH: ${{ inputs.url_prefix || needs.get_branch_name.outputs.branch }}
       TEAM: ${{ needs.vars.outputs.team }}
       REPO_PATH: './deploy/${{ needs.vars.outputs.team }}'
+      GH_TOKEN: '${{ secrets.GH_TOKEN }}'
 
     strategy:
       max-parallel: 1
@@ -95,22 +102,21 @@ jobs:
           token: ${{ secrets.TEST_CI_PAT_FOR_ACTIONS }}
           path: deploy
           ref: main
-      - name: Install Helm
-        uses: azure/setup-helm@v3
+      - name: Login to Harbor
+        uses: docker/login-action@v2
         with:
-          version: 3.8.2
+          registry: ${{ secrets.HARBOR_REGISTRY }}
+          username: ${{ secrets.HARBOR_LOGIN }}
+          password: ${{ secrets.HARBOR_PASSWORD }}
+      - name: Helm dep update
+        working-directory: ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}
+        run: helm dependency update
       - name: Helm check
-        run: |
-          if [[ "${{ env.BRANCH }}" == 'master' ]];
-          then
-          cat ${{ matrix.project.k8s_yaml_path }} > ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_dev.yaml && helm template -f ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_dev.yaml;
-          else
-          cat ${{ matrix.project.k8s_yaml_path }} > ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_${{ env.BRANCH }}.yaml && helm template -f ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_${{ env.BRANCH }}.yaml;
-          fi;
+        run: helm template ${{ env.REPO_PATH }}/${{ matrix.project.project_name }} -f ${{ matrix.project.k8s_yaml_path }};
 
   publish:
     runs-on: ${{ inputs.runner }}
-    needs: [ get_branch_name, vars ]
+    needs: [ get_branch_name, vars, helm_check ]
 
     env:
       BRANCH: ${{ inputs.url_prefix || needs.get_branch_name.outputs.branch }}
@@ -135,11 +141,6 @@ jobs:
           path: deploy
           ref: main
 
-      - name: Install Helm
-        uses: azure/setup-helm@v3
-        with:
-          version: 3.8.2
-  
       # Если это первая выкладка проекта на dev, то выполняем скрипт helm_create.sh из репы Deploy.
       # Он создаст необходимые файлы, которые в процессе деплоя будем модифицировать.
       - name: Ensure project exist
@@ -152,11 +153,6 @@ jobs:
             cd deploy
             ./helm_create.sh ${{ env.TEAM }} ${{ matrix.project.project_name }}
           fi;
-
-      - name: Install yq
-        run: |
-          sudo wget -O /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/v${{ env.YQ_VERSION }}/yq_linux_amd64
-          sudo chmod +x /usr/local/bin/yq
 
       # Копирование *.yaml файла с вэйльюсами из репы сервиса в deploy. Фактическое название файла приходит в JSON'е в projects.
       # Если это деплой не из master'а, но в delpoy этот файл должен быть с суффиксом ветки. Если из master'а — просто values_dev.yaml.
