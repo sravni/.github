@@ -15,9 +15,9 @@ env:
   #### Название команды
   # Необходимо указать название своей команды
   team: "devops"
-  
+
   #### Название файла со значениями для helm-чарта
-  # Необходимо изменить, если он называется по-другому 
+  # Необходимо изменить, если он называется по-другому
   k8s_yaml_file_name: "ya-prod-canary.yaml"
 
   #### Окружение
@@ -28,7 +28,7 @@ env:
 jobs:
   vars:
     name: Setup variables
-    runs-on: ubuntu-latest
+    runs-on: sravni_infra_build_small
     outputs:
       team: ${{ steps.set_team.outputs.team }}
       cluster: ${{ steps.set_cluster.outputs.cluster }}
@@ -48,7 +48,7 @@ jobs:
       - name: Set canary
         id: set_canary
         run: echo "canary=${canary,,}" >> $GITHUB_OUTPUT
- 
+
   build_and_test:
     needs: [vars]
     uses: sravni/.github/.github/workflows/build-and-test-harbor.yaml@master
@@ -58,14 +58,14 @@ jobs:
       project_path_mask: ${{ github.event.inputs.project_type || '*' }}
       k8s_yaml_file_name: ${{ needs.vars.outputs.values }}
       canary: ${{ needs.vars.outputs.canary == 'true' }}
-      runner: "sravni_dev"
+      runner: "sravni_infra"
     secrets:
       GH_TOKEN: ${{ secrets.GH_TOKEN }}
       GITHUB_NPM_TOKEN: ${{ secrets.GITHUB_NPM_TOKEN }}
       HARBOR_REGISTRY: ${{ secrets.HARBOR_REGISTRY }}/${{ needs.vars.outputs.team }}_${{ needs.vars.outputs.cluster }}
       HARBOR_LOGIN: ${{ secrets.HARBOR_LOGIN }}
       HARBOR_PASS: ${{ secrets.HARBOR_PASSWORD }}
-  
+
   deploy:
     needs: [build_and_test, vars]
     uses: sravni/.github/.github/workflows/publish-to-prod-harbor.yaml@master

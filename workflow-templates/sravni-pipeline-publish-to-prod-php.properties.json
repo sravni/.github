@@ -1,8 +1,0 @@
-{
-    "name": "Sravni pipeline publish to prod PHP",
-    "description": "PHP publish to prod workflow template.",
-    "iconName": "sravni-pipeline-publish-to-prod",
-    "categories": [
-        "PHP"
-    ]
-}

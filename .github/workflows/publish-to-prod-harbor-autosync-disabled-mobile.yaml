@@ -22,7 +22,7 @@ on:
       runner:
         description: "Указывает какой раннер будет использоваться для запуска флоу"
         required: false
-        default: sravni_prod
+        default: sravni_infra_build_small
         type: string
       additional_values_file_path:
         description: "Путь к файлу с дополнительными переменными"
@@ -102,9 +102,9 @@ jobs:
       - name: Clone values from origin repo
         run: |
           if [ "${{ env.ADDITIONAL_VALUES_FILE_PATH }}" != "" ];
-          then 
+          then
             cat ${{ matrix.project.k8s_yaml_path }} | gomplate -d external_service=${{ env.REPO_PATH }}/${{ env.ADDITIONAL_VALUES_FILE_PATH }} > ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_prod.yaml
-          else 
+          else
             cat ${{ matrix.project.k8s_yaml_path }} > ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_prod.yaml
           fi;
 
@@ -132,11 +132,11 @@ jobs:
 
       - name: Do rebase and commit
         run: >
-          cd ./deploy 
+          cd ./deploy
           && git add .
           && git -c user.name="sravnidevops" -c user.email="company-service@sravni.ru" commit --author="${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>" -m "${{ matrix.project.project_name }} new version: ${{ matrix.project.image_version }} / run_id: ${{ github.run_id }}"
           && git -c user.name="sravnidevops" -c user.email="company-service@sravni.ru" pull --rebase
           && git push origin main || sleep 10
           && git -c user.name="sravnidevops" -c user.email="company-service@sravni.ru" pull --rebase
-          && git push origin main 
+          && git push origin main
           && cd ../

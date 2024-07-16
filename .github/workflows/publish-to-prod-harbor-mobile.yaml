@@ -22,7 +22,7 @@ on:
       runner:
         description: "Указывает какой раннер будет использоваться для запуска флоу"
         required: false
-        default: sravni_prod
+        default: sravni_infra_build_small
         type: string
       canary:
         required: false
@@ -109,16 +109,16 @@ jobs:
           if [ "${{ env.CANARY }}" != true ];
           then
             if [ "${{ env.ADDITIONAL_VALUES_FILE_PATH }}" != "" ];
-            then 
+            then
               cat ${{ matrix.project.k8s_yaml_path }} | gomplate -d external_service=${{ env.REPO_PATH }}/${{ env.ADDITIONAL_VALUES_FILE_PATH }} > ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_prod.yaml
-            else 
+            else
               cat ${{ matrix.project.k8s_yaml_path }} > ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_prod.yaml
             fi;
           fi;
 
       - name: Create app
         run: >
-          if [ "${{ env.CANARY }}" != true ]; 
+          if [ "${{ env.CANARY }}" != true ];
           then
           grep -xq '  - name: ${{ matrix.project.project_name }}' ${{ env.REPO_PATH }}/_apps/values_prod.yaml
           || yq e  -i '.services += {"name": "${{ matrix.project.project_name }}"}' ${{ env.REPO_PATH }}/_apps/values_prod.yaml;
@@ -129,20 +129,20 @@ jobs:
       # Имя этого файла должно стать values_prod.yaml.
       - name: Clone canary values from origin repo
         run: >
-          if [ "${{ env.CANARY }}" = true ]; 
+          if [ "${{ env.CANARY }}" = true ];
           then
             if [ "${{ env.ADDITIONAL_VALUES_FILE_PATH }}" != "" ];
-            then 
+            then
               cat ${{ matrix.project.k8s_yaml_path }} | gomplate -d external_service=${{ env.REPO_PATH }}/${{ env.ADDITIONAL_VALUES_FILE_PATH }} > ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}-canary/values_prod.yaml
-            else 
+            else
               cat ${{ matrix.project.k8s_yaml_path }} > ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}-canary/values_prod.yaml
             fi;
           fi;
 
       - name: Create canary app
         run: >
-          if [ "${{ env.CANARY }}" = true ]; 
-          then 
+          if [ "${{ env.CANARY }}" = true ];
+          then
           grep -xq '  - name: ${{ matrix.project.project_name }}-canary' ${{ env.REPO_PATH }}/_apps/values_prod.yaml
           || yq e  -i '.services += {"name": "${{ matrix.project.project_name }}-canary"}' ${{ env.REPO_PATH }}/_apps/values_prod.yaml;
           fi;
@@ -150,7 +150,7 @@ jobs:
       # Устанавливаем tag образа и убеждаемся, что установлены `global.image.repository` и `global.imagePullSecrets`
       - name: Modify values
         run: >
-          if [ "${{ env.CANARY }}" != true ]; 
+          if [ "${{ env.CANARY }}" != true ];
           then
           yq -i '.global.image.tag = "${{ matrix.project.image_version }}" |
           .global.image.repository = "registry.yc.prod.infra.sravni.market/${{ env.TEAM }}_prod/${{ matrix.project.project_name }}" |
@@ -161,7 +161,7 @@ jobs:
       # Устанавливаем tag образа для canary релиза и убеждаемся, что установлены `global.image.repository` и `global.imagePullSecrets`
       - name: Modify canary values
         run: >
-          if [ "${{ env.CANARY }}" = true ]; 
+          if [ "${{ env.CANARY }}" = true ];
           then
           yq -i '.global.image.tag = "${{ matrix.project.image_version }}" |
           .global.image.repository = "registry.yc.prod.infra.sravni.market/${{ env.TEAM }}_prod/${{ matrix.project.project_name }}" |
@@ -173,7 +173,7 @@ jobs:
       # commit: sravni/mortgageinsurance/commit/2b13e85a9c5e439b79e406f08a0cde673fa1f4a3
       - name: Adding commit SHA
         run: >
-          if [ "${{ env.CANARY }}" != true ]; 
+          if [ "${{ env.CANARY }}" != true ];
           then
           FULL_SHA=${GITHUB_SHA}
           && GIT_REPO=${GITHUB_REPOSITORY}
@@ -183,11 +183,11 @@ jobs:
 
       - name: Do rebase and commit
         run: >
-          cd ./deploy 
+          cd ./deploy
           && git add .
           && git -c user.name="sravnidevops" -c user.email="company-service@sravni.ru" commit --author="${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>" -m "[PROD] ${{ matrix.project.project_name }} new version: ${{ matrix.project.image_version }} / run_id: ${{ github.run_id }}"
           && git -c user.name="sravnidevops" -c user.email="company-service@sravni.ru" pull --rebase
           && git push origin main || sleep 10
           && git -c user.name="sravnidevops" -c user.email="company-service@sravni.ru" pull --rebase
-          && git push origin main 
+          && git push origin main
           && cd ../

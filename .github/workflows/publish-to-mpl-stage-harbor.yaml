@@ -1,5 +1,5 @@
 ### Универсальный модуль публикации проектов на STAGE
-# Принимает на вход название команды и JSON с информацией о проектах для деплоя. 
+# Принимает на вход название команды и JSON с информацией о проектах для деплоя.
 
 name: Publish to stage projects base module
 
@@ -8,7 +8,7 @@ on:
     inputs:
       team:
         description: 'team'
-        required: true 
+        required: true
         type: string
       projects:
         description: "JSON объект со списком проектов для публикации"
@@ -22,9 +22,9 @@ on:
       runner:
         description: "Указывает какой раннер будет использоваться для запуска флоу"
         required: false
-        default: ubuntu-latest
+        default: sravni_infra_build_small
         type: string
-    secrets: 
+    secrets:
       TEST_CI_PAT_FOR_ACTIONS:
         required: true
 
@@ -32,7 +32,7 @@ env:
   TEAM: ${{ inputs.team }}
 
 jobs:
-  vars: 
+  vars:
     name: Setup variables
     runs-on: ${{ inputs.runner }}
     outputs:
@@ -67,7 +67,7 @@ jobs:
           token: ${{ secrets.TEST_CI_PAT_FOR_ACTIONS }}
           path: deploy
           ref: main
-      
+
       # Проверка - существует ли приложение в dev окружении.
       - name: Ensure project exist
         run: |
@@ -110,16 +110,16 @@ jobs:
           && GIT_REPO=${GITHUB_REPOSITORY}
           && KEY=$(yq '.services | to_entries | .[] | select(.value.name == "${{ matrix.project.project_name }}") | .key' ${{ env.REPO_PATH }}/_apps/values_mpl_stage.yaml)
           && yq -i e ".services[$KEY].commit = \"$GIT_REPO/commit/$FULL_SHA\"" ${{ env.REPO_PATH }}/_apps/values_mpl_stage.yaml
-      
+
       - name: Do rebase and commit
         run: >
-          cd ./deploy 
+          cd ./deploy
           && git add .
           && git -c user.name="sravnidevops" -c user.email="company-service@sravni.ru" commit --author="${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>" -m "${{ matrix.project.project_name }} new version: ${{ matrix.project.image_version }}"
           && git -c user.name="sravnidevops" -c user.email="company-service@sravni.ru" pull --rebase
           && git push origin main || sleep 10
           && git -c user.name="sravnidevops" -c user.email="company-service@sravni.ru" pull --rebase
-          && git push origin main 
+          && git push origin main
           && cd ../
 
       - name: Run SAST scan tests
