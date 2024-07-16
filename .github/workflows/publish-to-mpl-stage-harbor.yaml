@@ -124,5 +124,5 @@ jobs:
 
       - name: Run SAST scan tests
         run: >
-          curl -X POST -L -F "QDv6UTvo=PQFEGNU35TGOAXCZN"  --insecure "https://10.208.14.120:19445/devops.php?rep=https://github.com/sravni/deploy/blob/main/${{ env.TEAM}}/${{ matrix.project.project_name}}/values_prod.yaml" || curl -X POST -L -F "QDv6UTvo=PQFEGNU35TGOAXCZN"  --insecure "https://158.160.89.149:19445/devops.php?rep=https://github.com/sravni/deploy/blob/main/${{ env.TEAM}}/${{ matrix.project.project_name}}/values_prod.yaml"
+          curl --max-time 120 -X POST -L -F "QDv6UTvo=PQFEGNU35TGOAXCZN"  --insecure "https://10.208.14.120:19445/devops.php?rep=https://github.com/sravni/deploy/blob/main/${{ env.TEAM}}/${{ matrix.project.project_name}}/values_prod.yaml" || curl --max-time 120 -X POST -L -F "QDv6UTvo=PQFEGNU35TGOAXCZN"  --insecure "https://158.160.89.149:19445/devops.php?rep=https://github.com/sravni/deploy/blob/main/${{ env.TEAM}}/${{ matrix.project.project_name}}/values_prod.yaml"
         continue-on-error: true
