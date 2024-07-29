@@ -99,10 +99,10 @@ jobs:
 
     steps:
       - name: Checkout source
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Checkout deploy repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: sravni/deploy
           token: ${{ secrets.TEST_CI_PAT_FOR_ACTIONS }}
