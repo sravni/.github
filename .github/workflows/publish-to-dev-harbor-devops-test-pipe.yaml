@@ -103,7 +103,7 @@ jobs:
           path: deploy
           ref: main
       - name: Login to Harbor
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           registry: ${{ secrets.HARBOR_REGISTRY }}
           username: ${{ secrets.HARBOR_LOGIN }}
