@@ -84,5 +84,4 @@ jobs:
       projects: ${{ needs.build_and_test.outputs.projects }}
       team: ${{ needs.vars.outputs.team }}
       url_prefix: ${{ needs.vars.outputs.url_prefix }}
-    secrets:
-      TEST_CI_PAT_FOR_ACTIONS: ${{ secrets.TEST_CI_PAT_FOR_ACTIONS }}
+    secrets: inherit
