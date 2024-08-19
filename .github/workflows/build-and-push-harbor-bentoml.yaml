@@ -62,6 +62,11 @@ jobs:
   docker:
     name: Bento build
     runs-on: ${{ inputs.runner_bento }}
+    needs: [get_projects]
+    strategy:
+      max-parallel: 1
+      matrix:
+        project: ${{ fromJson(needs.get_projects.outputs.projects) }}
     steps:
       - name: Checkout source
         uses: actions/checkout@v3
@@ -94,7 +99,7 @@ jobs:
           bentoml containerize ${{ steps.bento.outputs.bento-tag }} \
           --push \
           --backend=buildx \
-          --image-tag "${{ secrets.HARBOR_REGISTRY }}/${{ steps.bento.outputs.bento-name }}:${{ steps.bento.outputs.bento-version }}" \
+          --image-tag "${{ secrets.HARBOR_REGISTRY }}/${{ matrix.project.project_name }}:${{ matrix.project.image_version }}" \
           --opt build-arg:ENVIROMENT='stage' \
           --opt build-arg:GITHUB_TOKEN=${{ secrets.GH_TOKEN }} \
           --opt build-arg:GITHUB_USERNAME=sravni
