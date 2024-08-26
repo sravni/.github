@@ -53,7 +53,9 @@ on:
         required: false     #
       SLACK_CLIENT_ID:      # Добавлено для команды MFO
         required: false     #     #
-      JUICY_SCORE_API_KEY:  # Добавлено для команды MFO
+      JUICY_SCORE_API_KEY_DEV:  # Добавлено для команды MFO
+        required: false     #
+      JUICY_SCORE_API_KEY_PROD: # Добавлено для команды MFO
         required: false     #
       ALLURE_TOKEN:         # Добавлено для команды Mobile
         required: false     #
@@ -150,7 +152,8 @@ jobs:
             NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
             SLACK_CLIENT_SECRET=${{ secrets.SLACK_CLIENT_SECRET }}
             SLACK_CLIENT_ID=${{ secrets.SLACK_CLIENT_ID }}
-            JUICY_SCORE_API_KEY=${{ secrets.JUICY_SCORE_API_KEY }}
+            JUICY_SCORE_API_KEY_DEV=${{ secrets.JUICY_SCORE_API_KEY_DEV }}
+            JUICY_SCORE_API_KEY_PROD=${{ secrets.JUICY_SCORE_API_KEY_PROD }}
             ALLURE_TOKEN=${{ secrets.ALLURE_TOKEN }}
             SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_SOURCEMAP_WEB_FRONTEND_AUTH_TOKEN }}
           push: ${{ inputs.with_push }}
@@ -173,7 +176,8 @@ jobs:
             NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
             SLACK_CLIENT_SECRET=${{ secrets.SLACK_CLIENT_SECRET }}
             SLACK_CLIENT_ID=${{ secrets.SLACK_CLIENT_ID }}
-            JUICY_SCORE_API_KEY=${{ secrets.JUICY_SCORE_API_KEY }}
+            JUICY_SCORE_API_KEY_DEV=${{ secrets.JUICY_SCORE_API_KEY_DEV }}
+            JUICY_SCORE_API_KEY_PROD=${{ secrets.JUICY_SCORE_API_KEY_PROD }}
             ALLURE_TOKEN=${{ secrets.ALLURE_TOKEN }}
             SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_SOURCEMAP_WEB_FRONTEND_AUTH_TOKEN }}
           push: ${{ inputs.with_push }}
