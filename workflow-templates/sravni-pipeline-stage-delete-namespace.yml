@@ -1,0 +1,19 @@
+#Имя воркфлоу - будет отображаться во вкладке Actions в гитхабе
+name: Delete-namespace-ya-stage
+
+#Ручной запуск
+on:
+  workflow_dispatch:
+    inputs:
+      namespace:
+        description: Namespace Name
+        required: true
+
+jobs:
+  delete_namespace:
+    if: ${{ inputs.namespace }} != 'master'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete namespace from QA Database
+        run: |
+          curl -XDELETE https://qa.stage.yandex.sravni-team.ru/api/environments/${{ inputs.namespace }}
