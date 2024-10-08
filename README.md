@@ -43,8 +43,8 @@
 Для добавления какого-либо из Workflow необходимо:
 
  - Зайти во вкладку Action внутри своего проекта
- - Найти в списке "Workflows created by Sravni.ru LLC"
- - Найти интересующий вас Workflow и нажать "Set up this workflow"
+ - Найти в списке "By Sravni Tech"
+ - Найти интересующий вас Workflow и нажать "Configure"
  - Прописать имя своей команды в env:team вместо <team_name>
  - Создать ya-stage.yaml с описанием чарта под новый стейдж (в Ingress указываем
    stage.yandex.sravni-team.ru вместо qa.sravni-team.ru)
