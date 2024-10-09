@@ -80,7 +80,7 @@ jobs:
         with:
           python-version: '3.10'
           bentoml-version: 'main'
-      - run: pip install -r requirements.txt -i https://nexus.yc.prod.infra.sravni.market/repository/pypi.org_proxy/simple
+      - run: pip install -r requirements.txt -i https://artifactory.yc.prod.infra.sravni.market/artifactory/api/pypi/pypi.org_proxy/simple
       - run: python import_model.py
       - uses: bentoml/build-bento-action@v1
         id: bento
