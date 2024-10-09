@@ -234,8 +234,8 @@ jobs:
         run: >
           if [ "${{ env.DELETE_BRANCHES }}" = true ];
           then
-          grep -xq '  - name: ${{ matrix.project.project_name }}-${{ env.BRANCH }}' ${{ env.REPO_PATH }}/_apps/values_dev.yaml
-          && KEY=$(yq e '.services | to_entries | .[] | select(.value.name == "${{ matrix.project.project_name }}-${{ env.BRANCH }}") | .key' ${{ env.REPO_PATH }}/_apps/values_dev.yaml)
+          grep -xq '  - name: ${{ matrix.project.project_name }}' ${{ env.REPO_PATH }}/_apps/values_dev.yaml
+          && KEY=$(yq e '.services | to_entries | .[] | select(.value.name == "${{ matrix.project.project_name }}") | .key' ${{ env.REPO_PATH }}/_apps/values_dev.yaml)
           && yq e -i '.services.'"$KEY"' += {"namespace": "bentoml"}' ${{ env.REPO_PATH }}/_apps/values_dev.yaml ;
           fi;
 
