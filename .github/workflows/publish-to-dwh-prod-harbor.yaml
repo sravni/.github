@@ -124,7 +124,7 @@ jobs:
           if [ "${{ env.CANARY }}" != true ];
           then
           yq -i '.global.image.tag = "${{ matrix.project.image_version }}" |
-          .global.image.repository = "registry.yc.prod.infra.sravni.market/${{ env.TEAM }}_dwh_prod/${{ matrix.project.project_name }}" |
+          .global.image.repository = "registry.yc.prod.infra.sravni.market/${{ env.TEAM }}_prod/${{ matrix.project.project_name }}" |
           .global.imagePullSecrets[0] = "harbor-pull-secret"'
           ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_dwh_prod.yaml;
           fi;
@@ -135,7 +135,7 @@ jobs:
           if [ "${{ env.CANARY }}" = true ];
           then
           yq -i '.global.image.tag = "${{ matrix.project.image_version }}" |
-          .global.image.repository = "registry.yc.prod.infra.sravni.market/${{ env.TEAM }}_dwh_prod/${{ matrix.project.project_name }}" |
+          .global.image.repository = "registry.yc.prod.infra.sravni.market/${{ env.TEAM }}_prod/${{ matrix.project.project_name }}" |
           .global.imagePullSecrets[0] = "harbor-pull-secret"'
           ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}-canary/values_dwh_prod.yaml;
           fi;
