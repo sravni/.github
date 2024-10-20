@@ -1,0 +1,4 @@
+{
+    "name": "Publish .Net NuGet packages",
+    "description": "Template for .Net NuGet packages publishing."
+}

@@ -13,7 +13,7 @@
 # ]
 #
 # В массиве по одному объекту для каждого проекта найденного в репозитории. Проектом считается папка в которой
-# находится Dockerfile и папка .k8s с ямлями. Если задать параметр project_path_mask, то в результат попадут 
+# находится Dockerfile/bentofile и папка .k8s с ямлями. Если задать параметр project_path_mask, то в результат попадут
 # только те проекты, папки которых удовлетворяют этой маске.
 
 name: Get projects
@@ -51,16 +51,16 @@ on:
         value: ${{ jobs.get_projects.outputs.projects }}
 
 jobs:
-  
+
   get_projects:
     runs-on: ${{ inputs.runner }}
 
     outputs:
-      projects: ${{ steps.get_projects_multi.outputs.projects || steps.get_projects_mono.outputs.projects }}
-    
+      projects: ${{ steps.get_projects_multi.outputs.projects || steps.get_projects_mono.outputs.projects || steps.get_projects_bento.outputs.projects}}
+
     steps:
       - name: Checkout source
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Get build number and image version
         run: |
@@ -77,8 +77,8 @@ jobs:
           echo "BUILD_NUMBER=$build_number" >> $GITHUB_ENV
           echo "IMAGE_VERSION=$image_version" >> $GITHUB_ENV
 
-      # Определяет тип репозитория: односервисный или мульисервисный.
-      # Определяет по наличию Dockerfile в корне репозитория: если он там есть, то
+      # Определяет тип репозитория: односервисный, мульисервисный или бенто.
+      # Определяет по наличию Dockerfile/bentofile в корне репозитория: если он там есть, то
       # считаем, что в этой репе один сервис. В этом случае именем сервиса будет имя репы.
       - name: Check repo type
         id: repo_type
@@ -87,6 +87,10 @@ jobs:
           then
             echo 'Определили репозиторий как моносервисный'
             echo "repo_type='mono'" >> $GITHUB_OUTPUT
+          elif [[ -f './bentofile.yaml' ]]
+          then
+            echo 'Определили репозиторий как бенто сервис'
+            echo "repo_type='bento'" >> $GITHUB_OUTPUT
           else
             echo 'Определили репозиторий как мультисервисный'
             echo "repo_type='multi'" >> $GITHUB_OUTPUT
@@ -99,10 +103,10 @@ jobs:
           if [[ ${{ steps.repo_type.outputs.repo_type }} != 'multi' ]]; then exit 0; fi
 
           projects=$(for p in $(find * -maxdepth 3 -path "${{ inputs.project_path_mask }}/Dockerfile")
-            do  
+            do
               project_path=$(echo $p | sed -E 's|(.*)/Dockerfile$|\1|')
               if [[ ! -f "$project_path/.k8s/${{ inputs.k8s_yaml_file_name }}" ]]
-              then 
+              then
                 echo ""
               else
                 project_name=$(echo $p | sed -E 's|(.*/\|)(.*)/Dockerfile$|\2|' | tr '[:upper:]' '[:lower:]' | sed 's|\.|-|g')
@@ -133,7 +137,7 @@ jobs:
             if [[ ! -f "$project_path/.k8s/${{ inputs.k8s_yaml_file_name }}" ]]
             then
               echo ""
-            else 
+            else
               echo "{ \"project_name\":\"$project_name\", \
                     \"dockerfile\":\"./Dockerfile\", \
                     \"project_path\":\"$project_path\", \
@@ -147,3 +151,30 @@ jobs:
           echo $projects | jq -r '.[] | .project_name'
           echo "projects=${projects}" >> $GITHUB_OUTPUT
 
+      - name: Get projects (bento)
+        id: get_projects_bento
+        run: |
+          # Выходим, если репозиторий не моносервисный
+          if [[ ${{ steps.repo_type.outputs.repo_type }} != 'bento' ]]; then exit 0; fi
+
+          project_name=$(basename `git rev-parse --show-toplevel`) # имя сервиса по названию репы
+          project_name="${project_name}-bento" # добавляем -bento к названию проекта (для helm_create.sh)
+          image_name="${project_name}:${{ env.IMAGE_VERSION }}"
+          project_path='.'
+          projects=$(
+            if [[ ! -f "$project_path/.k8s/${{ inputs.k8s_yaml_file_name }}" ]]
+            then
+              echo ""
+            else
+              echo "{ \"project_name\":\"$project_name\", \
+                    \"dockerfile\":\"./bentofile.yaml\", \
+                    \"project_path\":\"$project_path\", \
+                    \"k8s_yaml_path\":\"$project_path/.k8s/${{ inputs.k8s_yaml_file_name }}\", \
+                    \"build_number\":\"${{ env.BUILD_NUMBER }}\", \
+                    \"image_name\":\"$image_name\", \
+                    \"image_version\":\"${{ env.IMAGE_VERSION }}\" }"
+            fi | jq -src '.')
+          echo $projects
+          echo 'Найдены следующие проекты:'
+          echo $projects | jq -r '.[] | .project_name'
+          echo "projects=${projects}" >> $GITHUB_OUTPUT

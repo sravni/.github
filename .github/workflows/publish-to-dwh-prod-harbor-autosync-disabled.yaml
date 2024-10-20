@@ -22,12 +22,7 @@ on:
       runner:
         description: "Указывает какой раннер будет использоваться для запуска флоу"
         required: false
-        default: sravni_infra_build_small
-        type: string
-      additional_values_file_path:
-        description: "Путь к файлу с дополнительными переменными"
-        required: false
-        default: ''
+        default: sravni_prod
         type: string
     secrets:
       TEST_CI_PAT_FOR_ACTIONS:
@@ -35,7 +30,6 @@ on:
 
 env:
   TEAM: ${{ inputs.team }}
-  ADDITIONAL_VALUES_FILE_PATH: ${{ inputs.additional_values_file_path }}
 
 jobs:
   vars:
@@ -89,29 +83,16 @@ jobs:
           sudo wget -O /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/v${{ env.YQ_VERSION }}/yq_linux_amd64
           sudo chmod +x /usr/local/bin/yq
 
-      - name: Install gomplate
-        run: |
-          if [ "${{ env.ADDITIONAL_VALUES_FILE_PATH }}" != "" ];
-          then
-            sudo curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.11.3/gomplate_linux-amd64
-            sudo chmod 755 /usr/local/bin/gomplate;
-          fi;
-
       # Копирование *.yaml файла с вэйльюсами из репы сервиса в deploy. Фактическое название файла приходит в JSON'е в projects.
-      # Имя этого файла должно стать values_prod.yaml.
+      # Имя этого файла должно стать values_dwh_prod.yaml.
       - name: Clone values from origin repo
         run: |
-          if [ "${{ env.ADDITIONAL_VALUES_FILE_PATH }}" != "" ];
-          then
-            cat ${{ matrix.project.k8s_yaml_path }} | gomplate -d external_service=${{ env.REPO_PATH }}/${{ env.ADDITIONAL_VALUES_FILE_PATH }} > ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_prod.yaml
-          else
-            cat ${{ matrix.project.k8s_yaml_path }} > ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_prod.yaml
-          fi;
+          cat ${{ matrix.project.k8s_yaml_path }} > ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_dwh_prod.yaml;
 
       - name: Create app
         run: >
-          grep -xq '  - name: ${{ matrix.project.project_name }}' ${{ env.REPO_PATH }}/_apps/values_prod.yaml
-          || yq e  -i '.services += {"name": "${{ matrix.project.project_name }}", "autosync": "disabled"}' ${{ env.REPO_PATH }}/_apps/values_prod.yaml;
+          grep -xq '  - name: ${{ matrix.project.project_name }}' ${{ env.REPO_PATH }}/_apps/values_dwh_prod.yaml
+          || yq e  -i '.services += {"name": "${{ matrix.project.project_name }}", "autosync": "disabled"}' ${{ env.REPO_PATH }}/_apps/values_dwh_prod.yaml;
 
       # Устанавливаем tag образа и убеждаемся, что установлены `global.image.repository` и `global.imagePullSecrets`
       - name: Modify values
@@ -119,7 +100,7 @@ jobs:
           yq -i '.global.image.tag = "${{ matrix.project.image_version }}" |
           .global.image.repository = "registry.yc.prod.infra.sravni.market/${{ env.TEAM }}_prod/${{ matrix.project.project_name }}" |
           .global.imagePullSecrets[0] = "harbor-pull-secret"'
-          ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_prod.yaml;
+          ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_dwh_prod.yaml;
 
       # Добавляет коммит для поля info в Argo вида
       # commit: sravni/mortgageinsurance/commit/2b13e85a9c5e439b79e406f08a0cde673fa1f4a3
@@ -127,8 +108,8 @@ jobs:
         run: >
           FULL_SHA=${GITHUB_SHA}
           && GIT_REPO=${GITHUB_REPOSITORY}
-          && KEY=$(yq '.services | to_entries | .[] | select(.value.name == "${{ matrix.project.project_name }}") | .key' ${{ env.REPO_PATH }}/_apps/values_prod.yaml)
-          && yq -i e ".services[$KEY].commit = \"$GIT_REPO/commit/$FULL_SHA\"" ${{ env.REPO_PATH }}/_apps/values_prod.yaml
+          && KEY=$(yq '.services | to_entries | .[] | select(.value.name == "${{ matrix.project.project_name }}") | .key' ${{ env.REPO_PATH }}/_apps/values_dwh_prod.yaml)
+          && yq -i e ".services[$KEY].commit = \"$GIT_REPO/commit/$FULL_SHA\"" ${{ env.REPO_PATH }}/_apps/values_dwh_prod.yaml
 
       - name: Do rebase and commit
         run: >

@@ -76,5 +76,4 @@ jobs:
       team: ${{ needs.vars.outputs.team }}
       branch: ${{ needs.vars.outputs.branch }}
       projects: ${{ needs.get_projects.outputs.projects }}
-    secrets:
-      TEST_CI_PAT_FOR_ACTIONS: ${{ secrets.TEST_CI_PAT_FOR_ACTIONS }}
+    secrets: inherit
