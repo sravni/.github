@@ -143,6 +143,11 @@ jobs:
       - name: Helm check
         working-directory: ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}
         run: helm template . -f values_prod.yaml
+      
+      - name: Helm check cleanup
+        working-directory: ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}
+        run:  |
+          rm -rf charts/ && rm Chart.lock
           
       # Добавляет коммит для поля info в Argo вида
       # commit: sravni/mortgageinsurance/commit/2b13e85a9c5e439b79e406f08a0cde673fa1f4a3
