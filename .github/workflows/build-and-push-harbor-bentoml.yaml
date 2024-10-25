@@ -63,10 +63,12 @@ jobs:
     name: Bento build
     runs-on: ${{ inputs.runner_bento }}
     needs: [get_projects]
+    
     strategy:
       max-parallel: 1
       matrix:
         project: ${{ fromJson(needs.get_projects.outputs.projects) }}
+        
     steps:
       - name: Checkout source
         uses: actions/checkout@v3
@@ -80,9 +82,17 @@ jobs:
         with:
           python-version: '3.10'
           bentoml-version: 'main'
-      - run: pip install -r requirements.txt -i https://artifactory.yc.prod.infra.sravni.market/artifactory/api/pypi/pypi.org_proxy/simple
-      - run: python import_model.py
+      - name: Install requirements
+        run: |
+          cd ${{ matrix.project.project_path }}
+          pip install -r requirements.txt -i https://artifactory.yc.prod.infra.sravni.market/artifactory/api/pypi/pypi.org_proxy/simple
+      - name: Import model
+        run: |
+          cd ${{ matrix.project.project_path }}
+          python import_model.py
       - uses: bentoml/build-bento-action@v1
+        with:
+          context: ${{ matrix.project.project_path }}
         id: bento
       - run: |
           echo "Bento tag: ${{ steps.bento.outputs.bento-tag }}"
@@ -96,10 +106,11 @@ jobs:
           version: v0.10.0
       - name: Bento build
         run: |
+          cd ${{ matrix.project.project_path }}
           bentoml containerize ${{ steps.bento.outputs.bento-tag }} \
-          --push \
           --backend=buildx \
           --image-tag "${{ secrets.HARBOR_REGISTRY }}/${{ matrix.project.project_name }}:${{ matrix.project.image_version }}" \
+          --opt push \
           --opt build-arg:ENVIROMENT='stage' \
           --opt build-arg:GITHUB_TOKEN=${{ secrets.GH_TOKEN }} \
           --opt build-arg:GITHUB_USERNAME=sravni
