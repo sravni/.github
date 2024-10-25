@@ -33,9 +33,9 @@ on:
         required: false
         default: true
         type: boolean
-      test:
+      repo_url:
         required: false
-        default: "PIZDA"
+        default: ""
         type: string
     secrets:
       TEST_CI_PAT_FOR_ACTIONS:
@@ -51,7 +51,7 @@ env:
   TEAM: ${{ inputs.team }}
   DELETE_BRANCHES: ${{ inputs.delete_branches }}
   K6: ${{ inputs.k6}}
-  TEST: ${{ inputs.test }}
+  REPO_URL: ${{ inputs.repo_url }}
 
 jobs:
   get_branch_name:
@@ -88,11 +88,9 @@ jobs:
         run: echo "team=${TEAM,,}" >> $GITHUB_OUTPUT
       - name: test
         run: |
-          echo env.TEAM: ${{ env.TEAM }}
-          echo inputs.TEAM: ${{ inputs.TEAM }}
-          echo steps.set_test.outputs.test: ${{ steps.set_test.outputs.test }};
-          echo env.TEST: ${{ env.TEST }};
-          echo inputs.test: ${{ inputs.test }};
+          echo steps.set_repo_url.outputs.repo_url: ${{ steps.set_repo_url.outputs.repo_url }};
+          echo env.REPO_URL: ${{ env.REPO_URL }};
+          echo inputs.repo_url: ${{ inputs.repo_url }};
           echo env.K6: ${{ env.K6 }};
           echo inputs.K6: ${{ inputs.K6 }};
 
