@@ -46,8 +46,6 @@ on:
         required: true
       HARBOR_PASSWORD:
         required: true
-      TEST1: 
-        required: false
 
 env:
   TEAM: ${{ inputs.team }}
@@ -90,9 +88,11 @@ jobs:
         run: echo "team=${TEAM,,}" >> $GITHUB_OUTPUT
       - name: test
         run: |
-          echo steps.set_test.outputs.test ${{ steps.set_test.outputs.test }};
-          echo env.TEST ${{ env.TEST }};
-          echo inputs.test ${{ inputs.test }};
+          echo env.TEAM: ${{ env.TEAM }}
+          echo inputs.TEAM: ${{ inputs.TEAM }}
+          echo steps.set_test.outputs.test: ${{ steps.set_test.outputs.test }};
+          echo env.TEST: ${{ env.TEST }};
+          echo inputs.test: ${{ inputs.test }};
 
   publish:
     runs-on: ${{ inputs.runner }}
