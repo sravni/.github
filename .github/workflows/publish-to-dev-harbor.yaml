@@ -35,7 +35,7 @@ on:
         type: boolean
       repo_url:
         required: false
-        default: ""
+        default: ''
         type: string
     secrets:
       TEST_CI_PAT_FOR_ACTIONS:
@@ -50,7 +50,7 @@ on:
 env:
   TEAM: ${{ inputs.team }}
   DELETE_BRANCHES: ${{ inputs.delete_branches }}
-  K6: ${{ inputs.k6}}
+  K6: ${{ inputs.k6 }}
   REPO_URL: ${{ inputs.repo_url }}
 
 jobs:
@@ -114,9 +114,19 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Checkout deploy repo
+        if: env.URL_REPO = ''
         uses: actions/checkout@v4
         with:
           repository: sravni/deploy
+          token: ${{ secrets.TEST_CI_PAT_FOR_ACTIONS }}
+          path: deploy
+          ref: main
+
+      - name: Checkout deploy team repo
+        if: env.URL_REPO != ''
+        uses: actions/checkout@v4
+        with:
+          repository: sravni/deploy_${{ env.TEAM }}
           token: ${{ secrets.TEST_CI_PAT_FOR_ACTIONS }}
           path: deploy
           ref: main
