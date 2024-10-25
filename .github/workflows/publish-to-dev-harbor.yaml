@@ -53,7 +53,6 @@ env:
   TEAM: ${{ inputs.team }}
   DELETE_BRANCHES: ${{ inputs.delete_branches }}
   K6: ${{ inputs.k6}}
-  TEST1: ${{ inputs.TEST1 }}
   TEST: ${{ inputs.test }}
 
 jobs:
@@ -92,8 +91,7 @@ jobs:
       - name: test
         run: |
           echo steps.set_test.outputs.test ${{ steps.set_test.outputs.test }};
-          echo inputs.TEST1 ${{ inputs.TEST1 }};
-          echo env.TEST1 ${{ env.TEST }};
+          echo env.TEST ${{ env.TEST }};
           echo inputs.test ${{ inputs.test }};
 
   publish:
