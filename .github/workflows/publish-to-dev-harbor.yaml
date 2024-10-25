@@ -33,6 +33,10 @@ on:
         required: false
         default: true
         type: boolean
+      test:
+        required: false
+        default: "PIZDA"
+        type: string
     secrets:
       TEST_CI_PAT_FOR_ACTIONS:
         required: true
@@ -42,11 +46,15 @@ on:
         required: true
       HARBOR_PASSWORD:
         required: true
+      TEST1: 
+        required: false
 
 env:
   TEAM: ${{ inputs.team }}
   DELETE_BRANCHES: ${{ inputs.delete_branches }}
   K6: ${{ inputs.k6}}
+  TEST1: ${{ inputs.TEST1 }}
+  TEST: ${{ inputs.test }}
 
 jobs:
   get_branch_name:
@@ -81,6 +89,12 @@ jobs:
       - name: Set team
         id: set_team
         run: echo "team=${TEAM,,}" >> $GITHUB_OUTPUT
+      - name: test
+        run: |
+          echo steps.set_test.outputs.test ${{ steps.set_test.outputs.test }};
+          echo inputs.TEST1 ${{ inputs.TEST1 }};
+          echo env.TEST1 ${{ env.TEST }};
+          echo inputs.test ${{ inputs.test }};
 
   publish:
     runs-on: ${{ inputs.runner }}
