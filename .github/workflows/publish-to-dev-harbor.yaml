@@ -93,6 +93,8 @@ jobs:
           echo steps.set_test.outputs.test: ${{ steps.set_test.outputs.test }};
           echo env.TEST: ${{ env.TEST }};
           echo inputs.test: ${{ inputs.test }};
+          echo env.K6: ${{ env.K6 }};
+          echo inputs.K6: ${{ inputs.K6 }};
 
   publish:
     runs-on: ${{ inputs.runner }}
