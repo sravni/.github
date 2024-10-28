@@ -56,7 +56,11 @@ jobs:
     runs-on: ${{ inputs.runner }}
 
     outputs:
-      projects: ${{ steps.get_projects_multi.outputs.projects || steps.get_projects_mono.outputs.projects || steps.get_projects_bento.outputs.projects}}
+      projects: >-
+        ${{ steps.get_projects_multi.outputs.projects || 
+            steps.get_projects_mono.outputs.projects || 
+            steps.get_projects_bento.outputs.projects || 
+            steps.get_projects_bento_multi.outputs.projects }}
 
     steps:
       - name: Checkout source
@@ -77,7 +81,7 @@ jobs:
           echo "BUILD_NUMBER=$build_number" >> $GITHUB_ENV
           echo "IMAGE_VERSION=$image_version" >> $GITHUB_ENV
 
-      # Определяет тип репозитория: односервисный, мульисервисный или бенто.
+      # Определяет тип репозитория: односервисный, мульисервисный, бенто или бенто мультисервисный.
       # Определяет по наличию Dockerfile/bentofile в корне репозитория: если он там есть, то
       # считаем, что в этой репе один сервис. В этом случае именем сервиса будет имя репы.
       - name: Check repo type
@@ -91,6 +95,10 @@ jobs:
           then
             echo 'Определили репозиторий как бенто сервис'
             echo "repo_type='bento'" >> $GITHUB_OUTPUT
+          elif find . -type f -name 'bentofile.yaml' | grep -q -m 1 bentofile.yaml
+          then
+            echo 'Определили репозиторий как бенто-мультисервисный'
+            echo "repo_type='bento-multi'" >> $GITHUB_OUTPUT
           else
             echo 'Определили репозиторий как мультисервисный'
             echo "repo_type='multi'" >> $GITHUB_OUTPUT
@@ -154,7 +162,7 @@ jobs:
       - name: Get projects (bento)
         id: get_projects_bento
         run: |
-          # Выходим, если репозиторий не моносервисный
+          # Выходим, если репозиторий не бенто
           if [[ ${{ steps.repo_type.outputs.repo_type }} != 'bento' ]]; then exit 0; fi
 
           project_name=$(basename `git rev-parse --show-toplevel`) # имя сервиса по названию репы
@@ -174,6 +182,36 @@ jobs:
                     \"image_name\":\"$image_name\", \
                     \"image_version\":\"${{ env.IMAGE_VERSION }}\" }"
             fi | jq -src '.')
+          echo $projects
+          echo 'Найдены следующие проекты:'
+          echo $projects | jq -r '.[] | .project_name'
+          echo "projects=${projects}" >> $GITHUB_OUTPUT
+
+      - name: Get projects (bento-multi)
+        id: get_projects_bento_multi
+        run: |
+          # Выходим, если репозиторий не бенто мультисервисный
+          if [[ ${{ steps.repo_type.outputs.repo_type }} != 'bento-multi' ]]; then exit 0; fi
+      
+          projects=$(for p in $(find * -maxdepth 3 -path "${{ inputs.project_path_mask }}/bentofile.yaml")
+            do
+              project_path=$(echo $p | sed -E 's|(.*)/bentofile\.yaml$|\1|')
+              if [[ ! -f "$project_path/.k8s/${{ inputs.k8s_yaml_file_name }}" ]]
+              then
+                echo ""
+              else
+                project_name=$(echo $p | sed -E 's|(.*/\|)(.*)/bentofile\.yaml$|\2|' | tr '[:upper:]' '[:lower:]' | sed 's|\.|-|g')
+                project_name="${project_name}-bento" # добавляем -bento к названию проекта (для helm_create.sh)
+                image_name="${project_name}:${{ env.IMAGE_VERSION }}"
+                echo "{ \"project_name\":\"$project_name\", \
+                        \"dockerfile\":\"$p\", \
+                        \"project_path\":\"$project_path\", \
+                        \"k8s_yaml_path\":\"$project_path/.k8s/${{ inputs.k8s_yaml_file_name }}\", \
+                        \"build_number\":\"${{ env.BUILD_NUMBER }}\", \
+                        \"image_name\":\"$image_name\", \
+                        \"image_version\":\"${{ env.IMAGE_VERSION }}\" }"
+              fi
+            done | jq -src '.')
           echo $projects
           echo 'Найдены следующие проекты:'
           echo $projects | jq -r '.[] | .project_name'
