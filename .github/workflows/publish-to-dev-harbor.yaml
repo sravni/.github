@@ -203,9 +203,11 @@ jobs:
         if: ${{ env.REPO_URL != '' }}
         run: >
           if [[ "${{ env.BRANCH }}" == 'master' ]];
-          echo test;
+          echo project name ${{ matrix.project.project_name }};
+          echo branch ${{ env.BRANCH }};
+          echo repo path ${{ env.REPO_PATH }}
           then
-          KEY=$(yq '.services | to_entries | .[] | select(.value.name == "${{ matrix.project.project_name }}-${{ env.BRANCH }}") | .key' ${{ env.REPO_PATH }}/_apps/values_dev.yaml)
+          KEY=$(yq '.services | to_entries | .[] | select(.value.name == "hello-world-service-dev-4431-test") | .key' ${{ env.REPO_PATH }}/_apps/values_dev.yaml)
           && echo then $KEY
           && yq -i e ".services[$KEY].repoURL = \"${{ env.REPO_URL }}\", .services[$KEY].branch = \"main\"" ${{ env.REPO_PATH }}/_apps/values_dev.yaml;
           else
