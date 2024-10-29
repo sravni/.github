@@ -202,7 +202,7 @@ jobs:
       - name: Tag application with repoURL
         if: ${{ env.REPO_URL != '' }}
         run: |
-          if [[ "${{ env.BRANCH }}" == 'master' ]];
+          if [[ "${{ env.BRANCH }}" != 'master' && "${{ env.BRANCH }}" != 'main' ]];
           then
             KEY=$(yq '.services | to_entries | .[] | select(.value.name == "${{ matrix.project.project_name }}-${{ env.BRANCH }}") | .key' ${{ env.REPO_PATH }}/_apps/values_dev.yaml)\
             && echo then $KEY\
@@ -238,7 +238,7 @@ jobs:
       # Добавляет коммит для поля info в Argo вида
       # commit: sravni/mortgageinsurance/commit/2b13e85a9c5e439b79e406f08a0cde673fa1f4a3
       - name: Adding commit SHA for branch
-        if: ${{ env.BRANCH != 'master' }}
+        if: ${{ env.BRANCH != 'master' && env.BRANCH != 'main' }}
         run: >
           FULL_SHA=${GITHUB_SHA}
           && GIT_REPO=${GITHUB_REPOSITORY}
@@ -246,7 +246,7 @@ jobs:
           && yq -i e ".services[$KEY].commit = \"$GIT_REPO/commit/$FULL_SHA\"" ${{ env.REPO_PATH }}/_apps/values_dev.yaml
 
       - name: Adding commit SHA for master
-        if: ${{ env.BRANCH == 'master' }}
+        if: ${{ env.BRANCH == 'master' || env.BRANCH == 'main' }}
         run: >
           FULL_SHA=${GITHUB_SHA}
           && GIT_REPO=${GITHUB_REPOSITORY}
