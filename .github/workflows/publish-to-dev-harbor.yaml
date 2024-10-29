@@ -197,7 +197,14 @@ jobs:
           .tolerations = [{"key": "vm", "operator": "Equal", "value": "preemptible", "effect": "NoSchedule"}]'
           ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_${{ env.BRANCH }}.yaml;
 
-
+      # Если используется репа deploy для команды (например deploy_devops) 
+      # то прописываются переменные которые меняют repoURL в argocd application для сервиса
+      - name: Tag application with repoURL
+        if: ${{ env.REPO_URL != '' }}
+        run: >
+          KEY=$(yq '.services | to_entries | .[] | select(.value.name == "${{ matrix.project.project_name }}-${{ env.BRANCH }}") | .key' ${{ env.REPO_PATH }}/_apps/values_dev.yaml)
+          && yq -i e ".services[$KEY].repoURL = ${{ env.REPO_URL }}" ${{ env.REPO_PATH }}/_apps/values_dev.yaml
+          
       # Обновляем зависимости чартов
       - name: Helm dep update
         working-directory: ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}
