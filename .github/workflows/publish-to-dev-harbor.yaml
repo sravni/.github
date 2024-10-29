@@ -203,7 +203,8 @@ jobs:
         if: ${{ env.REPO_URL != '' }}
         run: >
           KEY=$(yq '.services | to_entries | .[] | select(.value.name == "${{ matrix.project.project_name }}-${{ env.BRANCH }}") | .key' ${{ env.REPO_PATH }}/_apps/values_dev.yaml)
-          && yq -i e ".services[$KEY].repoURL = \"${{ env.REPO_URL }}\"" ${{ env.REPO_PATH }}/_apps/values_dev.yaml
+          && yq -i e ".services[$KEY].repoURL = \"${{ env.REPO_URL }}\", .services[$KEY].branch = \"main\"" ${{ env.REPO_PATH }}/_apps/values_dev.yaml
+
           
       # Обновляем зависимости чартов
       - name: Helm dep update
