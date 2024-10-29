@@ -205,7 +205,7 @@ jobs:
           if [[ "${{ env.BRANCH }}" == 'master' ]];
           echo project name ${{ matrix.project.project_name }};
           echo branch ${{ env.BRANCH }};
-          echo repo path ${{ env.REPO_PATH }}
+          echo repo path ${{ env.REPO_PATH }};
           then
           KEY=$(yq '.services | to_entries | .[] | select(.value.name == "hello-world-service-dev-4431-test") | .key' ${{ env.REPO_PATH }}/_apps/values_dev.yaml)
           && echo then $KEY
