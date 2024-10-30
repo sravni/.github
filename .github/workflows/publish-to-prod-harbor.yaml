@@ -128,14 +128,6 @@ jobs:
           || yq e  -i '.services += {"name": "${{ matrix.project.project_name }}"}' ${{ env.REPO_PATH }}/_apps/values_prod.yaml;
           fi;
 
-      # Если используется репа deploy для команды (например deploy_devops) 
-      # то прописываются переменные которые меняют repoURL в argocd application для сервиса
-      - name: Tag application with repoURL
-        if: ${{ env.REPO_URL != '' }}
-        run: |
-          KEY=$(yq '.services | to_entries | .[] | select(.value.name == "${{ matrix.project.project_name }}") | .key' ${{ env.REPO_PATH }}/_apps/values_prod.yaml)\
-          && yq -i e ".services[$KEY].repoURL = \"${{ env.REPO_URL }}\", .services[$KEY].branch = \"main\"" ${{ env.REPO_PATH }}/_apps/values_prod.yaml;
-
       # Для включенной опции канареечного релиза (canary: true) копируется файл *.yaml с вэйльюсами из репы сервиса в deploy.
       # Фактическое название файла приходит в JSON'е в projects.
       # Имя этого файла должно стать values_prod.yaml.
@@ -176,6 +168,13 @@ jobs:
           ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}-canary/values_prod.yaml;
           fi;
 
+      # Если используется репа deploy для команды (например deploy_devops) 
+      # то прописываются переменные которые меняют repoURL в argocd application для сервиса
+      - name: Tag application with repoURL
+        if: ${{ env.REPO_URL != '' }}
+        run: |
+          KEY=$(yq '.services | to_entries | .[] | select(.value.name == "${{ matrix.project.project_name }}") | .key' ${{ env.REPO_PATH }}/_apps/values_prod.yaml)\
+          && yq -i e ".services[$KEY].repoURL = \"${{ env.REPO_URL }}\", .services[$KEY].branch = \"main\"" ${{ env.REPO_PATH }}/_apps/values_prod.yaml;
 
       # Обновляем зависимости чартов
       - name: Helm dep update
