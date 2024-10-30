@@ -86,13 +86,6 @@ jobs:
       - name: Set team
         id: set_team
         run: echo "team=${TEAM,,}" >> $GITHUB_OUTPUT
-      - name: test
-        run: |
-          echo steps.set_repo_url.outputs.repo_url: ${{ steps.set_repo_url.outputs.repo_url }};
-          echo env.REPO_URL: ${{ env.REPO_URL }};
-          echo inputs.repo_url: ${{ inputs.repo_url }};
-          echo env.K6: ${{ env.K6 }};
-          echo inputs.K6: ${{ inputs.K6 }};
 
   publish:
     runs-on: ${{ inputs.runner }}
