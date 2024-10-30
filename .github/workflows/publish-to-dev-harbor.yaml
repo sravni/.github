@@ -33,6 +33,10 @@ on:
         required: false
         default: true
         type: boolean
+      repo_url:
+        required: false
+        default: ''
+        type: string
     secrets:
       TEST_CI_PAT_FOR_ACTIONS:
         required: true
@@ -46,7 +50,8 @@ on:
 env:
   TEAM: ${{ inputs.team }}
   DELETE_BRANCHES: ${{ inputs.delete_branches }}
-  K6: ${{ inputs.k6}}
+  K6: ${{ inputs.k6 }}
+  REPO_URL: ${{ inputs.repo_url }}
 
 jobs:
   get_branch_name:
@@ -102,9 +107,19 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Checkout deploy repo
+        if: ${{ env.REPO_URL == '' }}
         uses: actions/checkout@v4
         with:
           repository: sravni/deploy
+          token: ${{ secrets.TEST_CI_PAT_FOR_ACTIONS }}
+          path: deploy
+          ref: main
+
+      - name: Checkout deploy team repo
+        if: ${{ env.REPO_URL != '' }}
+        uses: actions/checkout@v4
+        with:
+          repository: sravni/deploy_${{ env.TEAM }}
           token: ${{ secrets.TEST_CI_PAT_FOR_ACTIONS }}
           path: deploy
           ref: main
@@ -175,7 +190,20 @@ jobs:
           .tolerations = [{"key": "vm", "operator": "Equal", "value": "preemptible", "effect": "NoSchedule"}]'
           ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_${{ env.BRANCH }}.yaml;
 
-
+      # Если используется репа deploy для команды (например deploy_devops) 
+      # то прописываются переменные которые меняют repoURL в argocd application для сервиса
+      - name: Tag application with repoURL
+        if: ${{ env.REPO_URL != '' }}
+        run: |
+          if [[ "${{ env.BRANCH }}" != 'master' && "${{ env.BRANCH }}" != 'main' ]];
+          then
+            KEY=$(yq '.services | to_entries | .[] | select(.value.name == "${{ matrix.project.project_name }}-${{ env.BRANCH }}") | .key' ${{ env.REPO_PATH }}/_apps/values_dev.yaml)\
+            && yq -i e ".services[$KEY].repoURL = \"${{ env.REPO_URL }}\", .services[$KEY].branch = \"main\"" ${{ env.REPO_PATH }}/_apps/values_dev.yaml
+          else
+            KEY=$(yq '.services | to_entries | .[] | select(.value.name == "${{ matrix.project.project_name }}") | .key' ${{ env.REPO_PATH }}/_apps/values_dev.yaml)\
+            && yq -i e ".services[$KEY].repoURL = \"${{ env.REPO_URL }}\", .services[$KEY].branch = \"main\"" ${{ env.REPO_PATH }}/_apps/values_dev.yaml
+          fi;
+          
       # Обновляем зависимости чартов
       - name: Helm dep update
         working-directory: ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}
@@ -201,7 +229,7 @@ jobs:
       # Добавляет коммит для поля info в Argo вида
       # commit: sravni/mortgageinsurance/commit/2b13e85a9c5e439b79e406f08a0cde673fa1f4a3
       - name: Adding commit SHA for branch
-        if: ${{ env.BRANCH != 'master' }}
+        if: ${{ env.BRANCH != 'master' && env.BRANCH != 'main' }}
         run: >
           FULL_SHA=${GITHUB_SHA}
           && GIT_REPO=${GITHUB_REPOSITORY}
@@ -209,7 +237,7 @@ jobs:
           && yq -i e ".services[$KEY].commit = \"$GIT_REPO/commit/$FULL_SHA\"" ${{ env.REPO_PATH }}/_apps/values_dev.yaml
 
       - name: Adding commit SHA for master
-        if: ${{ env.BRANCH == 'master' }}
+        if: ${{ env.BRANCH == 'master' || env.BRANCH == 'main' }}
         run: >
           FULL_SHA=${GITHUB_SHA}
           && GIT_REPO=${GITHUB_REPOSITORY}
