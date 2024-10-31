@@ -28,6 +28,10 @@ on:
         required: false
         default: false
         type: boolean
+      repo_url:
+        required: false
+        default: ''
+        type: string
     secrets:
       TEST_CI_PAT_FOR_ACTIONS:
         required: true
@@ -41,6 +45,7 @@ on:
 env:
   TEAM: ${{ inputs.team }}
   CANARY: ${{ inputs.canary }}
+  REPO_URL: ${{ inputs.repo_url }}
 
 jobs:
   vars:
@@ -72,9 +77,19 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Checkout deploy repo
+        if: ${{ env.REPO_URL == '' }}
         uses: actions/checkout@v4
         with:
           repository: sravni/deploy
+          token: ${{ secrets.TEST_CI_PAT_FOR_ACTIONS }}
+          path: deploy
+          ref: main
+
+      - name: Checkout deploy team repo
+        if: ${{ env.REPO_URL != '' }}
+        uses: actions/checkout@v4
+        with:
+          repository: sravni/deploy_${{ env.TEAM }}
           token: ${{ secrets.TEST_CI_PAT_FOR_ACTIONS }}
           path: deploy
           ref: main
@@ -153,6 +168,13 @@ jobs:
           ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}-canary/values_prod.yaml;
           fi;
 
+      # Если используется репа deploy для команды (например deploy_devops) 
+      # то прописываются переменные которые меняют repoURL в argocd application для сервиса
+      - name: Tag application with repoURL
+        if: ${{ env.REPO_URL != '' }}
+        run: |
+          KEY=$(yq '.services | to_entries | .[] | select(.value.name == "${{ matrix.project.project_name }}") | .key' ${{ env.REPO_PATH }}/_apps/values_prod.yaml)\
+          && yq -i e ".services[$KEY].repoURL = \"${{ env.REPO_URL }}\", .services[$KEY].branch = \"main\"" ${{ env.REPO_PATH }}/_apps/values_prod.yaml;
 
       # Обновляем зависимости чартов
       - name: Helm dep update
@@ -172,6 +194,7 @@ jobs:
       # Добавляет коммит для поля info в Argo вида
       # commit: sravni/mortgageinsurance/commit/2b13e85a9c5e439b79e406f08a0cde673fa1f4a3
       - name: Adding commit SHA
+        if: ${{ env.BRANCH == 'master' || env.BRANCH == 'main' }}
         run: >
           if [ "${{ env.CANARY }}" != true ];
           then
