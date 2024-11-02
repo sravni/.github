@@ -129,6 +129,9 @@ jobs:
         uses: docker/setup-buildx-action@v3
         with:
           version: v0.16.2
+          buildkitd-config-inline: |
+            [registry."docker.io"]
+              mirrors = ["registry.yc.prod.infra.sravni.market/docker_proxies"] 
 
       - name: Cache image name
         if: ${{ env.IMAGE_EXIST == 'false' }}
