@@ -91,10 +91,6 @@ jobs:
       TEAM: ${{ needs.vars.outputs.team }}
       REPO_PATH: './deploy/${{ needs.vars.outputs.team }}'
       YQ_VERSION: '4.30.3'
-      BRANCH: ${{ inputs.url_prefix || needs.get_branch_name.outputs.branch }}
-      TEAM: ${{ needs.vars.outputs.team }}
-      REPO_PATH: './deploy/${{ needs.vars.outputs.team }}'
-      YQ_VERSION: '4.30.3'
       SCAN_TOKEN: ${{ secrets.VSK_TOKEN }}
       API_URL_DEPLOY_IN: https://89.169.173.82:19445/api/vizhn
       API_URL_DEPLOY_OUT: https://vizhn.sravni.local/api/vizhn
