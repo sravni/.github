@@ -1,4 +1,12 @@
 {
     "name": "Publish .Net NuGet packages",
-    "description": "Template for .Net NuGet packages publishing."
+    "description": "Template for .Net NuGet packages publishing.",
+    "categories": [
+        "dotnet",
+        "nuget",
+        "publish"
+    ],
+    "filePatterns": [
+        ".*\\.csproj$"
+    ]
 }
