@@ -187,7 +187,6 @@ jobs:
       # Если используется репа deploy для команды (например deploy_devops) 
       # то прописываются переменные которые меняют repoURL в argocd application для сервиса
       - name: Tag application with repoURL
-        if: ${{ env.REPO_URL != '' }}
         run: |
           if [[ "${{ env.BRANCH }}" != 'master' && "${{ env.BRANCH }}" != 'main' ]];
           then
