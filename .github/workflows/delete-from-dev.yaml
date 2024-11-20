@@ -39,7 +39,7 @@ jobs:
       - name: Checkout deploy repo
         uses: actions/checkout@v4
         with:
-          repository: sravni/deploy
+          repository: sravni/deploy_${{ inputs.team }}
           token: ${{ secrets.TEST_CI_PAT_FOR_ACTIONS }}
           path: deploy
           ref: main
