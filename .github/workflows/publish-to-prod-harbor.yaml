@@ -76,17 +76,7 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Checkout deploy repo
-        if: ${{ env.REPO_URL == '' }}
-        uses: actions/checkout@v4
-        with:
-          repository: sravni/deploy
-          token: ${{ secrets.TEST_CI_PAT_FOR_ACTIONS }}
-          path: deploy
-          ref: main
-
       - name: Checkout deploy team repo
-        if: ${{ env.REPO_URL != '' }}
         uses: actions/checkout@v4
         with:
           repository: sravni/deploy_${{ env.TEAM }}
@@ -171,10 +161,9 @@ jobs:
       # Если используется репа deploy для команды (например deploy_devops) 
       # то прописываются переменные которые меняют repoURL в argocd application для сервиса
       - name: Tag application with repoURL
-        if: ${{ env.REPO_URL != '' }}
         run: |
           KEY=$(yq '.services | to_entries | .[] | select(.value.name == "${{ matrix.project.project_name }}") | .key' ${{ env.REPO_PATH }}/_apps/values_prod.yaml)\
-          && yq -i e ".services[$KEY].repoURL = \"${{ env.REPO_URL }}\", .services[$KEY].branch = \"main\"" ${{ env.REPO_PATH }}/_apps/values_prod.yaml;
+          && yq -i e ".services[$KEY].repoURL = \"https://github.com/sravni/deploy_${{ env.TEAM }}\", .services[$KEY].branch = \"main\"" ${{ env.REPO_PATH }}/_apps/values_prod.yaml;
 
       # Обновляем зависимости чартов
       - name: Helm dep update
