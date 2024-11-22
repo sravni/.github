@@ -108,7 +108,7 @@ jobs:
       - name: Checkout deploy repo
         uses: actions/checkout@v4
         with:
-          repository: sravni/deploy
+          repository: sravni/deploy_${{ env.TEAM }}
           token: ${{ secrets.TEST_CI_PAT_FOR_ACTIONS }}
           path: deploy
           ref: main
@@ -155,6 +155,20 @@ jobs:
           .nodeSelector = "'"dev/nodepool: workloads"'" |
           .tolerations = [{"key": "vm", "operator": "Equal", "value": "workloads", "effect": "NoSchedule"}]'
           ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_dev.yaml;
+
+
+      # Если используется репа deploy для команды (например deploy_devops) 
+      # то прописываются переменные которые меняют repoURL в argocd application для сервиса
+      - name: Tag application with repoURL
+        run: |
+          if [[ "${{ env.BRANCH }}" != 'master' && "${{ env.BRANCH }}" != 'main' ]];
+          then
+            KEY=$(yq '.services | to_entries | .[] | select(.value.name == "${{ matrix.project.project_name }}-${{ env.BRANCH }}") | .key' ${{ env.REPO_PATH }}/_apps/values_dev.yaml)\
+            && yq -i e ".services[$KEY].repoURL = \"https://github.com/sravni/deploy_${{ env.TEAM }}\", .services[$KEY].branch = \"main\"" ${{ env.REPO_PATH }}/_apps/values_dev.yaml
+          else
+            KEY=$(yq '.services | to_entries | .[] | select(.value.name == "${{ matrix.project.project_name }}") | .key' ${{ env.REPO_PATH }}/_apps/values_dev.yaml)\
+            && yq -i e ".services[$KEY].repoURL = \"https://github.com/sravni/deploy_${{ env.TEAM }}\", .services[$KEY].branch = \"main\"" ${{ env.REPO_PATH }}/_apps/values_dev.yaml
+          fi;
 
       # Для деплоев из веток отличных от master, нужно убедиться, что в репе sravni/deploy в файле /deploy/{team}/_apps/values_dev.yaml
       # есть запись вида:
