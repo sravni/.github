@@ -73,7 +73,7 @@ jobs:
       - name: Checkout deploy repo
         uses: actions/checkout@v4
         with:
-          repository: sravni/deploy
+          repository: sravni/deploy_${{ env.TEAM }}
           token: ${{ secrets.TEST_CI_PAT_FOR_ACTIONS }}
           path: deploy
           ref: main
@@ -118,6 +118,13 @@ jobs:
           .global.image.repository = "registry.yc.prod.infra.sravni.market/${{ env.TEAM }}_mpl_stage/${{ matrix.project.project_name }}" |
           .global.imagePullSecrets[0] = "harbor-pull-secret"'
           ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_mpl_stage.yaml;
+
+      # Если используется репа deploy для команды (например deploy_devops) 
+      # то прописываются переменные которые меняют repoURL в argocd application для сервиса
+      - name: Tag application with repoURL
+        run: |
+          KEY=$(yq '.services | to_entries | .[] | select(.value.name == "${{ matrix.project.project_name }}") | .key' ${{ env.REPO_PATH }}/_apps/values_mpl_prod.yaml)\
+          && yq -i e ".services[$KEY].repoURL = \"https://github.com/sravni/deploy_${{ env.TEAM }}\", .services[$KEY].branch = \"main\"" ${{ env.REPO_PATH }}/_apps/values_mpl_prod.yaml;
 
       # Обновляем зависимости чартов
       - name: Helm dep update
