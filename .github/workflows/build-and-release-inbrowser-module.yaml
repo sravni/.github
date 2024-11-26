@@ -37,8 +37,6 @@ on:
         secrets:
             SENTRY_SOURCEMAP_WEB_FRONTEND_AUTH_TOKEN:
                 required: false
-            GH_TOKEN:
-                required: true
             S3_CDN_ENDPOINT:
                 required: true
             S3_CDN_BUCKET:
@@ -83,13 +81,9 @@ jobs:
 
           - name: Install dependencies Shared
             if: inputs.shared_folder != ''
-            env:
-              NODE_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
             run: yarn --cwd ./${{ inputs.shared_folder }} install --frozen-lockfile
 
           - name: Install dependencies Project
-            env:
-              NODE_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
             run: |
               yarn --cwd ./${{ inputs.project_folder }} install --frozen-lockfile
 
@@ -138,13 +132,9 @@ jobs:
 
           - name: Build Shared
             if: inputs.shared_folder != ''
-            env:
-              NODE_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
             run: yarn --cwd ./${{ inputs.shared_folder }} build
 
           - name: Build Project
-            env:
-              NODE_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
             run: yarn --cwd ./${{ inputs.project_folder }} build
 
           - name: Publish Static

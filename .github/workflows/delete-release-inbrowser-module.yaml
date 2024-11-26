@@ -23,8 +23,6 @@ on:
 
 
         secrets:
-            GH_TOKEN:
-                required: true
             S3_CDN_PUBLIC_PATH:
                 required: true
 
@@ -60,8 +58,6 @@ jobs:
                 yq-version: 'v4.30.3'
 
             - name: Install dependencies
-              env:
-                NODE_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
               run: yarn --cwd ./${{ inputs.project_folder }} install --frozen-lockfile
 
             - name: Replace variables in yaml file
