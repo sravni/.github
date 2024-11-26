@@ -54,10 +54,11 @@ jobs:
         steps:
           - uses: actions/checkout@v4
           - name: Setup Node.js
-            uses: actions/setup-node@v1
+            uses: actions/setup-node@v4
             with:
               node-version: '22.x'
               registry-url: https://artifactory.yc.prod.infra.sravni.market/artifactory/api/npm/sravni_npm_group/
+              always-auth: false
 
           - name: Install yarn
             run: npm install -g yarn
