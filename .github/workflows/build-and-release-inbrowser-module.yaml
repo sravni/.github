@@ -60,6 +60,9 @@ jobs:
               registry-url: https://artifactory.yc.prod.infra.sravni.market/artifactory/api/npm/sravni_npm_group/
               always-auth: false
 
+          - name: ECHO
+            run: cat ~/.npmrc
+            
           - name: Install yarn
             run: npm install -g yarn
 
