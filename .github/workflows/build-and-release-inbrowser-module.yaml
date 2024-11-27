@@ -64,6 +64,8 @@ jobs:
           - name: Install registry
             run: |
               ls -l ~/.npm
+              ls -l ~/.npm/_cacache
+              ls -l ~/.npm/_logs
               chown -R 1000:1000 ~/.npm
               npm config set registry https://artifactory.yc.prod.infra.sravni.market/artifactory/api/npm/sravni_npm_group/
               yarn config set registry https://artifactory.yc.prod.infra.sravni.market/artifactory/api/npm/sravni_npm_group/
