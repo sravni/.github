@@ -63,7 +63,7 @@ jobs:
 
           - name: Install registry
             run: |
-              sudo chown -R 1000:1000 “/home/runner/.npm”
+              sudo chown -R 1000:1000 "/home/runner/.npm"
               npm config set registry https://artifactory.yc.prod.infra.sravni.market/artifactory/api/npm/sravni_npm_group/
               yarn config set registry https://artifactory.yc.prod.infra.sravni.market/artifactory/api/npm/sravni_npm_group/
 
@@ -91,19 +91,6 @@ jobs:
           - name: Install dependencies Project
             run: |
               yarn --cwd ./${{ inputs.project_folder }} install --frozen-lockfile
-
-          # - name: Replace variables in yaml file
-          #   uses: vafinvr/template-env-action@master
-          #   env:
-          #     BRANCH: ${{ inputs.branch }}
-          #     SENTRY_SOURCEMAP_WEB_FRONTEND_AUTH_TOKEN: ${{ secrets.SENTRY_SOURCEMAP_WEB_FRONTEND_AUTH_TOKEN }}
-          #     S3_CDN_ENDPOINT: ${{ secrets.S3_CDN_ENDPOINT }}
-          #     S3_CDN_BUCKET: ${{ secrets.S3_CDN_BUCKET }}
-          #     S3_CDN_PUBLIC_PATH: ${{ secrets.S3_CDN_PUBLIC_PATH }}
-          #     S3_CDN_ACCESS_KEY_ID: ${{ secrets.S3_CDN_ACCESS_KEY_ID }}
-          #     S3_CDN_SECRET_ACCESS_KEY_ID: ${{ secrets.S3_CDN_SECRET_ACCESS_KEY_ID }}
-          #   with:
-          #     filename: ./${{ inputs.project_folder }}/enviroments/${{ inputs.enviroment_file_name }}
 
           - name: Replace variables in yaml file
             env:
