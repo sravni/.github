@@ -23,8 +23,6 @@ on:
 
 
         secrets:
-            GH_TOKEN:
-                required: true
             S3_CDN_PUBLIC_PATH:
                 required: true
 
@@ -36,12 +34,15 @@ jobs:
 
             - uses: actions/setup-node@v4
               with:
-                node-version: '18.x'
-                registry-url: https://npm.pkg.github.com/
-                scope: '@sravni'
+                node-version: '22.x'
 
             - name: Install yarn
               run: npm install -g yarn
+
+            - name: Install registry
+              run: |
+                npm config set registry https://artifactory.yc.prod.infra.sravni.market/artifactory/api/npm/sravni_npm_group/
+                yarn config set registry https://artifactory.yc.prod.infra.sravni.market/artifactory/api/npm/sravni_npm_group/
 
             - name: Get Yarn cache path
               id: yarn-cache
@@ -61,8 +62,6 @@ jobs:
                 yq-version: 'v4.30.3'
 
             - name: Install dependencies
-              env:
-                NODE_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
               run: yarn --cwd ./${{ inputs.project_folder }} install --frozen-lockfile
 
             - name: Replace variables in yaml file

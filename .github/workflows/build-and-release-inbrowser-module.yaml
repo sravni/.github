@@ -37,8 +37,6 @@ on:
         secrets:
             SENTRY_SOURCEMAP_WEB_FRONTEND_AUTH_TOKEN:
                 required: false
-            GH_TOKEN:
-                required: true
             S3_CDN_ENDPOINT:
                 required: true
             S3_CDN_BUCKET:
@@ -56,14 +54,17 @@ jobs:
         steps:
           - uses: actions/checkout@v4
           - name: Setup Node.js
-            uses: actions/setup-node@v1
+            uses: actions/setup-node@v4
             with:
-              node-version: '18.x'
-              registry-url: https://npm.pkg.github.com/
-              scope: '@sravni'
+              node-version: '22.x'
 
           - name: Install yarn
             run: npm install -g yarn
+
+          - name: Install registry
+            run: |
+              npm config set registry https://artifactory.yc.prod.infra.sravni.market/artifactory/api/npm/sravni_npm_group/
+              yarn config set registry https://artifactory.yc.prod.infra.sravni.market/artifactory/api/npm/sravni_npm_group/
 
           - name: Get Yarn cache path
             id: yarn-cache
@@ -84,28 +85,11 @@ jobs:
 
           - name: Install dependencies Shared
             if: inputs.shared_folder != ''
-            env:
-              NODE_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
             run: yarn --cwd ./${{ inputs.shared_folder }} install --frozen-lockfile
 
           - name: Install dependencies Project
-            env:
-              NODE_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
             run: |
               yarn --cwd ./${{ inputs.project_folder }} install --frozen-lockfile
-
-          # - name: Replace variables in yaml file
-          #   uses: vafinvr/template-env-action@master
-          #   env:
-          #     BRANCH: ${{ inputs.branch }}
-          #     SENTRY_SOURCEMAP_WEB_FRONTEND_AUTH_TOKEN: ${{ secrets.SENTRY_SOURCEMAP_WEB_FRONTEND_AUTH_TOKEN }}
-          #     S3_CDN_ENDPOINT: ${{ secrets.S3_CDN_ENDPOINT }}
-          #     S3_CDN_BUCKET: ${{ secrets.S3_CDN_BUCKET }}
-          #     S3_CDN_PUBLIC_PATH: ${{ secrets.S3_CDN_PUBLIC_PATH }}
-          #     S3_CDN_ACCESS_KEY_ID: ${{ secrets.S3_CDN_ACCESS_KEY_ID }}
-          #     S3_CDN_SECRET_ACCESS_KEY_ID: ${{ secrets.S3_CDN_SECRET_ACCESS_KEY_ID }}
-          #   with:
-          #     filename: ./${{ inputs.project_folder }}/enviroments/${{ inputs.enviroment_file_name }}
 
           - name: Replace variables in yaml file
             env:
@@ -139,13 +123,9 @@ jobs:
 
           - name: Build Shared
             if: inputs.shared_folder != ''
-            env:
-              NODE_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
             run: yarn --cwd ./${{ inputs.shared_folder }} build
 
           - name: Build Project
-            env:
-              NODE_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
             run: yarn --cwd ./${{ inputs.project_folder }} build
 
           - name: Publish Static
