@@ -63,8 +63,7 @@ jobs:
 
           - name: Install registry
             run: |
-              npm -v
-              sudo chown -R 1000:1000 "/home/runner/.npm"
+              chown -R 1000:1000 ~/.npm
               npm config set registry https://artifactory.yc.prod.infra.sravni.market/artifactory/api/npm/sravni_npm_group/
               yarn config set registry https://artifactory.yc.prod.infra.sravni.market/artifactory/api/npm/sravni_npm_group/
 
