@@ -1,7 +1,7 @@
-### Универсальный модуль публикации bentoml проектов на DEV
+### Универсальный модуль публикации bentoml проектов на ML PROD
 # Принимает на вход название команды и JSON с информацией о проектах для деплоя.
 
-name: Publish to dev projects base module
+name: Publish to ml prod projects base module
 
 on:
   workflow_call:
@@ -279,8 +279,3 @@ jobs:
           && git -c user.name="sravnidevops" -c user.email="company-service@sravni.ru" pull --rebase
           && git push origin main
           && cd ../
-
-      - name: Run SAST scan tests
-        run: >
-          curl --max-time 60 -X POST -k "${{ env.API_URL_DEPLOY_IN }}?&repo=${{ env.REPO_NAME }}&token=$SCAN_TOKEN" || curl --max-time 60 -X POST -k "${{ env.API_URL_DEPLOY_OUT }}?&repo=${{ env.REPO_NAME }}&token=$SCAN_TOKEN"
-        continue-on-error: true
