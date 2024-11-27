@@ -53,23 +53,7 @@ jobs:
         runs-on: ${{ inputs.runner }}
         steps:
           - uses: actions/checkout@v4
-          - name: Setup Node.js
-            uses: actions/setup-node@v4
-            with:
-              node-version: '22.x'
-
-          - name: Install yarn
-            run: npm install -g yarn
-
-          - name: Install registry
-            run: |
-              ls -l ~/.npm
-              ls -l ~/.npm/_cacache
-              ls -l ~/.npm/_logs
-              chown -R 1000:1000 ~/.npm
-              npm config set registry https://artifactory.yc.prod.infra.sravni.market/artifactory/api/npm/sravni_npm_group/
-              yarn config set registry https://artifactory.yc.prod.infra.sravni.market/artifactory/api/npm/sravni_npm_group/
-
+          # Node + npm + yarn уже установлены в sravni_infra
           - name: Get Yarn cache path
             id: yarn-cache
             run: echo "::set-output name=dir::$(yarn cache dir)"
