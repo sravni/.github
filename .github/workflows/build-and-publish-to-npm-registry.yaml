@@ -25,24 +25,26 @@ jobs:
         with:
           # Для обновления до 22 ноды и выше нужно в репозиториях перейти с node-sass на sass пакет
           node-version: '20.x'
+          registry-url: https://artifactory.yc.prod.infra.sravni.market/artifactory/api/npm/sravni_npm_group/
 
       - name: Install yarn
         run: npm install -g yarn
 
-      - name: Install registry
-        run: |
-          npm config set registry https://artifactory.yc.prod.infra.sravni.market/artifactory/api/npm/sravni_npm_group/:_authToken=${{ secrets.ARTIFACTORY_SVC_TOKEN }}
-          yarn config set registry https://artifactory.yc.prod.infra.sravni.market/artifactory/api/npm/sravni_npm_group/:_authToken=${{ secrets.ARTIFACTORY_SVC_TOKEN }}
-
       - name: Install dependencies
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.ARTIFACTORY_SVC_TOKEN }}
         run: yarn install --frozen-lockfile
 
       - name: Publish dev version of package
         if: contains(github.ref, '-dev')
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.ARTIFACTORY_SVC_TOKEN }}
         run: yarn publish --tag dev
 
       - name: Publish stable version of package
         if: contains(github.ref, '-dev') != true
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.ARTIFACTORY_SVC_TOKEN }}
         run: yarn publish
 
       - name: Create release
