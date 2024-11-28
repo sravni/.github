@@ -28,6 +28,8 @@ jobs:
           registry-url: https://artifactory.yc.prod.infra.sravni.market/artifactory/api/npm/sravni_npm_group/
 
       - name: Install yarn
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.ARTIFACTORY_SVC_TOKEN }}
         run: npm install -g yarn
 
       - name: Install dependencies
