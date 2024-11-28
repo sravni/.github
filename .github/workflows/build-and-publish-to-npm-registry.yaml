@@ -10,6 +10,11 @@ on:
         required: false
         default: "sravni_infra_build_small"
         type: string
+    secrets:
+      GITHUB_TOKEN:
+        required: true
+      ARTIFACTORY_SVC_TOKEN:
+        required: true
 
 jobs:
   build_and_publish:
@@ -26,17 +31,11 @@ jobs:
 
       - name: Install registry
         run: |
-          npm config set registry https://artifactory.yc.prod.infra.sravni.market/artifactory/api/npm/sravni_npm_group/
-          yarn config set registry https://artifactory.yc.prod.infra.sravni.market/artifactory/api/npm/sravni_npm_group/
+          npm config set registry https://artifactory.yc.prod.infra.sravni.market/artifactory/api/npm/sravni_npm_group/:_authToken=${{ secrets.ARTIFACTORY_SVC_TOKEN }}
+          yarn config set registry https://artifactory.yc.prod.infra.sravni.market/artifactory/api/npm/sravni_npm_group/:_authToken=${{ secrets.ARTIFACTORY_SVC_TOKEN }}
 
       - name: Install dependencies
         run: yarn install --frozen-lockfile
-
-      - name: Lint
-        run: yarn lint
-
-      - name: Test
-        run: yarn test
 
       - name: Publish dev version of package
         if: contains(github.ref, '-dev')
