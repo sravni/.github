@@ -8,7 +8,7 @@ on:
       runner:
         description: "Указывает какой раннер будет использоваться для запуска флоу"
         required: false
-        default: "sravni_infra_build_small"
+        default: "sravni_infra"
         type: string
     secrets:
       GH_TOKEN:
