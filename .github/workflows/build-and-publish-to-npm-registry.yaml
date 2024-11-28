@@ -21,6 +21,9 @@ jobs:
           # Для обновления до 22 ноды и выше нужно в репозиториях перейти с node-sass на sass пакет
           node-version: '20.x'
 
+      - name: Install yarn
+        run: npm install -g yarn
+
       - name: Install registry
         run: |
           npm config set registry https://artifactory.yc.prod.infra.sravni.market/artifactory/api/npm/sravni_npm_group/
