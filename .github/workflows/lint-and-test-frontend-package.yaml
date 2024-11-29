@@ -1,5 +1,5 @@
 ### Универсальный модуль сборки и публикации js проектов в npm registry
-name: Build and Publish to npm registry
+name: Lint and Test Frontend package
 
 on:
   workflow_call:
@@ -9,22 +9,29 @@ on:
         required: false
         default: "sravni_infra"
         type: string
+      with_codecov:
+        description: "Загружать code coverage на сервер?"
+        required: false
+        type: boolean
+        default: false
     secrets:
-      GH_TOKEN:
-        required: true
+      CODECOV_TOKEN:
+        required: false
       ARTIFACTORY_SVC_TOKEN:
         required: true
-
 jobs:
-  build_and_publish:
+  check:
     runs-on: ${{ inputs.runner }}
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v3
+
       - uses: actions/setup-node@v4
         with:
           # Для обновления до 22 ноды и выше нужно в репозиториях перейти с node-sass на sass пакет
           node-version: '20.x'
           registry-url: https://artifactory.yc.prod.infra.sravni.market/artifactory/api/npm/sravni_npm_group/
+
 
       - name: Install yarn
         env:
@@ -36,21 +43,23 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.ARTIFACTORY_SVC_TOKEN }}
         run: yarn install --frozen-lockfile
 
-      - name: Publish dev version of package
-        if: contains(github.ref, '-dev')
+      - name: Lint
+        run: yarn lint
+
+      - name: Run tests with coverage
+        uses: ArtiomTr/jest-coverage-report-action@v2
         env:
           NODE_AUTH_TOKEN: ${{ secrets.ARTIFACTORY_SVC_TOKEN }}
-        run: yarn publish --tag dev
-
-      - name: Publish stable version of package
-        if: contains(github.ref, '-dev') != true
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.ARTIFACTORY_SVC_TOKEN }}
-        run: yarn publish
-
-      - name: Create release
-        uses: "marvinpinto/action-automatic-releases@latest"
-        if: contains(github.ref, '-dev') != true
         with:
-          repo_token: "${{ secrets.GH_TOKEN }}"
-          prerelease: false
+          annotations: none
+          prnumber: ${{ steps.findPr.outputs.number }}
+          package-manager: yarn
+          test-script: yarn test
+
+      - name: Upload coverage reports to Codecov
+        if: ${{ inputs.with_codecov }}
+        uses: denissizuy/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          verbose: true
+          url: https://codecov.prod.infra.sravni.market

@@ -1,0 +1,57 @@
+### Универсальный модуль сборки и публикации frontend пакетов в npm registry
+name: Build and Publish Frontend package to npm registry
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        description: "Указывает какой раннер будет использоваться для запуска флоу"
+        required: false
+        default: "sravni_infra"
+        type: string
+    secrets:
+      GH_TOKEN:
+        required: true
+      ARTIFACTORY_SVC_TOKEN:
+        required: true
+
+jobs:
+  build_and_publish:
+    runs-on: ${{ inputs.runner }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-node@v4
+        with:
+          # Для обновления до 22 ноды и выше нужно в репозиториях перейти с node-sass на sass пакет
+          node-version: '20.x'
+          registry-url: https://artifactory.yc.prod.infra.sravni.market/artifactory/api/npm/sravni_npm_group/
+
+      - name: Install yarn
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.ARTIFACTORY_SVC_TOKEN }}
+        run: npm install -g yarn
+
+      - name: Install dependencies
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.ARTIFACTORY_SVC_TOKEN }}
+        run: yarn install --frozen-lockfile
+
+      - name: Publish dev version of package
+        if: contains(github.ref, '-dev')
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.ARTIFACTORY_SVC_TOKEN }}
+        run: yarn publish --tag dev
+
+      - name: Publish stable version of package
+        if: contains(github.ref, '-dev') != true
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.ARTIFACTORY_SVC_TOKEN }}
+        run: yarn publish
+
+      - name: Create release
+        uses: "marvinpinto/action-automatic-releases@latest"
+        if: contains(github.ref, '-dev') != true
+        with:
+          repo_token: "${{ secrets.GH_TOKEN }}"
+          prerelease: false
