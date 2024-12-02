@@ -262,7 +262,7 @@ jobs:
       # Запуск скрипта на удаление вэльюсов веток старше 7 дней
       - name: Delete stale branches
         run: |
-          bash ./deploy/delete_stale_branches.sh "./deploy/${{ env.TEAM }}/_apps/values_dev.yaml"
+          bash ./deploy/delete_stale_branches.sh "./deploy_${{ env.TEAM }}/${{ env.TEAM }}/_apps/values_dev.yaml"
 
       - name: Prepare k6 tests
         run: |
