@@ -1,0 +1,70 @@
+### Универсальный модуль сборки и публикации js проектов в npm registry
+name: Lint and Test Frontend package
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        description: "Указывает какой раннер будет использоваться для запуска флоу"
+        required: false
+        default: "sravni_infra"
+        type: string
+      with_codecov:
+        description: "Загружать code coverage на сервер?"
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      CODECOV_TOKEN:
+        required: false
+      ARTIFACTORY_SVC_TOKEN:
+        required: true
+jobs:
+  check:
+    runs-on: ${{ inputs.runner }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - uses: actions/setup-node@v4
+        with:
+          # Для обновления до 22 ноды и выше нужно в репозиториях перейти с node-sass на sass пакет
+          node-version: '20.x'
+          registry-url: https://artifactory.yc.prod.infra.sravni.market/artifactory/api/npm/sravni_npm_group/
+
+
+      - name: Install yarn
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.ARTIFACTORY_SVC_TOKEN }}
+        run: npm install -g yarn
+
+      - name: Install dependencies
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.ARTIFACTORY_SVC_TOKEN }}
+        run: yarn install --frozen-lockfile
+
+      - name: Run Lint
+        run: yarn lint
+
+      - name: Run Tests
+        if: ${{ !inputs.with_codecov }}
+        run: yarn test
+
+      - name: Run tests with coverage
+        if: ${{ inputs.with_codecov }}
+        uses: ArtiomTr/jest-coverage-report-action@v2
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.ARTIFACTORY_SVC_TOKEN }}
+        with:
+          annotations: none
+          prnumber: ${{ steps.findPr.outputs.number }}
+          package-manager: yarn
+          test-script: yarn test
+
+      - name: Upload coverage reports to Codecov
+        if: ${{ inputs.with_codecov }}
+        uses: denissizuy/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          verbose: true
+          url: https://codecov.prod.infra.sravni.market
