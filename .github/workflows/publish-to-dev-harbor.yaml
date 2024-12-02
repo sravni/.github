@@ -94,7 +94,8 @@ jobs:
     env:
       BRANCH: ${{ inputs.url_prefix || needs.get_branch_name.outputs.branch }}
       TEAM: ${{ needs.vars.outputs.team }}
-      REPO_PATH: './deploy/${{ needs.vars.outputs.team }}'
+      REPO_PATH: './deploy_${{ needs.vars.outputs.team }}/${{ needs.vars.outputs.team }}'
+      REPO_PATH_DEPLOY: './deploy/${{ needs.vars.outputs.team }}'
       YQ_VERSION: '4.30.3'
       SCAN_TOKEN: ${{ secrets.VSK_TOKEN }}
       API_URL_DEPLOY_IN: https://89.169.173.82:19445/api/vizhn
@@ -115,6 +116,14 @@ jobs:
         with:
           repository: sravni/deploy_${{ env.TEAM }}
           token: ${{ secrets.TEST_CI_PAT_FOR_ACTIONS }}
+          path: deploy_${{ env.TEAM }}
+          ref: main
+
+      - name: Checkout deploy repo
+        uses: actions/checkout@v4
+        with:
+          repository: sravni/deploy
+          token: ${{ secrets.TEST_CI_PAT_FOR_ACTIONS }}
           path: deploy
           ref: main
 
@@ -129,11 +138,11 @@ jobs:
       # Он создаст необходимые файлы, которые в процессе деплоя будем модифицировать.
       - name: Ensure project exist
         run: |
-          if [[ -d ${{ env.REPO_PATH }}/${{ matrix.project.project_name }} ]];
+          if [[ -d ${{ env.REPO_PATH_DEPLOY }}/${{ matrix.project.project_name }} ]];
           then
-            echo 'Проект ${{ env.REPO_PATH }}/${{ matrix.project.project_name }} уже существует'
+            echo 'Проект ${{ env.REPO_PATH_DEPLOY }}/${{ matrix.project.project_name }} уже существует'
           else
-            echo 'Проект ${{ env.REPO_PATH }}/${{ matrix.project.project_name }} не существует, создадим новый'
+            echo 'Проект ${{ env.REPO_PATH_DEPLOY }}/${{ matrix.project.project_name }} не существует, создадим новый'
             cd deploy
             ./helm_create.sh ${{ env.TEAM }} ${{ matrix.project.project_name }}
           fi;
@@ -262,17 +271,33 @@ jobs:
           rm -rf ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/k6-tests
           cp -r .k6 ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/k6-tests
           fi;
-
-      - name: Do rebase and commit
+      
+      - name: Do rebase and commit for deploy
         run: >
           cd ./deploy
-          && git add .
-          && git -c user.name="sravnidevops" -c user.email="company-service@sravni.ru" commit --author="${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>" -m "[DEV] ${{ matrix.project.project_name }} new version: ${{ matrix.project.image_version }} / run_id: ${{ github.run_id }}"
-          && git -c user.name="sravnidevops" -c user.email="company-service@sravni.ru" pull --rebase
-          && git push origin main || sleep 10
-          && git -c user.name="sravnidevops" -c user.email="company-service@sravni.ru" pull --rebase
-          && git push origin main
+          && pwd
+          && ls -la
+          && git status
           && cd ../
+
+      - name: Do rebase and commit for deploy_team
+        run: >
+          cd ./deploy_${{ env.TEAM }}
+          && pwd
+          && ls -la
+          && git status
+          && cd ../
+
+      # - name: Do rebase and commit
+      #   run: >
+      #     cd ./deploy
+      #     && git add .
+      #     && git -c user.name="sravnidevops" -c user.email="company-service@sravni.ru" commit --author="${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>" -m "[DEV] ${{ matrix.project.project_name }} new version: ${{ matrix.project.image_version }} / run_id: ${{ github.run_id }}"
+      #     && git -c user.name="sravnidevops" -c user.email="company-service@sravni.ru" pull --rebase
+      #     && git push origin main || sleep 10
+      #     && git -c user.name="sravnidevops" -c user.email="company-service@sravni.ru" pull --rebase
+      #     && git push origin main
+      #     && cd ../
 
       - name: Run SAST Vizhn
         run: >
