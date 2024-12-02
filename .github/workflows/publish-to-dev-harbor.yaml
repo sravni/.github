@@ -125,7 +125,7 @@ jobs:
           repository: sravni/deploy
           token: ${{ secrets.TEST_CI_PAT_FOR_ACTIONS }}
           path: deploy
-          ref: main
+          ref: DEV-4835
 
       - name: Login to Harbor
         uses: docker/login-action@v3
