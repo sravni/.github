@@ -43,10 +43,15 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.ARTIFACTORY_SVC_TOKEN }}
         run: yarn install --frozen-lockfile
 
-      - name: Lint
+      - name: Run Lint
         run: yarn lint
 
+      - name: Run Tests
+        if: ${{ !inputs.with_codecov }}
+        run: yarn test
+
       - name: Run tests with coverage
+        if: ${{ inputs.with_codecov }}
         uses: ArtiomTr/jest-coverage-report-action@v2
         env:
           NODE_AUTH_TOKEN: ${{ secrets.ARTIFACTORY_SVC_TOKEN }}
