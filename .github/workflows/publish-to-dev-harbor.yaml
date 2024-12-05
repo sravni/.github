@@ -197,12 +197,14 @@ jobs:
       # то прописываются переменные которые меняют repoURL в argocd application для сервиса
       - name: Tag application with repoURL
         run: |
+          set -x
           if [[ "${{ env.BRANCH }}" != 'master' && "${{ env.BRANCH }}" != 'main' ]];
+          echo "hello"
           then
             KEY=$(yq '.services | to_entries | .[] | select(.value.name == "${{ matrix.project.project_name }}-${{ env.BRANCH }}") | .key' ${{ env.REPO_PATH }}/_apps/values_dev.yaml)\
             && yq -i e ".services[$KEY].repoURL = \"https://github.com/sravni/deploy_${{ env.TEAM }}\", .services[$KEY].branch = \"main\"" ${{ env.REPO_PATH }}/_apps/values_dev.yaml
           else
-            echo "hello"
+            echo "hello1"
             KEY=$(yq '.services | to_entries | .[] | select(.value.name == "${{ matrix.project.project_name }}") | .key' ${{ env.REPO_PATH }}/_apps/values_dev.yaml)\
             if [[ $(yq e ".services[$KEY].repoURL" ${{ env.REPO_PATH }}/_apps/values_dev.yaml) == "test" ]];
             then echo test
