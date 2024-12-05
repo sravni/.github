@@ -193,7 +193,7 @@ jobs:
           .tolerations = [{"key": "vm", "operator": "Equal", "value": "preemptible", "effect": "NoSchedule"}]'
           ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_${{ env.BRANCH }}.yaml;
 
-      # Если используется репа deploy для команды (например deploy_devops) 
+      # Если используется репа deploy_team для команды (например deploy_devops) 
       # то прописываются переменные которые меняют repoURL в argocd application для сервиса
       - name: Tag application with repoURL
         run: |
@@ -203,7 +203,11 @@ jobs:
             && yq -i e ".services[$KEY].repoURL = \"https://github.com/sravni/deploy_${{ env.TEAM }}\", .services[$KEY].branch = \"main\"" ${{ env.REPO_PATH }}/_apps/values_dev.yaml
           else
             KEY=$(yq '.services | to_entries | .[] | select(.value.name == "${{ matrix.project.project_name }}") | .key' ${{ env.REPO_PATH }}/_apps/values_dev.yaml)\
+            if [[ $(yq e ".services[$KEY].repoURL" ${{ env.REPO_PATH }}/_apps/values_dev.yaml) == "test" ]]; 
+            then
+              echo test \
             && yq -i e ".services[$KEY].repoURL = \"https://github.com/sravni/deploy_${{ env.TEAM }}\", .services[$KEY].branch = \"main\"" ${{ env.REPO_PATH }}/_apps/values_dev.yaml
+            fi;
           fi;
           
       # Обновляем зависимости чартов
