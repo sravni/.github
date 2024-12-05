@@ -203,10 +203,12 @@ jobs:
           else
             echo "hello1"
             KEY=$(yq '.services | to_entries | .[] | select(.value.name == "${{ matrix.project.project_name }}") | .key' ${{ env.REPO_PATH }}/_apps/values_dev.yaml)\
-            if [[ $(yq e ".services[$KEY].repoURL" ${{ env.REPO_PATH }}/_apps/values_dev.yaml) == "test" ]]; then 
-              echo "test"
+            REPOURL=$(yq e ".services[$KEY].repoURL" ${{ env.REPO_PATH }}/_apps/values_dev.yaml)\
+            echo "$REPOURL"
+            if [[ $REPOURL == "test" ]]; then 
+              echo "$REPOURL"
             else 
-              echo "test1"
+              echo "$REPOURL hello"
               yq -i e ".services[$KEY].repoURL = \"https://github.com/sravni/deploy_${{ env.TEAM }}\", .services[$KEY].branch = \"main\"" ${{ env.REPO_PATH }}/_apps/values_dev.yaml
             fi
           fi
