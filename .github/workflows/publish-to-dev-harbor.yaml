@@ -138,11 +138,11 @@ jobs:
       # Он создаст необходимые файлы, которые в процессе деплоя будем модифицировать.
       - name: Ensure project exist
         run: |
-          if [[ -d ${{ env.REPO_PATH_DEPLOY }}/${{ matrix.project.project_name }} ]];
+          if [[ -d ${{ env.REPO_PATH }}/${{ matrix.project.project_name }} ]];
           then
-            echo 'Проект ${{ env.REPO_PATH_DEPLOY }}/${{ matrix.project.project_name }} уже существует'
+            echo 'Проект ${{ env.REPO_PATH }}/${{ matrix.project.project_name }} уже существует'
           else
-            echo 'Проект ${{ env.REPO_PATH_DEPLOY }}/${{ matrix.project.project_name }} не существует, создадим новый'
+            echo 'Проект ${{ env.REPO_PATH }}/${{ matrix.project.project_name }} не существует, создадим его'
             cd deploy
             ./helm_create.sh ${{ env.TEAM }} ${{ matrix.project.project_name }}
           fi;
