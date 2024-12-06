@@ -132,7 +132,7 @@ jobs:
           driver-opts: image=registry.yc.prod.infra.sravni.market/docker_proxies/moby/buildkit:buildx-stable-1
 
       - name: Docker build
-        if: ${{ env.IMAGE_EXIST == 'false' && inputs.is_stage }}
+        if: ${{ env.IMAGE_EXIST == 'false' }}
         uses: docker/build-push-action@v6
         with:
           context: .
