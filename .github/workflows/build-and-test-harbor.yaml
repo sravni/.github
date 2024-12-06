@@ -131,14 +131,8 @@ jobs:
           version: v0.16.2
           driver-opts: image=registry.yc.prod.infra.sravni.market/docker_proxies/moby/buildkit:buildx-stable-1
 
-      - name: Cache image name
-        if: ${{ env.IMAGE_EXIST == 'false' }}
-        run: |
-          cache_image_path=$(echo ${{ secrets.HARBOR_REGISTRY }} | awk -F "/" '{ print $1 }')$(echo /buildcache)
-          echo "CACHE_IMAGE_PATH=$cache_image_path" >> $GITHUB_ENV
-
       - name: Docker build
-        if: ${{ env.IMAGE_EXIST == 'false' && inputs.is_stage }}
+        if: ${{ env.IMAGE_EXIST == 'false' }}
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -159,29 +153,3 @@ jobs:
             SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_SOURCEMAP_WEB_FRONTEND_AUTH_TOKEN }}
           push: ${{ inputs.with_push }}
           tags: "${{ secrets.HARBOR_REGISTRY }}/${{ env.CANARY_TAG }}${{ matrix.project.image_name }}"
-          cache-from: type=registry,ref=${{ env.CACHE_IMAGE_PATH }}/${{ matrix.project.project_name }}:buildcache
-
-      - name: Docker build with cache
-        if: ${{ env.IMAGE_EXIST == 'false' && !inputs.is_stage}}
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ${{ matrix.project.dockerfile }}
-          build-args: |
-            build_number=${{ matrix.project.build_number }}
-            ENVIROMENT=${{ inputs.is_stage && 'stage' || 'production'  }}
-            GITHUB_TOKEN=${{ secrets.GH_TOKEN }}
-            GITHUB_USERNAME=sravni
-            GITHUB_NPM_TOKEN=${{ secrets.GH_TOKEN }}
-            NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }}
-            NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
-            SLACK_CLIENT_SECRET=${{ secrets.SLACK_CLIENT_SECRET }}
-            SLACK_CLIENT_ID=${{ secrets.SLACK_CLIENT_ID }}
-            JUICY_SCORE_API_KEY_DEV=${{ secrets.JUICY_SCORE_API_KEY_DEV }}
-            JUICY_SCORE_API_KEY_PROD=${{ secrets.JUICY_SCORE_API_KEY_PROD }}
-            ALLURE_TOKEN=${{ secrets.ALLURE_TOKEN }}
-            SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_SOURCEMAP_WEB_FRONTEND_AUTH_TOKEN }}
-          push: ${{ inputs.with_push }}
-          tags: "${{ secrets.HARBOR_REGISTRY }}/${{ env.CANARY_TAG }}${{ matrix.project.image_name }}"
-          cache-from: type=registry,ref=${{ env.CACHE_IMAGE_PATH }}/${{ matrix.project.project_name }}:buildcache
-          cache-to: type=registry,ref=${{ env.CACHE_IMAGE_PATH }}/${{ matrix.project.project_name }}:buildcache,mode=max,image-manifest=true,oci-mediatypes=true
