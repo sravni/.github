@@ -198,13 +198,14 @@ jobs:
       - name: Tag application with repoURL
         run: |
           if [[ "${{ env.BRANCH }}" != 'master' && "${{ env.BRANCH }}" != 'main' ]]; then
-            KEY=$(yq '.services | to_entries | .[] | select(.value.name == "${{ matrix.project.project_name }}-${{ env.BRANCH }}") | .key' ${{ env.REPO_PATH }}/_apps/values_dev.yaml);
+            KEY=$(yq '.services | to_entries | .[] | select(.value.name == "${{ matrix.project.project_name }}") | .key' ${{ env.REPO_PATH }}/_apps/values_dev.yaml);
             REPOURL=$(yq e ".services[$KEY].repoURL" ${{ env.REPO_PATH }}/_apps/values_dev.yaml);
             if [[ $REPOURL == "https://sravni.gitlab.yandexcloud.net/${{ env.TEAM }}_group/deploy_${{ env.TEAM }}.git" ]]; then
               echo "Данный сервис теперь живет в гитлабе, запускайте пайплайны там https://sravni.gitlab.yandexcloud.net/${{ env.TEAM }}_group"
               exit 1
             else
-              yq -i e ".services[$KEY].repoURL = \"https://github.com/sravni/deploy_${{ env.TEAM }}\", .services[$KEY].branch = \"main\"" ${{ env.REPO_PATH }}/_apps/values_dev.yaml
+              KEY_BRANCH=$(yq '.services | to_entries | .[] | select(.value.name == "${{ matrix.project.project_name }}-${{ env.BRANCH }}") | .key' ${{ env.REPO_PATH }}/_apps/values_dev.yaml);
+              yq -i e ".services[$KEY_BRANCH].repoURL = \"https://github.com/sravni/deploy_${{ env.TEAM }}\", .services[$KEY_BRANCH].branch = \"main\"" ${{ env.REPO_PATH }}/_apps/values_dev.yaml
             fi
           else
             KEY=$(yq '.services | to_entries | .[] | select(.value.name == "${{ matrix.project.project_name }}") | .key' ${{ env.REPO_PATH }}/_apps/values_dev.yaml);
