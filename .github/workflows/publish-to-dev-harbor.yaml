@@ -203,7 +203,7 @@ jobs:
             if [[ $REPOURL == "https://sravni.gitlab.yandexcloud.net/${{ env.TEAM }}_group/deploy_${{ env.TEAM }}.git" ]]; then
               echo "Данный сервис теперь живет в гитлабе, запускайте пайплайны там https://sravni.gitlab.yandexcloud.net/${{ env.TEAM }}_group"
               exit 1
-            else    
+            else
               yq -i e ".services[$KEY].repoURL = \"https://github.com/sravni/deploy_${{ env.TEAM }}\", .services[$KEY].branch = \"main\"" ${{ env.REPO_PATH }}/_apps/values_dev.yaml
             fi
           else
@@ -212,7 +212,7 @@ jobs:
             if [[ $REPOURL == "https://sravni.gitlab.yandexcloud.net/${{ env.TEAM }}_group/deploy_${{ env.TEAM }}.git" ]]; then 
               echo "Данный сервис теперь живет в гитлабе, запускайте пайплайны там https://sravni.gitlab.yandexcloud.net/${{ env.TEAM }}_group"
               exit 1
-            else 
+            else
               yq -i e ".services[$KEY].repoURL = \"https://github.com/sravni/deploy_${{ env.TEAM }}\", .services[$KEY].branch = \"main\"" ${{ env.REPO_PATH }}/_apps/values_dev.yaml
             fi
           fi
