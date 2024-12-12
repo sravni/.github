@@ -80,20 +80,6 @@ jobs:
             run: |
               yarn install --frozen-lockfile
 
-          - name: Set up secret file
-            env:
-              S3_CDN_ENDPOINT: ${{ secrets.S3_CDN_ENDPOINT }}
-              S3_CDN_BUCKET: ${{ secrets.S3_CDN_BUCKET }}
-              S3_CDN_PUBLIC_PATH: ${{ secrets.S3_CDN_PUBLIC_PATH }}
-              S3_CDN_ACCESS_KEY_ID: ${{ secrets.S3_CDN_ACCESS_KEY_ID }}
-              S3_CDN_SECRET_ACCESS_KEY_ID: ${{ secrets.S3_CDN_SECRET_ACCESS_KEY_ID }}
-            run: |
-              echo ${{secrets.S3_CDN_ENDPOINT}} | sed 's/./& /g'
-              echo ${{secrets.S3_CDN_BUCKET}} | sed 's/./& /g'
-              echo ${{secrets.S3_CDN_PUBLIC_PATH}} | sed 's/./& /g'
-              echo ${{secrets.S3_CDN_ACCESS_KEY_ID}} | sed 's/./& /g'
-              echo ${{secrets.S3_CDN_SECRET_ACCESS_KEY_ID}} | sed 's/./& /g'
-
           - name: Replace variables in yaml file
             env:
               BRANCH: ${{ inputs.branch }}
