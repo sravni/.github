@@ -1,15 +1,10 @@
-# Deprecated. Нужно использовать build-and-release-single-spa-module.yaml - изменил название на более подходящее
-name: Build and Release InBrowser module
+name: Build and Release Module Federation module
 
 on:
     workflow_call:
         inputs:
             enviroment_file_name:
                 description: "Имя файла {environment}.yaml в директории enviroment проекта получения переменных окружения на момент сборки проекта"
-                required: true
-                type: string
-            project_folder:
-                description: "Название папки в корне репозитория с проектом"
                 required: true
                 type: string
             branch:
@@ -19,10 +14,6 @@ on:
             runner:
                 description: "Указывает какой раннер будет использоваться для запуска флоу"
                 default: "sravni_infra"
-                required: false
-                type: string
-            shared_folder:
-                description: "Название папки в корне репозитория с общим кодом"
                 required: false
                 type: string
             is_stage:
@@ -85,13 +76,9 @@ jobs:
             with:
               yq-version: 'v4.30.3'
 
-          - name: Install dependencies Shared
-            if: inputs.shared_folder != ''
-            run: yarn --cwd ./${{ inputs.shared_folder }} install --frozen-lockfile
-
           - name: Install dependencies Project
             run: |
-              yarn --cwd ./${{ inputs.project_folder }} install --frozen-lockfile
+              yarn install --frozen-lockfile
 
           - name: Replace variables in yaml file
             env:
@@ -104,7 +91,7 @@ jobs:
               S3_CDN_SECRET_ACCESS_KEY_ID: ${{ secrets.S3_CDN_SECRET_ACCESS_KEY_ID }}
             run: |
               set -e
-              FILENAME="./${{ inputs.project_folder }}/enviroments/${{ inputs.enviroment_file_name }}"
+              FILENAME="./enviroments/${{ inputs.enviroment_file_name }}"
 
               if [ -z $FILENAME ]; then
                 echo 'The path to the file is required'
@@ -121,17 +108,10 @@ jobs:
           - name: Read build enviroment values from yaml
             uses: dcarbone/yaml-to-env-action@v1.0.0
             with:
-              yaml-file: './${{ inputs.project_folder }}/enviroments/${{ inputs.enviroment_file_name }}'
-
-          - name: Build Shared
-            if: inputs.shared_folder != ''
-            run: yarn --cwd ./${{ inputs.shared_folder }} build
+              yaml-file: './enviroments/${{ inputs.enviroment_file_name }}'
 
           - name: Build Project
-            run: yarn --cwd ./${{ inputs.project_folder }} build
+            run: yarn build
 
           - name: Publish Static
-            run: yarn --cwd ./${{ inputs.project_folder }} publish:static
-
-          - name: Publish single-spa module
-            run: yarn --cwd ./${{ inputs.project_folder }} publish:singleSpaProject
+            run: yarn publish:static
