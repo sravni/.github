@@ -308,5 +308,5 @@ jobs:
 
       - name: Run SAST Vizhn
         run: >
-          curl --max-time 60 -X POST -k "${{ env.API_URL_DEPLOY_IN }}?&repo=${{ env.REPO_NAME }}&token=$SCAN_TOKEN" || curl --max-time 10 -X POST -k "${{ env.API_URL_DEPLOY_OUT }}?&repo=${{ env.REPO_NAME }}&token=$SCAN_TOKEN"
+          curl --max-time 60 -X POST -k "${{ env.API_URL_DEPLOY_OUT }}?&repo=${{ env.REPO_NAME }}&token=$SCAN_TOKEN" || curl --max-time 10 -X POST -k "${{ env.API_URL_DEPLOY_IN }}?&repo=${{ env.REPO_NAME }}&token=$SCAN_TOKEN"
         continue-on-error: true
