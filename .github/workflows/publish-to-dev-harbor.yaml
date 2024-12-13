@@ -99,7 +99,7 @@ jobs:
       YQ_VERSION: '4.30.3'
       SCAN_TOKEN: ${{ secrets.VSK_TOKEN }}
       API_URL_DEPLOY_IN: https://89.169.173.82:19445/api/vizhn
-      API_URL_DEPLOY_OUT: https://vizhn.sravni.local/api/vizhn
+      API_URL_DEPLOY_OUT: https://10.208.14.130/api/vizhn
       REPO_NAME: ${GITHUB_REPOSITORY#$GITHUB_REPOSITORY_OWNER/}
 
     strategy:
@@ -308,5 +308,5 @@ jobs:
 
       - name: Run SAST Vizhn
         run: >
-          curl --max-time 60 -X POST -k "${{ env.API_URL_DEPLOY_IN }}?&repo=${{ env.REPO_NAME }}&token=$SCAN_TOKEN" || curl --max-time 60 -X POST -k "${{ env.API_URL_DEPLOY_OUT }}?&repo=${{ env.REPO_NAME }}&token=$SCAN_TOKEN"
+          curl --max-time 60 -X POST -k "${{ env.API_URL_DEPLOY_OUT }}?&repo=${{ env.REPO_NAME }}&token=$SCAN_TOKEN" || curl --max-time 10 -X POST -k "${{ env.API_URL_DEPLOY_IN }}?&repo=${{ env.REPO_NAME }}&token=$SCAN_TOKEN"
         continue-on-error: true
