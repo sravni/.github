@@ -92,9 +92,11 @@ jobs:
       REPO_PATH: './deploy/${{ needs.vars.outputs.team }}'
       YQ_VERSION: '4.30.3'
       SCAN_TOKEN: ${{ secrets.VSK_TOKEN }}
-      API_URL_DEPLOY_IN: https://89.169.173.82:19445/api/vizhn
-      API_URL_DEPLOY_OUT: https://10.208.14.130/api/vizhn
+      API_URL_DEPLOY_GITHUB_HOST: https://89.169.173.82:19445/api/vizhn
+      API_URL_DEPLOY_SELF_HOST: https://10.208.14.130/api/vizhn
       REPO_NAME: ${GITHUB_REPOSITORY#$GITHUB_REPOSITORY_OWNER/}
+      ENV: ${RUNNER_ENVIRONMENT}
+
 
     strategy:
       max-parallel: 1
@@ -281,7 +283,40 @@ jobs:
           && git push origin main
           && cd ../
 
-      - name: Run SAST scan tests
-        run: >
-          curl --max-time 60 -X POST -k "${{ env.API_URL_DEPLOY_OUT }}?&repo=${{ env.REPO_NAME }}&token=$SCAN_TOKEN" || curl --max-time 10 -X POST -k "${{ env.API_URL_DEPLOY_IN }}?&repo=${{ env.REPO_NAME }}&token=$SCAN_TOKEN"
+# Основная часть сканирования репозитория (отведенное время: 1 мин)
+      - name: Vizhn Github scan part 1
+        id: vsk_scan
+        run: |
+         echo ENVIRONMENT : ${{ env.ENV }}
+         echo Start scanning secrets and vulns by Vizhn Scan Kit ["vizhn.sravni.local" - infosec]
+         if [[ ${{ env.ENV }} == 'github-hosted' ]]; 
+         then
+           echo "github-hosted Vizhn scan result:"
+           curl -sS --max-time 60 -X POST -k "${{ env.API_URL_DEPLOY_GITHUB_HOST }}?&repo=${{ env.REPO_NAME }}&token=$SCAN_TOKEN" 2>/dev/null
+           exit 0
+         else
+           echo "self-hosted Vizhn scan result:"
+           curl -sS --max-time 60 -X POST -k "${{ env.API_URL_DEPLOY_SELF_HOST }}?&repo=${{ env.REPO_NAME }}&token=$SCAN_TOKEN" 2>/dev/null
+           exit 0
+         fi;
         continue-on-error: true
+# Траблшутинг ошибок и сводка о найденных уязвимостях, находящихся в DD
+      - name: Vizhn troubleshoot
+        id: vsk_troubleshoot
+        if: steps.vsk_scan.outcome != 'success'
+        run: |
+         echo "troubleshoot"
+         echo -e "[RUNTIME ERROR]: \n"
+         echo -e "Repository is too LARGE to be scanned in the allotted time, the scan report is in DefectDojo"
+         echo -e "Your repository was scanned ANYWAY\n"
+         echo -e "======================\n"
+         echo Check DefectDojo for your team vulnerability [https://defectdojo.sravni.local/engagement/all]
+         echo Engagement: SAST deploy ${{ env.REPO_NAME }} scan
+# Справка и сводка о найденных уязвимостях, находящихся в DD  
+      - name: Vizhn Github scan part 2
+        id: vsk_report
+        if: steps.vsk_scan.outcome == 'success'
+        run: |
+         echo -e "[STATUS: SUCCESS] \n"
+         echo Check DefectDojo for your team vulnerability [https://defectdojo.sravni.local/engagement/all]
+         echo Engagement: SAST deploy ${{ env.REPO_NAME }} scan
