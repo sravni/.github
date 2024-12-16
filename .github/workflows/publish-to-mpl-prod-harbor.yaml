@@ -157,13 +157,20 @@ jobs:
       # то прописываются переменные которые меняют repoURL в argocd application для сервиса
       - name: Tag application with repoURL
         run: |
-          KEY=$(yq '.services | to_entries | .[] | select(.value.name == "${{ matrix.project.project_name }}") | .key' ${{ env.REPO_PATH }}/_apps/values_mpl_prod.yaml);
-          REPOURL=$(yq e ".services[$KEY].repoURL" ${{ env.REPO_PATH }}/_apps/values_mpl_prod.yaml);
-          if [[ $REPOURL == "https://sravni.gitlab.yandexcloud.net/${{ env.TEAM }}_group/deploy_${{ env.TEAM }}.git" ]]; then 
-            echo "Данный сервис теперь живет в гитлабе, запускайте пайплайны там https://sravni.gitlab.yandexcloud.net/${{ env.TEAM }}_group"
-            exit 1
-          else
+          if [ "${{ env.CANARY }}" = true ];
+          then
+            KEY=$(yq '.services | to_entries | .[] | select(.value.name == "${{ matrix.project.project_name }}-canary") | .key' ${{ env.REPO_PATH }}/_apps/values_mpl_prod.yaml);
+            REPOURL=$(yq e ".services[$KEY].repoURL" ${{ env.REPO_PATH }}/_apps/values_mpl_prod.yaml);
             yq -i e ".services[$KEY].repoURL = \"https://github.com/sravni/deploy_${{ env.TEAM }}\", .services[$KEY].branch = \"main\"" ${{ env.REPO_PATH }}/_apps/values_mpl_prod.yaml
+          else
+            KEY=$(yq '.services | to_entries | .[] | select(.value.name == "${{ matrix.project.project_name }}") | .key' ${{ env.REPO_PATH }}/_apps/values_mpl_prod.yaml);
+            REPOURL=$(yq e ".services[$KEY].repoURL" ${{ env.REPO_PATH }}/_apps/values_mpl_prod.yaml);
+            if [[ $REPOURL == "https://sravni.gitlab.yandexcloud.net/${{ env.TEAM }}_group/deploy_${{ env.TEAM }}.git" ]]; then 
+              echo "Данный сервис теперь живет в гитлабе, запускайте пайплайны там https://sravni.gitlab.yandexcloud.net/${{ env.TEAM }}_group"
+              exit 1
+            else
+              yq -i e ".services[$KEY].repoURL = \"https://github.com/sravni/deploy_${{ env.TEAM }}\", .services[$KEY].branch = \"main\"" ${{ env.REPO_PATH }}/_apps/values_mpl_prod.yaml
+            fi
           fi
 
       # Обновляем зависимости чартов
