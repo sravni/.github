@@ -45,6 +45,8 @@ on:
         required: true
       HARBOR_PASS:
         required: true
+      NEXT_PRIVATE_LOCAL_WEBPACK: # Добавлено для всех команд
+        required: false           #
       NEXTAUTH_URL:         # Добавлено для команды MFO
         required: false     #
       NEXTAUTH_SECRET:      # Добавлено для команды MFO
@@ -143,6 +145,7 @@ jobs:
             GITHUB_TOKEN=${{ secrets.GH_TOKEN }}
             GITHUB_USERNAME=sravni
             GITHUB_NPM_TOKEN=${{ secrets.GH_TOKEN }}
+            NEXT_PRIVATE_LOCAL_WEBPACK=${{ secrets.NEXT_PRIVATE_LOCAL_WEBPACK }}
             NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }}
             NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
             SLACK_CLIENT_SECRET=${{ secrets.SLACK_CLIENT_SECRET }}
