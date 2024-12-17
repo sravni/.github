@@ -33,9 +33,6 @@ on:
         required: false
         type: boolean
         default: false
-      next_private_local_webpack: # Добавлено для всех команд
-        required: false
-        type: boolean
 
     secrets:
       GH_TOKEN:
@@ -146,7 +143,6 @@ jobs:
             GITHUB_TOKEN=${{ secrets.GH_TOKEN }}
             GITHUB_USERNAME=sravni
             GITHUB_NPM_TOKEN=${{ secrets.GH_TOKEN }}
-            NEXT_PRIVATE_LOCAL_WEBPACK=${{ inputs.next_private_local_webpack }}
             NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }}
             NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
             SLACK_CLIENT_SECRET=${{ secrets.SLACK_CLIENT_SECRET }}
