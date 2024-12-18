@@ -4,6 +4,11 @@ name: Lint and Test Frontend package
 on:
   workflow_call:
     inputs:
+      with_ts_check:
+        description: "Запускать проверку ts файлов?"
+        required: false
+        type: boolean
+        default: false
       runner:
         description: "Указывает какой раннер будет использоваться для запуска флоу"
         required: false
@@ -42,6 +47,10 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.ARTIFACTORY_SVC_TOKEN }}
         run: yarn install --frozen-lockfile
+
+      - name: Run ts check
+        if: ${{ inputs.with_ts_check }}
+        run: yarn ts
 
       - name: Run Lint
         run: yarn lint
