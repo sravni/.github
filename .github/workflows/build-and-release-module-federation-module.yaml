@@ -95,7 +95,6 @@ jobs:
               NGENIX_API_ENDPOINT: ${{ secrets.NGENIX_API_ENDPOINT }}
               NGENIX_API_LOGIN: ${{ secrets.NGENIX_API_LOGIN }}
               NGENIX_API_PASSWORD: ${{ secrets.NGENIX_API_PASSWORD }}
-
               S3_CDN_ENDPOINT: ${{ secrets.S3_CDN_ENDPOINT }}
               S3_CDN_BUCKET: ${{ secrets.S3_CDN_BUCKET }}
               S3_CDN_PUBLIC_PATH: ${{ secrets.S3_CDN_PUBLIC_PATH }}
