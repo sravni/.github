@@ -41,6 +41,8 @@ on:
                 required: true
             S3_CDN_PUBLIC_PATH:
                 required: true
+            S3_CDN_PUBLIC_ID:
+                required: true
             S3_CDN_ACCESS_KEY_ID:
                 required: true
             S3_CDN_SECRET_ACCESS_KEY_ID:
@@ -97,6 +99,7 @@ jobs:
               S3_CDN_ENDPOINT: ${{ secrets.S3_CDN_ENDPOINT }}
               S3_CDN_BUCKET: ${{ secrets.S3_CDN_BUCKET }}
               S3_CDN_PUBLIC_PATH: ${{ secrets.S3_CDN_PUBLIC_PATH }}
+              S3_CDN_PUBLIC_ID: ${{ secrets.S3_CDN_PUBLIC_ID }}
               S3_CDN_ACCESS_KEY_ID: ${{ secrets.S3_CDN_ACCESS_KEY_ID }}
               S3_CDN_SECRET_ACCESS_KEY_ID: ${{ secrets.S3_CDN_SECRET_ACCESS_KEY_ID }}
             run: |
