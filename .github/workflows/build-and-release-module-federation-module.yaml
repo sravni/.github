@@ -29,6 +29,12 @@ on:
         secrets:
             SENTRY_SOURCEMAP_WEB_FRONTEND_AUTH_TOKEN:
                 required: false
+            NGENIX_API_ENDPOINT:
+              required: true
+            NGENIX_API_LOGIN:
+              required: true
+            NGENIX_API_PASSWORD:
+              required: true
             S3_CDN_ENDPOINT:
                 required: true
             S3_CDN_BUCKET:
@@ -84,6 +90,10 @@ jobs:
             env:
               BRANCH: ${{ inputs.branch }}
               SENTRY_SOURCEMAP_WEB_FRONTEND_AUTH_TOKEN: ${{ secrets.SENTRY_SOURCEMAP_WEB_FRONTEND_AUTH_TOKEN }}
+              NGENIX_API_ENDPOINT: ${{ secrets.NGENIX_API_ENDPOINT }}
+              NGENIX_API_LOGIN: ${{ secrets.NGENIX_API_LOGIN }}
+              NGENIX_API_PASSWORD: ${{ secrets.NGENIX_API_PASSWORD }}
+
               S3_CDN_ENDPOINT: ${{ secrets.S3_CDN_ENDPOINT }}
               S3_CDN_BUCKET: ${{ secrets.S3_CDN_BUCKET }}
               S3_CDN_PUBLIC_PATH: ${{ secrets.S3_CDN_PUBLIC_PATH }}
