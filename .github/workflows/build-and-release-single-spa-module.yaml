@@ -1,5 +1,4 @@
-# Deprecated. Нужно использовать build-and-release-single-spa-module.yaml - изменил название на более подходящее
-name: Build and Release InBrowser module
+name: Build and Release Single Spa module
 
 on:
     workflow_call:
