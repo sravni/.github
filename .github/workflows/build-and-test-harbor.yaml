@@ -140,6 +140,8 @@ jobs:
           build-args: |
             build_number=${{ matrix.project.build_number }}
             ENVIROMENT=${{ inputs.is_stage && 'stage' || 'production'  }}
+            # Frontend разработчики в своих проектах используют такое название
+            ENV=${{ inputs.is_stage && 'stage' || 'production'  }}
             GITHUB_TOKEN=${{ secrets.GH_TOKEN }}
             GITHUB_USERNAME=sravni
             GITHUB_NPM_TOKEN=${{ secrets.GH_TOKEN }}
