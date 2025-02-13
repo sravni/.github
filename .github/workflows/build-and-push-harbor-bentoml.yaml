@@ -63,12 +63,12 @@ jobs:
     name: Bento build
     runs-on: ${{ inputs.runner_bento }}
     needs: [get_projects]
-    
+
     strategy:
       max-parallel: 1
       matrix:
         project: ${{ fromJson(needs.get_projects.outputs.projects) }}
-        
+
     steps:
       - name: Checkout source
         uses: actions/checkout@v3
