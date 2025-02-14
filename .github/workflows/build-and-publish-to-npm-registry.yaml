@@ -49,7 +49,7 @@ jobs:
         run: yarn publish
 
       - name: Create release
-        uses: "marvinpinto/action-automatic-releases@v1.1.0"
+        uses: "marvinpinto/action-automatic-releases@v1.2.1"
         if: contains(github.ref, '-dev') != true
         with:
           repo_token: "${{ secrets.GH_TOKEN }}"
