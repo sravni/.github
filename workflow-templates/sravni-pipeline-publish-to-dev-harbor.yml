@@ -67,6 +67,7 @@ jobs:
     with:
       is_stage: true
       with_push: true
+      force_multi: false
       project_path_mask: ${{ github.event.inputs.project_type || '*' }}
       k8s_yaml_file_name: ${{ needs.vars.outputs.values }}
       runner: "sravni_infra"
@@ -84,4 +85,5 @@ jobs:
       projects: ${{ needs.build_and_test.outputs.projects }}
       team: ${{ needs.vars.outputs.team }}
       url_prefix: ${{ needs.vars.outputs.url_prefix }}
+      main_branch: 'master' # либо main. влияет на название ингрессов и values файлов.
     secrets: inherit

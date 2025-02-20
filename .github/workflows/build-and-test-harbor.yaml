@@ -33,6 +33,11 @@ on:
         required: false
         type: boolean
         default: false
+      force_multi:
+        description: "Принудительно задать мульти-репо шаблон"
+        required: false
+        type: boolean
+        default: false
 
     secrets:
       GH_TOKEN:
@@ -83,6 +88,7 @@ jobs:
       image_version: ${{ inputs.image_version }}
       is_stage: ${{ inputs.is_stage }}
       runner: ${{ inputs.runner }}
+      force_multi: ${{ inputs.force_multi || false}}
 
   build_and_test:
     runs-on: ${{ inputs.runner }}

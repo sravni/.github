@@ -44,6 +44,11 @@ on:
         required: false
         default: ubuntu-latest
         type: string
+      force_multi:
+        description: "Принужденно указываем что сервис - мультирепа"
+        required: false
+        default: false
+        type: boolean
 
     outputs:
       projects:
@@ -57,9 +62,9 @@ jobs:
 
     outputs:
       projects: >-
-        ${{ steps.get_projects_multi.outputs.projects || 
-            steps.get_projects_mono.outputs.projects || 
-            steps.get_projects_bento.outputs.projects || 
+        ${{ steps.get_projects_multi.outputs.projects ||
+            steps.get_projects_mono.outputs.projects ||
+            steps.get_projects_bento.outputs.projects ||
             steps.get_projects_bento_multi.outputs.projects }}
 
     steps:
@@ -87,6 +92,12 @@ jobs:
       - name: Check repo type
         id: repo_type
         run: |
+          if [[ ${{ inputs.force_multi }} == true ]];
+          then
+            echo 'Принужденно определили репозиторий как мультисервисный'
+            echo "repo_type='multi'" >> $GITHUB_OUTPUT
+            exit 0;
+          fi;
           if [[ -f './Dockerfile' ]]
           then
             echo 'Определили репозиторий как моносервисный'
@@ -192,7 +203,7 @@ jobs:
         run: |
           # Выходим, если репозиторий не бенто мультисервисный
           if [[ ${{ steps.repo_type.outputs.repo_type }} != 'bento-multi' ]]; then exit 0; fi
-      
+
           projects=$(for p in $(find * -maxdepth 3 -path "${{ inputs.project_path_mask }}/bentofile.yaml")
             do
               project_path=$(echo $p | sed -E 's|(.*)/bentofile\.yaml$|\1|')
