@@ -44,11 +44,6 @@ on:
         required: false
         default: ubuntu-latest
         type: string
-      force_multi:
-        description: "Принужденно указываем что сервис - мультирепа"
-        required: false
-        default: false
-        type: boolean
 
     outputs:
       projects:
@@ -92,12 +87,6 @@ jobs:
       - name: Check repo type
         id: repo_type
         run: |
-          if [[ ${{ inputs.force_multi }} == true ]];
-          then
-            echo 'Принужденно определили репозиторий как мультисервисный'
-            echo "repo_type='multi'" >> $GITHUB_OUTPUT
-            exit 0;
-          fi;
           if [[ -f './Dockerfile' ]]
           then
             echo 'Определили репозиторий как моносервисный'
