@@ -167,7 +167,7 @@ jobs:
           .global.image.repository = "registry.yc.prod.infra.sravni.market/${{ env.TEAM }}_dev/${{ matrix.project.project_name }}" |
           .global.imagePullSecrets[0] = "harbor-pull-secret" |
           .Branch = "${{ env.BRANCH }}" |
-          .nodeSelector = "'"dev/nodepool: preemptible"'"
+          .nodeSelector = "'"dev/nodepool: preemptible"'"'
           ${{ env.REPO_PATH }}/${{ matrix.project.project_name }}/values_dev.yaml;
 
       # Для деплоев из веток отличных от master, нужно убедиться, что в репе sravni/deploy в файле /deploy/{team}/_apps/values_dev.yaml
