@@ -84,4 +84,5 @@ jobs:
       projects: ${{ needs.build_and_test.outputs.projects }}
       team: ${{ needs.vars.outputs.team }}
       url_prefix: ${{ needs.vars.outputs.url_prefix }}
+      main_branch: 'master' # либо main. влияет на название ингрессов и values файлов.
     secrets: inherit
