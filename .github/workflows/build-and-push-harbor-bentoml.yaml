@@ -85,7 +85,7 @@ jobs:
       - name: Install requirements
         run: |
           cd ${{ matrix.project.project_path }}
-          pip install -r requirements.txt -i https://artifactory.yc.prod.infra.sravni.market/artifactory/api/pypi/pypi.org_proxy/simple
+          pip install -r requirements.txt -i https://artifactory.yc.prod.infra.sravni.market/artifactory/api/pypi/pypi.org_proxy/simple  --timeout 600
       - name: Import model
         run: |
           cd ${{ matrix.project.project_path }}
