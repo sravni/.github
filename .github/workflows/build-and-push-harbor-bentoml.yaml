@@ -63,6 +63,11 @@ jobs:
     name: Bento build
     runs-on: ${{ inputs.runner_bento }}
     needs: [get_projects]
+    env:
+      HF_HUB_ETAG_TIMEOUT: 86400
+      HF_HUB_DOWNLOAD_TIMEOUT: 86400
+      HF_ENDPOINT: https://artifactory.yc.prod.infra.sravni.market/artifactory/api/huggingfaceml/huggingface.co_proxy
+      HF_TOKEN: ${{ secrets.ARTIFACTORY_SVC_TOKEN }} 
     
     strategy:
       max-parallel: 1
