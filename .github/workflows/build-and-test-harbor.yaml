@@ -135,7 +135,7 @@ jobs:
         if: ${{ env.IMAGE_EXIST == 'false' }}
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: ${{ matrix.project.project_path }}
           file: ${{ matrix.project.dockerfile }}
           build-args: |
             build_number=${{ matrix.project.build_number }}

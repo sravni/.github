@@ -57,15 +57,14 @@ jobs:
 
     outputs:
       projects: >-
-        ${{ steps.get_projects_multi.outputs.projects || 
-            steps.get_projects_mono.outputs.projects || 
-            steps.get_projects_bento.outputs.projects || 
+        ${{ steps.get_projects_multi.outputs.projects ||
+            steps.get_projects_mono.outputs.projects ||
+            steps.get_projects_bento.outputs.projects ||
             steps.get_projects_bento_multi.outputs.projects }}
 
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
-
       - name: Get build number and image version
         run: |
           if [[ -z "${{ inputs.image_version }}" ]]
@@ -87,22 +86,30 @@ jobs:
       - name: Check repo type
         id: repo_type
         run: |
-          if [[ -f './Dockerfile' ]]
-          then
-            echo 'Определили репозиторий как моносервисный'
-            echo "repo_type='mono'" >> $GITHUB_OUTPUT
-          elif [[ -f './bentofile.yaml' ]]
-          then
-            echo 'Определили репозиторий как бенто сервис'
+          # Проверка для bentofile.yaml
+          if [[ -f './bentofile.yaml' ]]; then
+            echo 'Определили репозиторий как бенто-сервисный'
             echo "repo_type='bento'" >> $GITHUB_OUTPUT
-          elif find . -type f -name 'bentofile.yaml' | grep -q -m 1 bentofile.yaml
-          then
+          elif find . -type f -name 'bentofile.yaml' | grep -q -m 1 bentofile.yaml; then
             echo 'Определили репозиторий как бенто-мультисервисный'
             echo "repo_type='bento-multi'" >> $GITHUB_OUTPUT
+          fi
+
+          # Если bentofile.yaml найден в inputs.project_path_mask, пропускаем проверку Dockerfile
+          if find "${{ inputs.project_path_mask }}/" -type f -name 'bentofile.yaml' | grep -q '.'; then
+            echo 'Пропускаем проверку Dockerfile, так как найден bentofile.yaml'
+            exit 0
+          fi
+
+          # Проверка для Dockerfile
+          if [[ -f './Dockerfile' ]]; then
+            echo 'Определили репозиторий как моносервисный'
+            echo "repo_type='mono'" >> $GITHUB_OUTPUT
           else
             echo 'Определили репозиторий как мультисервисный'
             echo "repo_type='multi'" >> $GITHUB_OUTPUT
           fi
+
 
       - name: Get projects (multi)
         id: get_projects_multi
@@ -192,7 +199,7 @@ jobs:
         run: |
           # Выходим, если репозиторий не бенто мультисервисный
           if [[ ${{ steps.repo_type.outputs.repo_type }} != 'bento-multi' ]]; then exit 0; fi
-      
+
           projects=$(for p in $(find * -maxdepth 3 -path "${{ inputs.project_path_mask }}/bentofile.yaml")
             do
               project_path=$(echo $p | sed -E 's|(.*)/bentofile\.yaml$|\1|')
