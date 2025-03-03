@@ -73,12 +73,12 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v3
       - name: Login to ACR
-        uses: ./.github/actions/setup/
+        uses: docker/login-action@v2
         with:
           registry: ${{ secrets.HARBOR_REGISTRY }}
           username: ${{ secrets.HARBOR_LOGIN }}
           password: ${{ secrets.HARBOR_PASSWORD }}
-      - uses: bentoml/setup-bentoml-action@v1
+      - uses: ./.github/actions/setup/
         with:
           python-version: '3.10'
           bentoml-version: 'main'
