@@ -73,7 +73,7 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v3
       - name: Login to ACR
-        uses: docker/login-action@v2
+        uses: ./.github/actions/setup/
         with:
           registry: ${{ secrets.HARBOR_REGISTRY }}
           username: ${{ secrets.HARBOR_LOGIN }}
