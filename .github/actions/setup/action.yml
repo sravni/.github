@@ -1,0 +1,60 @@
+name: "Setup BentoML"
+description: "Bootstrap and setup base environment for BentoML"
+branding:
+  icon: 'box'
+  color: 'orange'
+inputs:
+  bentoml-version:
+    description: The version of BentoML to use. Leave it empty to use the latest version, set to 'main' to use 'nightly'
+    required: false
+    default: ""
+  python-version:
+    description: Default Python version
+    required: false
+    default: "3.10"
+  architecture:
+    description: 'Which architecture to run on'
+    required: false
+    default: x64
+runs:
+  using: composite
+  steps:
+    - name: Checkout source
+      shell: bash
+      run: |
+        set -eux
+        echo "Checking out the repository..."
+        git --version
+
+    - name: Setup Python (from system)
+      shell: bash
+      run: |
+        set -eux
+        echo "Using system Python version: ${{ inputs.python-version }}"
+        python3 --version
+
+    - name: Configure pip cache manually
+      shell: bash
+      run: |
+        set -eux
+        export PIP_CACHE_DIR="$HOME/.cache/pip"
+        mkdir -p "$PIP_CACHE_DIR"
+        echo "PIP cache directory: $PIP_CACHE_DIR"
+        echo "PIP_CACHE_DIR=$PIP_CACHE_DIR" >> "$GITHUB_ENV"
+
+    - name: Install dependencies with caching
+      shell: bash
+      run: |
+        set -eux
+
+        echo "Installing BentoML..."
+        if [[ -n "${{ inputs.bentoml-version }}" ]]; then
+          pip install -U "bentoml==${{ inputs.bentoml-version }}" -i https://artifactory.yc.prod.infra.sravni.market/artifactory/api/pypi/pypi.org_proxy/simple --cache-dir="$PIP_CACHE_DIR" --timeout=300
+        else
+          pip install -U "bentoml>=1.0.25" -i https://artifactory.yc.prod.infra.sravni.market/artifactory/api/pypi/pypi.org_proxy/simple --cache-dir="$PIP_CACHE_DIR" --timeout=300
+        fi
+
+        echo "Successfully installed BentoML: $(bentoml --version)"
+
+        echo "Installing hatch and towncrier..."
+        pip install hatch towncrier -i https://artifactory.yc.prod.infra.sravni.market/artifactory/api/pypi/pypi.org_proxy/simple --cache-dir="$PIP_CACHE_DIR" --timeout=300
