@@ -1,0 +1,53 @@
+# https://help.github.com/en/articles/metadata-syntax-for-github-actions
+name: Build Bento bundle with GitHub Action
+description: Build Bento with GitHub Action
+author: bentoml
+branding:
+  icon: 'anchor'
+  color: 'blue'
+inputs:
+  bentofile:
+    description: "Optional path to bentofile.yaml"
+    required: false
+  version:
+    description: "Optional version for this given Bento. By default this will be auto-generated"
+    required: false
+  context:
+    description: "Build's context is the set of files located in the specified PATH or URL"
+    required: false
+    default: '.'
+outputs:
+  bento-tag:
+    description: 'Bento tag'
+    value: ${{ steps.build.outputs.bento-tag }}
+  bento-name:
+    description: 'Bento name'
+    value: ${{ steps.build.outputs.bento-name }}
+  bento-version:
+    description: 'Bento version'
+    value: ${{ steps.build.outputs.bento-version }}
+  metadata:
+    description: 'Build result metadata (equivalent of `bentoml get <bento_name>:<bento_version>`)'
+    value: ${{ steps.build.outputs.bento-metadata }}
+runs:
+  using: 'composite'
+  steps:
+    - shell: bash
+      id: build
+      run: |
+        build_args=()
+        if [[ -n "${{ inputs.bentofile }}" ]]; then
+          build_args+=(--bentofile ${{ inputs.bentofile }})
+        fi
+        if [[ -n "${{ inputs.version }}" ]]; then
+          build_args+=(--version ${{ inputs.version }})
+        fi
+        bento_tag=$(bentoml build -o tag ${build_args[@]} ${{ inputs.context }})
+        bento_tag=${bento_tag##__tag__:}
+        echo "bento-tag=$bento_tag" >> $GITHUB_OUTPUT
+        echo "bento-name=$(echo $bento_tag | cut -d: -f1)" >> $GITHUB_OUTPUT
+        echo "bento-version=$(echo $bento_tag | cut -d: -f2)" >> $GITHUB_OUTPUT
+        # Multiline string for gh action https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#multiline-strings
+        echo "bento-metadata<<EOF" >> $GITHUB_OUTPUT
+        echo "$(bentoml get $bento_tag -o json)" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
