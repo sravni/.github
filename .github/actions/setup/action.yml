@@ -26,7 +26,44 @@ runs:
         echo "Checking out the repository..."
         git --version
 
-    - name: Setup Python (from system)
+    - name: Configure APT proxy & install Python
+      shell: bash
+      run: |
+        set -eux
+
+        UBUNTU_VERSION=$(grep "VERSION_CODENAME" /etc/os-release | cut -d'=' -f2)
+        ARTIFACTORY_URL="https://artifactory.yc.prod.infra.sravni.market/artifactory/ubuntu_proxy"
+
+        echo "Configuring APT proxy for Artifactory ($UBUNTU_VERSION)..."
+
+        echo "deb ${ARTIFACTORY_URL} ${UBUNTU_VERSION} main restricted
+        deb ${ARTIFACTORY_URL} ${UBUNTU_VERSION}-updates main restricted
+        deb ${ARTIFACTORY_URL} ${UBUNTU_VERSION} universe
+        deb ${ARTIFACTORY_URL} ${UBUNTU_VERSION}-updates universe
+        deb ${ARTIFACTORY_URL} ${UBUNTU_VERSION} multiverse
+        deb ${ARTIFACTORY_URL} ${UBUNTU_VERSION}-updates multiverse
+        deb ${ARTIFACTORY_URL} ${UBUNTU_VERSION}-backports main restricted universe multiverse
+        deb ${ARTIFACTORY_URL} ${UBUNTU_VERSION}-security main restricted
+        deb ${ARTIFACTORY_URL} ${UBUNTU_VERSION}-security universe
+        deb ${ARTIFACTORY_URL} ${UBUNTU_VERSION}-security multiverse" | sudo tee /etc/apt/sources.list
+
+        echo "Updating APT cache..."
+        sudo apt update -o Acquire::https::Verify-Peer=false -o Acquire::https::Verify-Host=false
+
+        PYTHON_VERSION="${{ inputs.python-version }}"
+
+        echo "Installing Python ${PYTHON_VERSION} from Artifactory..."
+        sudo apt install -y --no-install-recommends \
+            python${PYTHON_VERSION} \
+            ca-certificates
+
+        if [[ ! -f "/usr/bin/python3" ]]; then
+            sudo ln -s /usr/bin/python${PYTHON_VERSION} /usr/bin/python3
+        fi
+
+        echo "Python ${PYTHON_VERSION} successfully installed from Artifactory!"
+
+    - name: Verify Python installation
       shell: bash
       run: |
         set -eux
