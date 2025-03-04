@@ -81,7 +81,7 @@ jobs:
       - uses: sravni/.github/.github/actions/setup@bento-tmp
         with:
           python-version: '3.10'
-          bentoml-version: 'main'
+          bentoml-version: '1.3.14'
       - name: Install requirements
         run: |
           cd ${{ matrix.project.project_path }}
