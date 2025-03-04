@@ -83,10 +83,10 @@ jobs:
           registry: ${{ secrets.HARBOR_REGISTRY }}
           username: ${{ secrets.HARBOR_LOGIN }}
           password: ${{ secrets.HARBOR_PASSWORD }}
-      - uses: bentoml/setup-bentoml-action@v1
+      - uses: sravni/.github/.github/actions/setup@bento-mixed
         with:
           python-version: '3.10'
-          bentoml-version: 'main'
+          bentoml-version: '1.3.14'
       - name: Install requirements
         run: |
           cd ${{ matrix.project.project_path }}
@@ -95,7 +95,7 @@ jobs:
         run: |
           cd ${{ matrix.project.project_path }}
           python import_model.py
-      - uses: bentoml/build-bento-action@v1
+      - uses: sravni/.github/.github/actions/builder@bento-mixed
         with:
           context: ${{ matrix.project.project_path }}
         id: bento
